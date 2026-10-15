@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Millennia FieldOps",
+    "slug": "millennia-fieldops",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "scheme": "millenniafieldops",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#0F2E22",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Millennia FieldOps uses the camera to photograph field observations.",
+        "NSLocationWhenInUseUsageDescription": "Millennia FieldOps records the GPS location of each observation.",
+        "NSPhotoLibraryUsageDescription": "Millennia FieldOps attaches photos from your library to records."
+      }
+    },
+    "android": {
+      "package": "my.millennia.fieldops",
+      "permissions": ["CAMERA", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "READ_MEDIA_IMAGES"]
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Millennia FieldOps attaches photos from your library to records.",
+          "cameraPermission": "Millennia FieldOps uses the camera to photograph field observations."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Millennia FieldOps records the GPS location of each observation."
+        }
+      ],
+      "expo-sqlite"
+    ]
+  }
+}

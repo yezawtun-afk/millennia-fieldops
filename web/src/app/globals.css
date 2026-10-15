@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+/* Millennia FieldOps colours. These become Tailwind classes such as
+   bg-forest, text-flora, border-line. */
+@theme {
+  --color-forest: #0f2e22;
+  --color-forest-soft: #16382b;
+  --color-forest-line: #23483a;
+  --color-primary: #1f6b4a;
+  --color-primary-dark: #175539;
+  --color-primary-soft: #e8f0ea;
+  --color-page: #f7f8f7;
+  --color-ink: #14181b;
+  --color-muted: #6b7280;
+  --color-line: #e4e7e5;
+
+  --color-flora: #16a34a;
+  --color-flora-soft: #e7f6ec;
+  --color-water: #0284c7;
+  --color-water-soft: #e3f2fb;
+  --color-hazard: #dc2626;
+  --color-hazard-soft: #fdeaea;
+
+  --color-pending: #f59e0b;
+  --color-pending-soft: #fdf3e0;
+  --color-approved: #16a34a;
+  --color-approved-soft: #e7f6ec;
+  --color-rejected: #dc2626;
+  --color-rejected-soft: #fdeaea;
+
+  --color-sev-low: #f59e0b;
+  --color-sev-medium: #ea580c;
+  --color-sev-high: #e11d48;
+  --color-sev-critical: #991b1b;
+
+  --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.leaflet-container {
+  font-family: var(--font-sans);
+  z-index: 0;
+}
