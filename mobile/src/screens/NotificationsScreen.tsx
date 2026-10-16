@@ -1,6 +1,8 @@
-import React, { useCallback, useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+﻿import React, { useCallback, useMemo, useState } from "react";
+import { RefreshControl, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import { fetchNotifications } from "../lib/api";
 import { ensureNotificationPermission, markAllRead, presentUnreadNotifications } from "../lib/notifications";
@@ -11,14 +13,46 @@ import type { AppNotification } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
 
 type Props = TabScreenProps<"Alerts">;
+type Bucket = "all" | "unread" | "read";
 
 let presentedThisSession = false;
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  if (Number.isNaN(diff)) return formatDateTime(iso);
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "Just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  return formatDateTime(iso);
+}
+
+function dayBucket(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+  if (sameDay(d, now)) return "Today";
+  const y = new Date(now); y.setDate(now.getDate() - 1);
+  if (sameDay(d, y)) return "Yesterday";
+  return formatDateTime(iso);
+}
+
+function accentForMessage(msg: string): { bg: string; fg: string; icon: "checkmark-circle" | "close-circle" | "notifications" } {
+  const lower = msg.toLowerCase();
+  if (lower.includes("approved")) return { bg: colors.approvedSoft ?? "#D1FAE5", fg: colors.approved ?? "#047857", icon: "checkmark-circle" };
+  if (lower.includes("rejected")) return { bg: colors.rejectedSoft ?? "#FDECEA", fg: colors.rejected ?? "#B91C1C", icon: "close-circle" };
+  return { bg: colors.primarySoft, fg: colors.primary, icon: "notifications" };
+}
 
 export function NotificationsScreen({ navigation }: Props) {
   const { profile } = useAuth();
   const [items, setItems] = useState<AppNotification[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [filter, setFilter] = useState<Bucket>("all");
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -32,13 +66,28 @@ export function NotificationsScreen({ navigation }: Props) {
   useFocusEffect(
     useCallback(() => {
       load();
-      // Show unread ones as phone notifications once per app session.
       if (profile && !presentedThisSession) {
         presentedThisSession = true;
         presentUnreadNotifications(profile.id).catch(() => undefined);
       }
     }, [profile, load])
   );
+
+  const filtered = useMemo(() => {
+    if (filter === "unread") return items.filter((i) => !i.read_at);
+    if (filter === "read") return items.filter((i) => !!i.read_at);
+    return items;
+  }, [items, filter]);
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, AppNotification[]>();
+    for (const item of filtered) {
+      const key = dayBucket(item.created_at);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(item);
+    }
+    return map;
+  }, [filtered]);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -52,6 +101,16 @@ export function NotificationsScreen({ navigation }: Props) {
     await markAllRead(profile.id);
     await load();
     setBusy(false);
+  }
+
+  async function dismiss(item: AppNotification) {
+    if (item.read_at) return;
+    try {
+      await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", item.id);
+    } catch {
+      // ignore - server triggers will mirror eventually
+    }
+    setItems((current) => current.map((i) => (i.id === item.id ? { ...i, read_at: new Date().toISOString() } : i)));
   }
 
   async function enableAlerts() {
@@ -68,7 +127,10 @@ export function NotificationsScreen({ navigation }: Props) {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <View style={styles.headerRow}>
-        <Text style={styles.heading}>Notifications</Text>
+        <View>
+          <Text style={styles.heading}>Notifications</Text>
+          <Text style={styles.subline}>{unread} unread - {items.length} total</Text>
+        </View>
         {unread > 0 ? <Pill label={`${unread} new`} color={colors.hazard} background={colors.hazardSoft} /> : null}
       </View>
 
@@ -84,34 +146,74 @@ export function NotificationsScreen({ navigation }: Props) {
         />
       </View>
 
-      <View style={{ height: 12 }} />
+      <View style={styles.chipsRow}>
+        {(["all", "unread", "read"] as Bucket[]).map((b) => (
+          <Pressable
+            key={b}
+            onPress={() => setFilter(b)}
+            style={({ pressed }) => [styles.chip, filter === b && styles.chipActive, pressed && { opacity: 0.7 }]}
+          >
+            <Text style={[styles.chipText, filter === b && styles.chipTextActive]}>
+              {b === "all" ? "All" : b === "unread" ? "Unread" : "Read"}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
 
       {items.length === 0 ? (
         <Card>
+          <Ionicons name="notifications-off-outline" size={26} color={colors.muted} />
+          <Text style={styles.emptyTitle}>No notifications yet</Text>
           <Text style={styles.muted}>
-            No notifications yet. You will be told here when a supervisor approves or rejects one of your records.
+            You will be alerted here when a supervisor approves or rejects one of your records.
           </Text>
         </Card>
+      ) : filtered.length === 0 ? (
+        <Card>
+          <Text style={styles.muted}>Nothing to show in this filter.</Text>
+        </Card>
       ) : (
-        items.map((item) => (
-          <Card key={item.id} style={{ marginBottom: 10 }}>
-            <View style={styles.itemHeader}>
-              <SectionTitle>Review update</SectionTitle>
-              {!item.read_at ? <View style={styles.dot} /> : null}
-            </View>
-            <Text style={styles.body}>{item.message}</Text>
-            <Text style={styles.meta}>{formatDateTime(item.created_at)}</Text>
-            {item.record_id ? (
-              <View style={{ height: 8 }} />
-            ) : null}
-            {item.record_id ? (
-              <Button
-                title="Open record"
-                variant="secondary"
-                onPress={() => navigation.navigate("RecordDetails", { id: item.record_id as string })}
-              />
-            ) : null}
-          </Card>
+        Array.from(grouped.entries()).map(([title, rows]) => (
+          <View key={title} style={{ marginBottom: 10 }}>
+            <SectionTitle>{title}</SectionTitle>
+            {rows.map((item) => {
+              const { bg, fg, icon } = accentForMessage(item.message);
+              return (
+                <Card key={item.id} style={{ marginBottom: 10, borderLeftWidth: 4, borderLeftColor: fg }}>
+                  <View style={styles.itemHeader}>
+                    <View style={styles.leftBadge}>
+                      <Ionicons name={icon} size={16} color={fg} />
+                      <Text style={[styles.statusText, { color: fg }]}>{icon === "checkmark-circle" ? "Approved" : icon === "close-circle" ? "Rejected" : "Update"}</Text>
+                    </View>
+                    <View style={styles.itemHeadRight}>
+                      {!item.read_at ? <View style={styles.dot} /> : null}
+                      <Pill label={relativeTime(item.created_at)} color={colors.muted} background={colors.card} />
+                    </View>
+                  </View>
+                  <Text style={styles.body}>{item.message}</Text>
+                  {item.record_id ? (
+                    <>
+                      <View style={{ height: 8 }} />
+                      <View style={styles.rowActions}>
+                        <Button
+                          title="Open record"
+                          variant="secondary"
+                          onPress={() => navigation.navigate("RecordDetails", { id: item.record_id as string })}
+                          style={{ flex: 1 }}
+                        />
+                        {!item.read_at ? (
+                          <Pressable style={styles.dismissBtn} onPress={() => dismiss(item)}>
+                            <Ionicons name="remove-circle-outline" size={18} color={colors.muted} />
+                            <Text style={styles.dismissText}>Mark read</Text>
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    </>
+                  ) : null}
+                </Card>
+              );
+            })}
+          </View>
         ))
       )}
     </ScrollView>
@@ -123,11 +225,24 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 40 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   heading: { fontSize: 20, fontWeight: "800", color: colors.ink },
+  subline: { fontSize: 12, color: colors.muted, marginTop: 2 },
   actions: { flexDirection: "row", marginTop: 14 },
   actionBtn: { flex: 1 },
+  chipsRow: { flexDirection: "row", gap: 8, marginTop: 14, marginBottom: 4 },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line },
+  chipActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
+  chipText: { fontSize: 13, color: colors.muted, fontWeight: "600" },
+  chipTextActive: { color: colors.primary },
   itemHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  leftBadge: { flexDirection: "row", alignItems: "center", gap: 6 },
+  statusText: { fontSize: 13, fontWeight: "700" },
+  itemHeadRight: { flexDirection: "row", alignItems: "center", gap: 6 },
   dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.hazard },
-  body: { fontSize: 14, color: colors.ink, lineHeight: 20 },
+  body: { fontSize: 14, color: colors.ink, lineHeight: 20, marginTop: 4 },
   meta: { fontSize: 12, color: colors.muted, marginTop: 6 },
-  muted: { fontSize: 13, color: colors.muted, lineHeight: 19 },
+  emptyTitle: { fontSize: 15, fontWeight: "700", color: colors.ink, marginTop: 8 },
+  muted: { fontSize: 13, color: colors.muted, lineHeight: 19, marginTop: 4 },
+  rowActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  dismissBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 6, paddingHorizontal: 10 },
+  dismissText: { fontSize: 12, color: colors.muted },
 });
