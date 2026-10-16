@@ -1,5 +1,5 @@
 import React from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -19,12 +19,55 @@ const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const Tabs = createBottomTabNavigator<MainTabParamList>();
 
+// The app mark shown in the header, matching the dashboard's brand block.
+function HeaderBrand() {
+  return (
+    <View style={headerStyles.brand}>
+      <View style={headerStyles.badge}>
+        <Text style={headerStyles.badgeText}>M</Text>
+      </View>
+      <View>
+        <Text style={headerStyles.brandTitle}>Millennia FieldOps</Text>
+        <Text style={headerStyles.brandSub}>Millennia Village</Text>
+      </View>
+    </View>
+  );
+}
+
+// Log out lives in the header, like the "Log out" button on the dashboard.
+function HeaderLogout() {
+  const { signOut } = useAuth();
+
+  function confirm() {
+    Alert.alert("Log out", "Sign out of Millennia FieldOps on this phone?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Log out",
+        style: "destructive",
+        onPress: () => {
+          void signOut();
+        },
+      },
+    ]);
+  }
+
+  return (
+    <Pressable onPress={confirm} hitSlop={12} accessibilityLabel="Log out" style={headerStyles.logout}>
+      <Ionicons name="log-out-outline" size={18} color="#FFFFFF" />
+      <Text style={headerStyles.logoutText}>Log out</Text>
+    </Pressable>
+  );
+}
+
 function MainTabs() {
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({
         headerStyle: { backgroundColor: colors.forest },
         headerTintColor: "#FFFFFF",
+        headerTitleAlign: "left",
+        headerTitle: () => <HeaderBrand />,
+        headerRight: () => <HeaderLogout />,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
         tabBarIcon: ({ color, size }) => {
@@ -83,3 +126,20 @@ export function RootNavigator() {
     </RootStack.Navigator>
   );
 }
+
+const headerStyles = StyleSheet.create({
+  brand: { flexDirection: "row", alignItems: "center", gap: 8 },
+  badge: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
+  brandTitle: { color: "#FFFFFF", fontSize: 13, fontWeight: "700", lineHeight: 16 },
+  brandSub: { color: "rgba(255,255,255,0.6)", fontSize: 10, lineHeight: 12 },
+  logout: { flexDirection: "row", alignItems: "center", gap: 4 },
+  logoutText: { color: "#FFFFFF", fontSize: 13, fontWeight: "600" },
+});

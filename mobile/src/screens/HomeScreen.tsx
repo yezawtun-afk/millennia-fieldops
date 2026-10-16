@@ -1,13 +1,23 @@
 import React, { useCallback, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { countPending } from "../lib/sqlite";
 import { syncOutbox } from "../lib/sync";
 import { fetchMyRecords } from "../lib/api";
+import { useOnlineStatus } from "../lib/network";
 import { Banner, Button, Card, Pill, SectionTitle } from "../components/ui";
 import { colors } from "../theme";
-import { STATUS_COLORS, STATUS_LABELS, TYPE_COLORS, TYPE_LABELS, formatDate, SEVERITY_COLORS } from "../lib/format";
+import {
+  ROLE_LABELS,
+  STATUS_COLORS,
+  STATUS_LABELS,
+  TYPE_COLORS,
+  TYPE_LABELS,
+  formatDate,
+  SEVERITY_COLORS,
+} from "../lib/format";
 import type { FieldRecord } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
 
@@ -15,6 +25,7 @@ type Props = TabScreenProps<"Home">;
 
 export function HomeScreen({ navigation }: Props) {
   const { profile } = useAuth();
+  const online = useOnlineStatus();
   const [pending, setPending] = useState(0);
   const [recent, setRecent] = useState<FieldRecord[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -68,15 +79,30 @@ export function HomeScreen({ navigation }: Props) {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <View style={styles.header}>
-        <Text style={styles.hello}>Hello{profile ? `, ${profile.full_name.split(" ")[0]}` : ""}</Text>
+        <View style={styles.headerTop}>
+          <Text style={styles.hello}>Hello{profile ? `, ${profile.full_name.split(" ")[0]}` : ""}</Text>
+          <Pill
+            label={online ? "Online" : "Offline"}
+            color={online ? colors.primary : "#92400E"}
+            background={online ? colors.primarySoft : colors.pendingSoft}
+            icon={
+              <Ionicons
+                name={online ? "wifi" : "wifi-outline"}
+                size={11}
+                color={online ? colors.primary : "#92400E"}
+              />
+            }
+          />
+        </View>
         <Text style={styles.sub}>
-          {profile ? `${profile.role.replace("_", " ")} - Millennia Village` : "Millennia Village"}
+          {profile ? `${ROLE_LABELS[profile.role]} - Millennia Village` : "Millennia Village"}
         </Text>
+        {profile?.email ? <Text style={styles.email}>{profile.email}</Text> : null}
       </View>
 
       {pending > 0 ? (
         <Card style={{ marginBottom: 14 }}>
-          <SectionTitle>Waiting to upload</SectionTitle>
+          <SectionTitle>Pending upload</SectionTitle>
           <Text style={styles.pendingText}>
             {pending} record(s) are saved on this phone and will upload when you have a connection.
           </Text>
@@ -179,8 +205,10 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
   content: { padding: 16, paddingBottom: 40 },
   header: { marginBottom: 16 },
+  headerTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   hello: { fontSize: 22, fontWeight: "800", color: colors.ink },
   sub: { fontSize: 13, color: colors.muted, marginTop: 2 },
+  email: { fontSize: 12, color: colors.muted, marginTop: 2 },
   pendingText: { fontSize: 13, color: colors.ink, lineHeight: 19 },
   tiles: { gap: 4 },
   tileRow: { flexDirection: "row", alignItems: "center", gap: 8 },

@@ -36,8 +36,7 @@
         {
           "locationWhenInUsePermission": "Millennia FieldOps records the GPS location of each observation."
         }
-      ],
-      "expo-sqlite"
+      ]
     ]
   }
 }

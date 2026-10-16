@@ -1,5 +1,11 @@
 import { colors } from "../theme";
-import type { HazardSeverity, RecordStatus, RecordType } from "./types";
+import type { HazardSeverity, RecordStatus, RecordType, UserRole } from "./types";
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  field_worker: "Field worker",
+  supervisor: "Supervisor",
+  admin: "Administrator",
+};
 
 export const TYPE_LABELS: Record<RecordType, string> = {
   flora: "Flora",

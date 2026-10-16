@@ -71,7 +71,7 @@ export function MyRecordsScreen({ navigation }: Props) {
 
       {outbox.length > 0 ? (
         <Card style={{ marginBottom: 14 }}>
-          <SectionTitle>Waiting to upload ({outbox.length})</SectionTitle>
+          <SectionTitle>Pending upload ({outbox.length})</SectionTitle>
           {outbox.map((row) => (
             <View key={row.localId} style={styles.queuedRow}>
               <View style={{ flex: 1 }}>
@@ -83,7 +83,11 @@ export function MyRecordsScreen({ navigation }: Props) {
                   <Text style={styles.queuedError}>{row.error}</Text>
                 ) : null}
               </View>
-              <Pill label={row.status === "error" ? "Needs retry" : "Queued"} color={colors.pending} background={colors.pendingSoft} />
+              <Pill
+                label={row.status === "error" ? "Needs retry" : "Pending upload"}
+                color={colors.pending}
+                background={colors.pendingSoft}
+              />
             </View>
           ))}
           <View style={{ height: 10 }} />

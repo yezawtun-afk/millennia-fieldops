@@ -91,9 +91,20 @@ export function Button({
 
 // ---- Pills ---------------------------------------------------------------
 
-export function Pill({ label, color, background }: { label: string; color: string; background: string }) {
+export function Pill({
+  label,
+  color,
+  background,
+  icon,
+}: {
+  label: string;
+  color: string;
+  background: string;
+  icon?: React.ReactNode;
+}) {
   return (
-    <View style={[styles.pill, { backgroundColor: background }]}>
+    <View style={[styles.pill, styles.pillRow, { backgroundColor: background }]}>
+      {icon}
       <Text style={[styles.pillText, { color }]}>{label}</Text>
     </View>
   );
@@ -183,6 +194,7 @@ const styles = StyleSheet.create({
   },
   buttonText: { fontSize: 15, fontWeight: "700" },
   pill: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999, alignSelf: "flex-start" },
+  pillRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   pillText: { fontSize: 12, fontWeight: "700" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
