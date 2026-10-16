@@ -34,21 +34,27 @@ export default async function MapPage() {
         title="Site map"
         subtitle={`${markers.length} geotagged record(s) across ${zones.length} monitoring zone(s).`}
       />
-      <MapView markers={markers} zones={zoneShapes} height={560} />
 
-      <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
-        <span className="font-medium text-ink">Legend:</span>
-        <span className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full" style={{ background: TYPE_CHART_COLORS.flora }} /> Flora
-        </span>
-        <span className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full" style={{ background: TYPE_CHART_COLORS.soil_water }} /> Soil/Water
-        </span>
-        <span className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full" style={{ background: TYPE_CHART_COLORS.hazard }} /> Hazard
-        </span>
+      <div className="overflow-hidden rounded-lg border border-line bg-white">
+        <MapView markers={markers} zones={zoneShapes} height={560} />
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+        <span className="font-semibold text-ink">Legend:</span>
+        <LegendChip color={TYPE_CHART_COLORS.flora} label="Flora" />
+        <LegendChip color={TYPE_CHART_COLORS.soil_water} label="Soil/Water" />
+        <LegendChip color={TYPE_CHART_COLORS.hazard} label="Hazard" />
         <span className="text-muted">Circles show the monitoring zones.</span>
       </div>
     </div>
+  );
+}
+
+function LegendChip({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink">
+      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+      {label}
+    </span>
   );
 }

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
-/* Millennia FieldOps colours. These become Tailwind classes such as
-   bg-forest, text-flora, border-line. */
+/* Millennia FieldOps colours and fonts.
+   These become Tailwind classes such as bg-forest, text-flora, border-line. */
 @theme {
   --color-forest: #0f2e22;
   --color-forest-soft: #16382b;
@@ -36,6 +36,7 @@
   --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
 }
 
+/* Base look: off-white page, calm text colour. */
 html,
 body {
   height: 100%;
@@ -49,7 +50,37 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Touch targets at least 44 px tall on phones. */
+@media (max-width: 640px) {
+  button,
+  a,
+  select,
+  input[type="date"] {
+    min-height: 44px;
+  }
+}
+
+/* Leaflet needs its panes to sit under our sidebar and dialogs. */
 .leaflet-container {
   font-family: var(--font-sans);
   z-index: 0;
+}
+
+/* A simple slide-in animation for the phone drawer. */
+@keyframes fieldops-drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.drawer-in {
+  animation: fieldops-drawer-in 0.18s ease-out;
+}
+
+/* Photos in a report should keep their shape. */
+.photo-thumb {
+  object-fit: cover;
 }

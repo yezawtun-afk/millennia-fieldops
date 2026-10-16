@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Lock, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { IconField, PrimaryButton } from "@/components/IconField";
 
 export function LoginForm() {
   const router = useRouter();
@@ -30,50 +32,40 @@ export function LoginForm() {
   }
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="rounded-2xl border border-line bg-white p-6 shadow-sm"
-    >
-      <h2 className="text-lg font-semibold text-ink">Sign in</h2>
-      <p className="mt-1 text-sm text-muted">Use your Millennia FieldOps account.</p>
+    <form onSubmit={onSubmit} className="space-y-4" noValidate>
+      <IconField
+        icon={Mail}
+        label="Email"
+        type="email"
+        name="email"
+        autoComplete="email"
+        placeholder="you@millennia.my"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+      />
+
+      <IconField
+        icon={Lock}
+        label="Password"
+        type="password"
+        name="password"
+        autoComplete="current-password"
+        placeholder="Your password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+      />
 
       {error ? (
-        <p className="mt-4 rounded-lg bg-rejected-soft px-3 py-2 text-sm text-rejected">{error}</p>
+        <p className="rounded-md border border-rejected/30 bg-rejected-soft px-3 py-2 text-sm text-rejected">
+          {error}
+        </p>
       ) : null}
 
-      <label className="mt-4 block text-sm font-medium text-ink">
-        Email
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-          className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-primary"
-          placeholder="you@millennia.my"
-        />
-      </label>
-
-      <label className="mt-3 block text-sm font-medium text-ink">
-        Password
-        <input
-          type="password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
-          className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-primary"
-          placeholder="Your password"
-        />
-      </label>
-
-      <button
-        type="submit"
-        disabled={busy}
-        className="mt-5 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark disabled:opacity-60"
-      >
-        {busy ? "Signing in..." : "Sign in"}
-      </button>
+      <PrimaryButton type="submit" busy={busy}>
+        Log in
+      </PrimaryButton>
     </form>
   );
 }

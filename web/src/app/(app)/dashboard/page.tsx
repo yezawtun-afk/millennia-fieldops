@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { CheckCircle2, Clock, Layers, TriangleAlert, XCircle } from "lucide-react";
 import { getZones, queryRecords } from "@/lib/data";
-import { PageHeader, StatCard, StatusBadge, TypePill, SeverityBadge, Card, EmptyState } from "@/components/ui";
-import { formatDate } from "@/lib/format";
+import { PageHeader, StatCard, EmptyState } from "@/components/ui";
+import { RecordRow } from "@/components/RecordRow";
 import { DashboardCharts } from "./DashboardCharts";
-import type { HazardSeverity, RecordStatus, RecordType } from "@/lib/types";
+import type { RecordStatus, RecordType } from "@/lib/types";
 
 export default async function DashboardPage() {
   const [records, zones] = await Promise.all([queryRecords(), getZones()]);
@@ -29,7 +30,7 @@ export default async function DashboardPage() {
     bySeverity[r.severity ?? "unrated"] += 1;
   }
 
-  // THE BY-ZONE BREAKDOWN: one bar per monitoring zone.
+  // One row per monitoring zone.
   const byZone = zones.map((zone) => {
     const zoneRecords = records.filter((r) => r.zone_id === zone.id);
     return {
@@ -43,7 +44,7 @@ export default async function DashboardPage() {
   });
   const unzoned = records.filter((r) => !r.zone_id).length;
 
-  const recent = records.slice(0, 8);
+  const recent = records.slice(0, 6);
 
   return (
     <div>
@@ -52,89 +53,114 @@ export default async function DashboardPage() {
         subtitle="Overview of field records across Millennia Village."
       />
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
-        <StatCard label="Total records" value={total} />
-        <StatCard label="Pending review" value={pending} accent="#f59e0b" />
-        <StatCard label="Approved" value={approved} accent="#16a34a" />
-        <StatCard label="Rejected" value={rejected} accent="#dc2626" />
-        <StatCard label="Active hazards" value={activeHazards} accent="#dc2626" />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <StatCard
+          label="Total records"
+          value={total}
+          tone="bg-primary-soft text-primary"
+          icon={<Layers className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Pending review"
+          value={pending}
+          tone="bg-pending-soft text-pending"
+          icon={<Clock className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Approved"
+          value={approved}
+          tone="bg-approved-soft text-approved"
+          icon={<CheckCircle2 className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Rejected"
+          value={rejected}
+          tone="bg-rejected-soft text-rejected"
+          icon={<XCircle className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Active hazards"
+          value={activeHazards}
+          tone="bg-rejected-soft text-rejected"
+          icon={<TriangleAlert className="h-4 w-4" />}
+        />
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
         <DashboardCharts byType={byType} byStatus={byStatus} bySeverity={bySeverity} />
       </div>
 
       {/* By-zone breakdown */}
-      <Card className="mt-4">
-        <h2 className="mb-3 text-sm font-semibold text-ink">Records by monitoring zone</h2>
+      <div className="mt-4 rounded-lg border border-line bg-white">
+        <h2 className="border-b border-line px-4 py-3 text-sm font-semibold text-ink">
+          Records by monitoring zone
+        </h2>
         {zones.length === 0 ? (
-          <EmptyState title="No zones yet" hint="Add monitoring zones from the Zones page." />
+          <div className="p-4">
+            <EmptyState title="No zones yet" hint="Add monitoring zones from the Zones page." />
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-                  <th className="py-2 pr-4 font-medium">Zone</th>
-                  <th className="py-2 pr-4 font-medium">Flora</th>
-                  <th className="py-2 pr-4 font-medium">Soil/Water</th>
-                  <th className="py-2 pr-4 font-medium">Hazard</th>
-                  <th className="py-2 pr-4 font-medium">Total</th>
+              <thead className="bg-page text-left text-xs uppercase tracking-wide text-muted">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Zone</th>
+                  <th className="px-4 py-3 font-semibold">Flora</th>
+                  <th className="px-4 py-3 font-semibold">Soil/Water</th>
+                  <th className="px-4 py-3 font-semibold">Hazard</th>
+                  <th className="px-4 py-3 font-semibold">Total</th>
                 </tr>
               </thead>
               <tbody>
                 {byZone.map((z) => (
-                  <tr key={z.name} className="border-b border-line/60 last:border-0">
-                    <td className="py-2 pr-4">
+                  <tr key={z.name} className="border-t border-line">
+                    <td className="px-4 py-3">
                       <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{ background: z.color }} />
                       {z.name}
                     </td>
-                    <td className="py-2 pr-4 text-flora">{z.flora}</td>
-                    <td className="py-2 pr-4 text-water">{z.soil_water}</td>
-                    <td className="py-2 pr-4 text-hazard">{z.hazard}</td>
-                    <td className="py-2 pr-4 font-semibold">{z.total}</td>
+                    <td className="px-4 py-3 text-flora">{z.flora}</td>
+                    <td className="px-4 py-3 text-water">{z.soil_water}</td>
+                    <td className="px-4 py-3 text-hazard">{z.hazard}</td>
+                    <td className="px-4 py-3 font-semibold">{z.total}</td>
                   </tr>
                 ))}
                 {unzoned > 0 ? (
-                  <tr className="text-muted">
-                    <td className="py-2 pr-4">No zone</td>
-                    <td className="py-2 pr-4">-</td>
-                    <td className="py-2 pr-4">-</td>
-                    <td className="py-2 pr-4">-</td>
-                    <td className="py-2 pr-4 font-semibold">{unzoned}</td>
+                  <tr className="border-t border-line text-muted">
+                    <td className="px-4 py-3">No zone</td>
+                    <td className="px-4 py-3">-</td>
+                    <td className="px-4 py-3">-</td>
+                    <td className="px-4 py-3">-</td>
+                    <td className="px-4 py-3 font-semibold">{unzoned}</td>
                   </tr>
                 ) : null}
               </tbody>
             </table>
           </div>
         )}
-      </Card>
+      </div>
 
       {/* Recent submissions */}
-      <Card className="mt-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-ink">Recent submissions</h2>
-          <Link href="/records" className="text-xs font-medium text-primary hover:underline">
-            View all records
+      <div className="mt-4 rounded-lg border border-line bg-white">
+        <div className="flex items-center justify-between border-b border-line px-4 py-3">
+          <h2 className="text-sm font-semibold text-ink">
+            Recent submissions{recent.length ? ` (${recent.length})` : ""}
+          </h2>
+          <Link href="/records" className="text-xs font-semibold text-primary hover:underline">
+            View all
           </Link>
         </div>
         {recent.length === 0 ? (
-          <EmptyState title="No records yet" hint="Records captured on the mobile app appear here." />
+          <div className="p-4">
+            <EmptyState title="No records yet" hint="Records captured on the mobile app appear here." />
+          </div>
         ) : (
-          <ul className="divide-y divide-line">
+          <div>
             {recent.map((r) => (
-              <li key={r.id} className="flex flex-wrap items-center gap-3 py-3">
-                <TypePill type={r.type} />
-                <Link href={`/records/${r.id}`} className="flex-1 text-sm font-medium text-ink hover:underline">
-                  {r.title}
-                </Link>
-                {r.type === "hazard" ? <SeverityBadge severity={r.severity as HazardSeverity | null} /> : null}
-                <StatusBadge status={r.status} />
-                <span className="w-28 text-right text-xs text-muted">{formatDate(r.observed_date)}</span>
-              </li>
+              <RecordRow key={r.id} record={r} />
             ))}
-          </ul>
+          </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

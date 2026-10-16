@@ -26,6 +26,18 @@ export const TYPE_STYLES: Record<RecordType, string> = {
   hazard: "bg-hazard-soft text-hazard",
 };
 
+export const TYPE_DOT_CLASSES: Record<RecordType, string> = {
+  flora: "bg-flora",
+  soil_water: "bg-water",
+  hazard: "bg-hazard",
+};
+
+export const TYPE_TILE_STYLES: Record<RecordType, string> = {
+  flora: "bg-flora-soft text-flora",
+  soil_water: "bg-water-soft text-water",
+  hazard: "bg-hazard-soft text-hazard",
+};
+
 export const STATUS_STYLES: Record<RecordStatus, string> = {
   pending: "bg-pending-soft text-pending",
   approved: "bg-approved-soft text-approved",

@@ -10,6 +10,12 @@ import type { Profile, UserRole } from "@/lib/types";
 
 const ROLES: UserRole[] = ["field_worker", "supervisor", "admin"];
 
+const ROLE_LABELS: Record<UserRole, string> = {
+  field_worker: "Field worker",
+  supervisor: "Supervisor",
+  admin: "Administrator",
+};
+
 export function UsersManager({
   initialUsers,
   currentUserId,
@@ -56,12 +62,12 @@ export function UsersManager({
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <Card className="lg:col-span-1">
+      <Card className="p-4 lg:col-span-1">
         <h2 className="mb-3 text-sm font-semibold text-ink">Create account</h2>
 
         {message ? (
           <p
-            className={`mb-3 rounded-lg px-3 py-2 text-sm ${
+            className={`mb-3 rounded-md px-3 py-2 text-sm ${
               message.kind === "ok" ? "bg-approved-soft text-approved" : "bg-rejected-soft text-rejected"
             }`}
           >
@@ -71,7 +77,13 @@ export function UsersManager({
 
         <form onSubmit={invite} className="space-y-3">
           <Input label="Full name" value={form.full_name} onChange={(v) => setForm({ ...form, full_name: v })} />
-          <Input label="Email" type="email" required value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
+          <Input
+            label="Email"
+            type="email"
+            required
+            value={form.email}
+            onChange={(v) => setForm({ ...form, email: v })}
+          />
           <Input
             label="Temporary password"
             type="password"
@@ -84,11 +96,11 @@ export function UsersManager({
             <select
               value={form.role}
               onChange={(e) => setForm({ ...form, role: e.target.value as UserRole })}
-              className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-primary"
+              className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-primary"
             >
               {ROLES.map((r) => (
                 <option key={r} value={r}>
-                  {r === "field_worker" ? "Field worker" : r === "supervisor" ? "Supervisor" : "Administrator"}
+                  {ROLE_LABELS[r]}
                 </option>
               ))}
             </select>
@@ -97,78 +109,81 @@ export function UsersManager({
           <button
             type="submit"
             disabled={pending}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-60"
           >
-            <UserPlus size={15} /> {pending ? "Working..." : "Create account"}
+            <UserPlus className="h-4 w-4" /> {pending ? "Working..." : "Create account"}
           </button>
         </form>
       </Card>
 
-      <Card className="lg:col-span-2">
+      <div className="lg:col-span-2">
         <h2 className="mb-3 text-sm font-semibold text-ink">Accounts ({initialUsers.length})</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[620px] text-sm">
-            <thead>
-              <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-                <th className="py-2 pr-3 font-medium">Name</th>
-                <th className="py-2 pr-3 font-medium">Email</th>
-                <th className="py-2 pr-3 font-medium">Role</th>
-                <th className="py-2 pr-3 font-medium">Status</th>
-                <th className="py-2 pr-3 font-medium"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {initialUsers.map((user) => {
-                const isSelf = user.id === currentUserId;
-                return (
-                  <tr key={user.id} className="border-b border-line/60 last:border-0">
-                    <td className="py-3 pr-3 font-medium text-ink">
-                      {user.full_name}
-                      {isSelf ? <span className="ml-2 text-xs text-muted">(you)</span> : null}
-                    </td>
-                    <td className="py-3 pr-3 text-muted">{user.email}</td>
-                    <td className="py-3 pr-3">
-                      <select
-                        value={user.role}
-                        disabled={isSelf}
-                        onChange={(e) => changeRole(user, e.target.value as UserRole)}
-                        className="rounded-lg border border-line px-2 py-1 text-xs outline-none focus:border-primary disabled:opacity-60"
-                      >
-                        {ROLES.map((r) => (
-                          <option key={r} value={r}>
-                            {r === "field_worker" ? "Field worker" : r === "supervisor" ? "Supervisor" : "Administrator"}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="py-3 pr-3">
-                      <span
-                        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                          user.is_active ? "bg-approved-soft text-approved" : "bg-rejected-soft text-rejected"
-                        }`}
-                      >
-                        {user.is_active ? "Active" : "Deactivated"}
-                      </span>
-                    </td>
-                    <td className="py-3 pr-3 text-right">
-                      <button
-                        disabled={isSelf}
-                        onClick={() => toggleActive(user)}
-                        className="rounded-lg border border-line px-3 py-1.5 text-xs hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {user.is_active ? "Deactivate" : "Reactivate"}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="overflow-hidden rounded-lg border border-line bg-white">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-page text-left text-xs uppercase tracking-wide text-muted">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Name</th>
+                  <th className="px-4 py-3 font-semibold">Email</th>
+                  <th className="px-4 py-3 font-semibold">Role</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold"> </th>
+                </tr>
+              </thead>
+              <tbody>
+                {initialUsers.map((user) => {
+                  const isSelf = user.id === currentUserId;
+                  return (
+                    <tr key={user.id} className="border-t border-line hover:bg-page">
+                      <td className="px-4 py-3 font-semibold text-ink">
+                        {user.full_name}
+                        {isSelf ? <span className="ml-2 text-xs font-normal text-muted">(you)</span> : null}
+                      </td>
+                      <td className="px-4 py-3 text-muted">{user.email}</td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={user.role}
+                          disabled={isSelf}
+                          onChange={(e) => changeRole(user, e.target.value as UserRole)}
+                          className="rounded-md border border-line px-2 py-1 text-xs outline-none focus:border-primary disabled:opacity-60"
+                        >
+                          {ROLES.map((r) => (
+                            <option key={r} value={r}>
+                              {ROLE_LABELS[r]}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            user.is_active ? "bg-approved-soft text-approved" : "bg-rejected-soft text-rejected"
+                          }`}
+                        >
+                          {user.is_active ? "Active" : "Deactivated"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          disabled={isSelf}
+                          onClick={() => toggleActive(user)}
+                          className="rounded-md border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {user.is_active ? "Deactivate" : "Reactivate"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
         <p className="mt-3 text-xs text-muted">
           Deactivated accounts keep their data and history but should not be used to sign in.
         </p>
-      </Card>
+      </div>
     </div>
   );
 }
@@ -194,7 +209,7 @@ function Input({
         required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-primary"
+        className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-primary"
       />
     </label>
   );

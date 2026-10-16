@@ -46,7 +46,7 @@ export function LeafletMap({
       : DEFAULT_CENTER;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-line" style={{ height }}>
+    <div className="overflow-hidden" style={{ height }}>
       <MapContainer center={center} zoom={15} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -58,7 +58,7 @@ export function LeafletMap({
             key={z.id}
             center={[z.lat, z.lng]}
             radius={z.radius}
-            pathOptions={{ color: z.color, fillColor: z.color, fillOpacity: 0.08, weight: 2 }}
+            pathOptions={{ color: z.color, fillColor: z.color, fillOpacity: 0.12, weight: 2 }}
           >
             <Popup>
               <strong>{z.name}</strong>
@@ -70,8 +70,8 @@ export function LeafletMap({
           <CircleMarker
             key={m.id}
             center={[m.lat, m.lng]}
-            radius={7}
-            pathOptions={{ color: "#ffffff", weight: 2, fillColor: m.color, fillOpacity: 1 }}
+            radius={8}
+            pathOptions={{ color: "#ffffff", weight: 3, fillColor: m.color, fillOpacity: 0.9 }}
           >
             <Popup>
               <strong>{m.label}</strong>

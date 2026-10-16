@@ -82,14 +82,17 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
     router.refresh();
   }
 
+  const inputClass =
+    "w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-primary";
+
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <Card className="lg:col-span-1">
-        <h2 className="mb-3 text-sm font-semibold text-ink">
-          {editingId ? "Edit zone" : "Add a zone"}
-        </h2>
+        <h2 className="mb-3 text-sm font-semibold text-ink">{editingId ? "Edit zone" : "Add a zone"}</h2>
         {error ? (
-          <p className="mb-3 rounded-lg bg-rejected-soft px-3 py-2 text-sm text-rejected">{error}</p>
+          <p className="mb-3 rounded-md border border-rejected/30 bg-rejected-soft px-3 py-2 text-sm text-rejected">
+            {error}
+          </p>
         ) : null}
 
         <form onSubmit={save} className="space-y-3">
@@ -98,7 +101,7 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
               required
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-primary"
+              className={inputClass}
             />
           </Field>
           <Field label="Description">
@@ -106,7 +109,7 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
               rows={2}
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-primary"
+              className={inputClass}
             />
           </Field>
           <div className="grid grid-cols-2 gap-3">
@@ -115,7 +118,7 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
                 required
                 value={form.center_lat}
                 onChange={(e) => setForm({ ...form, center_lat: e.target.value })}
-                className="w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-primary"
+                className={inputClass}
               />
             </Field>
             <Field label="Longitude">
@@ -123,7 +126,7 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
                 required
                 value={form.center_lng}
                 onChange={(e) => setForm({ ...form, center_lng: e.target.value })}
-                className="w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-primary"
+                className={inputClass}
               />
             </Field>
             <Field label="Radius (m)">
@@ -131,7 +134,7 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
                 required
                 value={form.radius_m}
                 onChange={(e) => setForm({ ...form, radius_m: e.target.value })}
-                className="w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-primary"
+                className={inputClass}
               />
             </Field>
             <Field label="Colour">
@@ -139,7 +142,7 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
                 type="color"
                 value={form.color}
                 onChange={(e) => setForm({ ...form, color: e.target.value })}
-                className="h-[38px] w-full rounded-lg border border-line"
+                className="h-[38px] w-full rounded-md border border-line"
               />
             </Field>
           </div>
@@ -148,13 +151,17 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
             <button
               type="submit"
               disabled={busy}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-60"
+              className="flex flex-1 items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-60"
             >
-              {editingId ? <Save size={15} /> : <Plus size={15} />}
+              {editingId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
               {editingId ? "Save changes" : "Add zone"}
             </button>
             {editingId ? (
-              <button type="button" onClick={reset} className="rounded-lg border border-line px-3 py-2 text-sm">
+              <button
+                type="button"
+                onClick={reset}
+                className="rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink"
+              >
                 Cancel
               </button>
             ) : null}
@@ -169,20 +176,26 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
             <li key={zone.id} className="flex items-center gap-3 py-3">
               <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: zone.color }} />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-ink">{zone.name}</p>
+                <p className="truncate text-sm font-semibold text-ink">{zone.name}</p>
                 <p className="truncate text-xs text-muted">
                   {zone.center_lat.toFixed(4)}, {zone.center_lng.toFixed(4)} - r {zone.radius_m} m
                   {zone.description ? ` - ${zone.description}` : ""}
                 </p>
               </div>
-              <button onClick={() => startEdit(zone)} className="rounded-lg border border-line px-3 py-1.5 text-xs">
+              <button
+                type="button"
+                onClick={() => startEdit(zone)}
+                className="rounded-md border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink hover:border-primary"
+              >
                 Edit
               </button>
               <button
+                type="button"
                 onClick={() => remove(zone)}
-                className="rounded-lg border border-line px-2 py-1.5 text-rejected hover:border-rejected"
+                aria-label="Delete zone"
+                className="rounded-md border border-line p-2 text-rejected hover:bg-rejected-soft"
               >
-                <Trash2 size={14} />
+                <Trash2 className="h-4 w-4" />
               </button>
             </li>
           ))}

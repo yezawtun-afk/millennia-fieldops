@@ -7,7 +7,7 @@ import type { MapMarker, MapZone } from "./LeafletMap";
 const LeafletMap = dynamic(() => import("./LeafletMap").then((m) => m.LeafletMap), {
   ssr: false,
   loading: () => (
-    <div className="flex h-72 items-center justify-center rounded-xl border border-line bg-white text-sm text-muted">
+    <div className="flex h-72 items-center justify-center rounded-lg border border-line bg-white text-sm text-muted">
       Loading map...
     </div>
   ),

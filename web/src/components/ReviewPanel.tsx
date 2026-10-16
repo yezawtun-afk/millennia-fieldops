@@ -45,7 +45,9 @@ export function ReviewPanel({ recordId }: { recordId: string }) {
   return (
     <div>
       {error ? (
-        <p className="mb-3 rounded-lg bg-rejected-soft px-3 py-2 text-sm text-rejected">{error}</p>
+        <p className="mb-3 rounded-md border border-rejected/30 bg-rejected-soft px-3 py-2 text-sm text-rejected">
+          {error}
+        </p>
       ) : null}
 
       <label className="block text-sm font-medium text-ink">
@@ -55,24 +57,26 @@ export function ReviewPanel({ recordId }: { recordId: string }) {
           onChange={(e) => setFeedback(e.target.value)}
           rows={4}
           placeholder="Notes for the field worker..."
-          className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-primary"
+          className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-primary"
         />
       </label>
 
       <div className="mt-3 flex gap-2">
         <button
+          type="button"
           onClick={() => decide("approved")}
           disabled={busy}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-approved px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-approved px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
         >
-          <Check size={16} /> Approve
+          <Check className="h-4 w-4" /> Approve
         </button>
         <button
+          type="button"
           onClick={() => decide("rejected")}
           disabled={busy}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-rejected px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-rejected px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
         >
-          <X size={16} /> Reject
+          <X className="h-4 w-4" /> Reject
         </button>
       </div>
     </div>
