@@ -8,7 +8,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -38,6 +39,7 @@
     "@babel/core": "^7.20.0",
     "@types/react": "~19.2.2",
     "babel-preset-expo": "~57.0.16",
+    "patch-package": "^8.0.1",
     "typescript": "~6.0.3"
   }
 }
