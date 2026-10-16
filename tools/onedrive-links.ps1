@@ -1,4 +1,4 @@
-# onedrive-links.ps1
+﻿# onedrive-links.ps1
 #
 # Keeps Node's heavy, regenerable folders OUT of OneDrive.
 #
@@ -106,5 +106,14 @@ foreach ($item in $links) {
     Write-Host "linked $($item.Label) -> $target" -ForegroundColor Green
 }
 
+
+# OneDrive will try to follow (and later "restore") junctions, so also tag the
+# real location and the links as System+Hidden - OneDrive skips those.
+foreach ($item in @($target, $link)) {
+    if (Test-Path $item) {
+        $null = & attrib +S +H "$item" 2>$null
+    }
+}
 Write-Host ""
 Write-Host "node_modules store: $storeRoot" -ForegroundColor Cyan
+
