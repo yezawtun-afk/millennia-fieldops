@@ -44,6 +44,14 @@ security definer
 set search_path = public
 as $$
 begin
+  -- Trusted contexts (SQL editor, service role, the dashboard) have no
+  -- end-user identity, so column protection only applies to signed-in users.
+  -- Without this, even an administrator could not fix roles from the SQL
+  -- editor, because auth.uid() is null there and is_admin() is therefore false.
+  if auth.uid() is null then
+    return new;
+  end if;
+
   -- profiles: block self-promotion
   if tg_table_name = 'profiles' then
     if not public.is_admin() then
