@@ -88,7 +88,39 @@ The app needs camera, location and media-library permissions for photos and GPS.
 
 ---
 
-## 5. Deploy
+## 5. Windows tip: keep heavy folders out of OneDrive
+
+If this project lives inside a **OneDrive** folder (it usually does), OneDrive tries to
+sync `node_modules` (tens of thousands of tiny files) and `web\.next` (hundreds of MB of
+cache). That is slow, and it can corrupt or silently revert dependency files - which
+breaks the app with confusing errors.
+
+The fix is to keep those folders outside OneDrive and leave a **junction** (a folder
+shortcut Windows, Node, Metro and Next.js all treat as a real folder) in their place.
+OneDrive skips junctions.
+
+The bundled script handles `mobile\node_modules`, `web\node_modules` and `web\.next`:
+
+```powershell
+# from the project root
+powershell -ExecutionPolicy Bypass -File tools\onedrive-links.ps1
+```
+
+It prints where the files now live:
+
+```
+node_modules store: C:\Users\<you>\AppData\Local\node_modules-store
+```
+
+Run it after a fresh clone, after copying the project to another PC, or any time one of
+those folders reappears as a real folder. It is safe to run repeatedly.
+
+> If a project's `node_modules` is empty after this, run `npm install` inside that
+> project folder to download the dependencies into the new location.
+
+---
+
+## 6. Deploy
 
 - **Web dashboard** -> Vercel (https://vercel.com): import the repo, set the root
   directory to `web`, and add `NEXT_PUBLIC_SUPABASE_URL` and
@@ -108,3 +140,4 @@ The app needs camera, location and media-library permissions for photos and GPS.
 | A new user cannot do anything | New accounts start as `field_worker`. Promote them in the dashboard **Users** page (or with SQL above). |
 | Photos upload but do not show | Confirm the `record-photos` bucket exists (step 2.3) and that you are signed in. |
 | Mobile app stuck "waiting to upload" | Check the phone has internet. It uploads on its own as soon as the connection is back; press **Sync now** on the Home screen to force it. |
+| `Cannot find module 'expo/config-plugins'` or a warning about the **legacy expo-cli** | Your `mobile/package.json` was reverted by OneDrive. Fix: `git checkout -- mobile/package.json mobile/package-lock.json`, then `cd mobile` and `npm install`. Then run `tools\onedrive-links.ps1` (step 5) to stop it happening again. |
