@@ -22,7 +22,7 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 do $$ begin
-  create type public.hazard_severity as enum ('low', 'medium', 'high', 'critical');
+  create type public.hazard_severity as enum ('low', 'medium', 'critical');
 exception when duplicate_object then null; end $$;
 
 -- ---------------------------------------------------------------------------

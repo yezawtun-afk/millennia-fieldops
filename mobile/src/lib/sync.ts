@@ -56,9 +56,11 @@ async function pushRecord(record: OutboxRecord, userId: string) {
   if (error) throw new Error(error.message);
 }
 
-export async function syncOutbox(userId: string): Promise<SyncResult> {
+async function runSync(userId: string): Promise<SyncResult> {
   const rows = await listOutbox();
-  const pending = rows.filter((r) => r.status === "pending");
+  // Every finished record is retried, including ones that failed last time, so a
+  // one-off network drop heals itself instead of waiting in the queue forever.
+  const pending = rows.filter((r) => r.status !== "draft");
 
   let uploaded = 0;
   let failed = 0;
@@ -75,4 +77,18 @@ export async function syncOutbox(userId: string): Promise<SyncResult> {
   }
 
   return { uploaded, failed };
+}
+
+// Only one upload run may be in flight at a time. A sync can be started from
+// the Home screen, the records list, saving a record and the "connection is
+// back" watcher; two runs at once would upload the same record twice.
+let inFlight: Promise<SyncResult> | null = null;
+
+export function syncOutbox(userId: string): Promise<SyncResult> {
+  if (!inFlight) {
+    inFlight = runSync(userId).finally(() => {
+      inFlight = null;
+    });
+  }
+  return inFlight;
 }

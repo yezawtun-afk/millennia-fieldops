@@ -51,7 +51,7 @@ erDiagram
         text health_condition
         int estimated_count
         text hazard_type
-        hazard_severity severity "low|medium|high|critical"
+        hazard_severity severity "low|medium|critical"
         text reading_type
         double reading_value
         text reading_unit
@@ -79,7 +79,7 @@ erDiagram
 | `user_role` | `field_worker`, `supervisor`, `admin` |
 | `record_type` | `flora`, `soil_water`, `hazard` |
 | `record_status` | `pending`, `approved`, `rejected` |
-| `hazard_severity` | `low`, `medium`, `high`, `critical` |
+| `hazard_severity` | `low`, `medium`, `critical` |
 
 ## Tables
 

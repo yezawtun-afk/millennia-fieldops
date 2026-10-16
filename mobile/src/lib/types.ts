@@ -3,7 +3,7 @@
 export type UserRole = "field_worker" | "supervisor" | "admin";
 export type RecordType = "flora" | "soil_water" | "hazard";
 export type RecordStatus = "pending" | "approved" | "rejected";
-export type HazardSeverity = "low" | "medium" | "high" | "critical";
+export type HazardSeverity = "low" | "medium" | "critical";
 
 export interface Profile {
   id: string;
@@ -92,10 +92,14 @@ export interface OutboxRecord {
   reading_unit: string | null;
 }
 
+// Local queue state. A draft is unfinished work that is never uploaded until
+// the user completes it; pending/error are finished records waiting to upload.
+export type OutboxStatus = "draft" | "pending" | "error";
+
 export interface OutboxRow {
   localId: string;
   payload: OutboxRecord;
-  status: "pending" | "error";
+  status: OutboxStatus;
   error: string | null;
   createdAt: string;
 }

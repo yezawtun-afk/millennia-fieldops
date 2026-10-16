@@ -4,7 +4,7 @@ import type { FieldRecord } from "../types";
 import { SEVERITY_LABELS } from "../format";
 import { toDateOnly } from "./format-date";
 
-const SEVERITY_ORDER = ["critical", "high", "medium", "low"] as const;
+const SEVERITY_ORDER = ["critical", "medium", "low"] as const;
 
 export function buildHazardPdf(records: FieldRecord[], stream: NodeJS.WritableStream) {
   const hazards = records
@@ -27,7 +27,7 @@ export function buildHazardPdf(records: FieldRecord[], stream: NodeJS.WritableSt
   doc.moveDown(0.8);
 
   // Summary counts by severity.
-  const counts = { critical: 0, high: 0, medium: 0, low: 0 } as Record<string, number>;
+  const counts = { critical: 0, medium: 0, low: 0 } as Record<string, number>;
   for (const h of hazards) if (h.severity) counts[h.severity] += 1;
 
   doc.fontSize(11).fillColor("#0F2E22").text("Summary by severity");

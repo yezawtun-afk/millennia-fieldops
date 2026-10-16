@@ -13,6 +13,7 @@ import { NewRecordScreen } from "../screens/NewRecordScreen";
 import { MyRecordsScreen } from "../screens/MyRecordsScreen";
 import { RecordDetailsScreen } from "../screens/RecordDetailsScreen";
 import { NotificationsScreen } from "../screens/NotificationsScreen";
+import { useAutoUpload } from "../lib/useAutoUpload";
 import type { AuthStackParamList, MainTabParamList, RootStackParamList } from "./types";
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -60,6 +61,9 @@ function HeaderLogout() {
 }
 
 function MainTabs() {
+  // Push anything queued as soon as the phone has a connection again.
+  useAutoUpload();
+
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({

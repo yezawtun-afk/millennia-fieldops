@@ -14,13 +14,13 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
 import { Banner, Button, Card, ChipGroup, Field, Input, SectionTitle } from "../components/ui";
 import { colors, radius } from "../theme";
-import { enqueueRecord } from "../lib/sqlite";
+import { enqueueRecord, getOutbox, markPending, saveDraft } from "../lib/sqlite";
 import { syncOutbox } from "../lib/sync";
 import { fetchZones } from "../lib/api";
 import { getCurrentCoordinates } from "../lib/location";
 import { captureFromCamera, pickFromLibrary } from "../lib/photos";
 import { GROWTH_STAGES, HAZARD_TYPES, HEALTH_CONDITIONS, READING_TYPES } from "../lib/format";
-import type { HazardSeverity, RecordType, Zone } from "../lib/types";
+import type { HazardSeverity, OutboxRecord, RecordType, Zone } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
 
 type Props = TabScreenProps<"New">;
@@ -34,7 +34,6 @@ const TYPE_OPTIONS: { label: string; value: RecordType }[] = [
 const SEVERITIES: { label: string; value: HazardSeverity }[] = [
   { label: "Low", value: "low" },
   { label: "Medium", value: "medium" },
-  { label: "High", value: "high" },
   { label: "Critical", value: "critical" },
 ];
 
@@ -66,10 +65,57 @@ export function NewRecordScreen({ navigation, route }: Props) {
 
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: "info" | "success" | "error"; text: string } | null>(null);
+  // Set when the form is editing an unfinished draft (opened from My records).
+  const [draftId, setDraftId] = useState<string | null>(null);
+  // Kept so a draft remembers when the observation was actually made.
+  const [observedDate, setObservedDate] = useState(() => new Date().toISOString());
+
+  const draftParam = route.params?.draftId;
 
   useEffect(() => {
-    if (route.params?.type) setType(route.params.type);
-  }, [route.params?.type]);
+    if (!route.params?.draftId && route.params?.type) setType(route.params.type);
+  }, [route.params?.type, route.params?.draftId]);
+
+  // Open a draft chosen in "My records" and fill the form with what was saved.
+  useEffect(() => {
+    let active = true;
+    if (!draftParam) return;
+
+    (async () => {
+      const row = await getOutbox(draftParam).catch(() => null);
+      if (!active || !row) return;
+      const p = row.payload;
+
+      setType(p.type);
+      setTitle(p.title);
+      setNotes(p.notes ?? "");
+      setPhotos(p.photos);
+      setCoords(
+        p.latitude !== null && p.longitude !== null
+          ? { latitude: p.latitude, longitude: p.longitude }
+          : null
+      );
+      setSpecies(p.species_name ?? "");
+      setGrowthStage(p.growth_stage);
+      setHealthCondition(p.health_condition);
+      setEstimatedCount(p.estimated_count === null ? "" : String(p.estimated_count));
+      setHazardType(p.hazard_type);
+      setSeverity(p.severity);
+      setReadingType(p.reading_type);
+      setReadingValue(p.reading_value === null ? "" : String(p.reading_value));
+      setReadingUnit(p.reading_unit ?? "");
+      setZoneId(p.zone_id);
+      setObservedDate(p.observed_date);
+      setDraftId(row.localId);
+      setMessage({ kind: "info", text: "Draft loaded - finish the details, then tap Save record." });
+      // Clear the parameter so re-opening the tab starts a blank record.
+      navigation.setParams({ draftId: undefined });
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [draftParam, navigation]);
 
   // Load zones when the screen gains focus (works from cache-free start too).
   useFocusEffect(
@@ -95,6 +141,8 @@ export function NewRecordScreen({ navigation, route }: Props) {
     setReadingValue("");
     setReadingUnit("");
     setZoneId(null);
+    setDraftId(null);
+    setObservedDate(new Date().toISOString());
   }
 
   async function addPhoto(source: "camera" | "library") {
@@ -113,10 +161,73 @@ export function NewRecordScreen({ navigation, route }: Props) {
     setCoords({ latitude: result.latitude, longitude: result.longitude });
   }
 
+  // Everything the form holds right now, ready to be stored on the phone.
+  function buildPayload(): Omit<OutboxRecord, "localId"> {
+    return {
+      type,
+      title: title.trim() || "Untitled draft",
+      zone_id: zoneId,
+      observed_date: observedDate,
+      latitude: coords?.latitude ?? null,
+      longitude: coords?.longitude ?? null,
+      notes: notes.trim() || null,
+      photos,
+      species_name: type === "flora" ? species.trim() || null : null,
+      growth_stage: type === "flora" ? growthStage : null,
+      health_condition: type === "flora" ? healthCondition : null,
+      estimated_count:
+        type === "flora" && estimatedCount.trim() ? Number(estimatedCount) : null,
+      hazard_type: type === "hazard" ? hazardType : null,
+      severity: type === "hazard" ? severity : null,
+      reading_type: type === "soil_water" ? readingType : null,
+      reading_value:
+        type === "soil_water" && readingValue.trim() ? Number(readingValue) : null,
+      reading_unit: type === "soil_water" ? readingUnit.trim() || null : null,
+    };
+  }
+
+  // What still has to be filled in before a record counts as complete.
+  function missingDetail(): string | null {
+    if (!title.trim()) return "Give the record a short title - or save it as a draft.";
+    if (type === "flora" && !species.trim()) return "Add the species name - or save it as a draft.";
+    if (type === "hazard" && !hazardType) return "Choose a hazard type - or save it as a draft.";
+    if (type === "hazard" && !severity) return "Choose a severity - or save it as a draft.";
+    if (type === "soil_water" && !readingType) return "Choose a reading type - or save it as a draft.";
+    if (type === "soil_water" && !readingValue.trim())
+      return "Add the reading value - or save it as a draft.";
+    return null;
+  }
+
+  // Park an unfinished record. Nothing is uploaded and no detail is required.
+  async function saveAsDraft() {
+    if (!profile) return;
+    setBusy(true);
+    setMessage(null);
+
+    try {
+      await saveDraft(buildPayload(), draftId ?? undefined);
+      reset();
+      setBusy(false);
+      Alert.alert(
+        "Draft saved",
+        "This record is kept as a draft on this phone. Open My records to finish it later."
+      );
+      navigation.navigate("Records");
+    } catch (error) {
+      setBusy(false);
+      setMessage({
+        kind: "error",
+        text: error instanceof Error ? error.message : "Could not save the draft.",
+      });
+    }
+  }
+
   async function save() {
     if (!profile) return;
-    if (!title.trim()) {
-      setMessage({ kind: "error", text: "Give the record a short title." });
+
+    const missing = missingDetail();
+    if (missing) {
+      setMessage({ kind: "error", text: missing });
       return;
     }
 
@@ -124,27 +235,13 @@ export function NewRecordScreen({ navigation, route }: Props) {
     setMessage(null);
 
     try {
-      const queued = await enqueueRecord({
-        type,
-        title: title.trim(),
-        zone_id: zoneId,
-        observed_date: new Date().toISOString(),
-        latitude: coords?.latitude ?? null,
-        longitude: coords?.longitude ?? null,
-        notes: notes.trim() || null,
-        photos,
-        species_name: type === "flora" ? species.trim() || null : null,
-        growth_stage: type === "flora" ? growthStage : null,
-        health_condition: type === "flora" ? healthCondition : null,
-        estimated_count:
-          type === "flora" && estimatedCount.trim() ? Number(estimatedCount) : null,
-        hazard_type: type === "hazard" ? hazardType : null,
-        severity: type === "hazard" ? severity : null,
-        reading_type: type === "soil_water" ? readingType : null,
-        reading_value:
-          type === "soil_water" && readingValue.trim() ? Number(readingValue) : null,
-        reading_unit: type === "soil_water" ? readingUnit.trim() || null : null,
-      });
+      if (draftId) {
+        // Finishing a draft moves it from the drafts list into the upload queue.
+        await saveDraft(buildPayload(), draftId);
+        await markPending(draftId);
+      } else {
+        await enqueueRecord(buildPayload());
+      }
 
       reset();
 
@@ -157,7 +254,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
       } else {
         Alert.alert(
           "Saved offline",
-          `The record is stored on this phone (${queued.slice(0, 6)}) and will upload automatically.`
+          "The record is stored on this phone and will upload automatically when you have a connection."
         );
       }
       navigation.navigate("Records");
@@ -314,8 +411,11 @@ export function NewRecordScreen({ navigation, route }: Props) {
         </Card>
 
         <Button title={busy ? "Saving..." : "Save record"} onPress={save} loading={busy} />
+        <View style={{ height: 10 }} />
+        <Button title="Save as draft" variant="secondary" onPress={saveAsDraft} disabled={busy} />
         <Text style={styles.footerHint}>
-          Records save on the phone first, then upload automatically - so you can keep working with no signal.
+          Records save on the phone first, then upload automatically - so you can keep working with no
+          signal. Still busy with the form? Tap "Save as draft" and finish it later from My records.
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

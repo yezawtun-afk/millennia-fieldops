@@ -34,14 +34,21 @@ sequenceDiagram
     SB-->>App: session + profile
 
     W->>App: Capture record (type, GPS, photos)
-    App->>DB: Insert into outbox (status = pending)
-    App->>SB: Try upload (photos then record)
-    alt online
-        SB-->>App: OK
-        App->>DB: Delete outbox row
-    else offline
-        App->>DB: Keep row for later
+    alt record not finished yet
+        App->>DB: Insert into outbox (status = draft)
+        Note over App,DB: Nothing is uploaded.<br/>Finish it later from My Records.
+    else record complete
+        App->>DB: Insert into outbox (status = pending)
+        App->>SB: Try upload (photos then record)
+        alt online
+            SB-->>App: OK
+            App->>DB: Delete outbox row
+        else offline
+            App->>DB: Keep row for later
+        end
     end
+
+    Note over App,SB: When the connection comes back, the app<br/>uploads everything pending by itself.
 
     W->>App: Open Notifications
     App->>SB: select notifications (unread)

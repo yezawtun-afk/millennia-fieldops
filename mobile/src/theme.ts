@@ -26,7 +26,6 @@ export const colors = {
 
   sevLow: "#F59E0B",
   sevMedium: "#EA580C",
-  sevHigh: "#E11D48",
   sevCritical: "#991B1B",
 } as const;
 

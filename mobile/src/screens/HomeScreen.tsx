@@ -3,7 +3,7 @@ import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
-import { countPending } from "../lib/sqlite";
+import { countDrafts, countPending } from "../lib/sqlite";
 import { syncOutbox } from "../lib/sync";
 import { fetchMyRecords } from "../lib/api";
 import { useOnlineStatus } from "../lib/network";
@@ -27,6 +27,7 @@ export function HomeScreen({ navigation }: Props) {
   const { profile } = useAuth();
   const online = useOnlineStatus();
   const [pending, setPending] = useState(0);
+  const [drafts, setDrafts] = useState(0);
   const [recent, setRecent] = useState<FieldRecord[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -35,6 +36,7 @@ export function HomeScreen({ navigation }: Props) {
   const refresh = useCallback(async () => {
     const queued = await countPending();
     setPending(queued);
+    setDrafts(await countDrafts());
     if (profile) {
       try {
         setRecent((await fetchMyRecords(profile.id)).slice(0, 4));
@@ -108,6 +110,17 @@ export function HomeScreen({ navigation }: Props) {
           </Text>
           <View style={{ height: 10 }} />
           <Button title={syncing ? "Syncing..." : "Sync now"} onPress={runSync} loading={syncing} />
+        </Card>
+      ) : null}
+
+      {drafts > 0 ? (
+        <Card style={{ marginBottom: 14 }}>
+          <SectionTitle>Unfinished drafts</SectionTitle>
+          <Text style={styles.pendingText}>
+            {drafts} record(s) were parked as a draft. Finish them to send them for review.
+          </Text>
+          <View style={{ height: 10 }} />
+          <Button title="Open my records" variant="secondary" onPress={() => navigation.navigate("Records")} />
         </Card>
       ) : null}
 

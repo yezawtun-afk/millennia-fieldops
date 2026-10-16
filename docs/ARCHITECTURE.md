@@ -58,9 +58,15 @@ Millennia FieldOps is one backend shared by two front ends.
 
 ## Offline-first details (mobile)
 
-- `src/lib/sqlite.ts` opens an expo-sqlite database with two tables:
-  `outbox` (the record payload + status) and `outbox_photos` (local file URIs).
-- `src/lib/sync.ts` loops the outbox in order, uploading photos then the record,
-  with an increasing back-off on network errors and a hard stop on `pending` items
-  that the server refused (those wait for the user to fix them).
-- The Home and My Records screens show a "waiting to upload" banner with **Sync now**.
+- `src/lib/sqlite.ts` opens an expo-sqlite database with one table, `outbox`, holding
+  the record payload, a status (`draft` / `pending` / `error`), the last error and a
+  timestamp.
+- Unfinished records are stored as **drafts**: they need no required detail and are
+  never uploaded until the user completes them from **My Records**.
+- `src/lib/sync.ts` walks the outbox in order, uploading photos then the record row.
+  It ignores `draft` rows, retries anything that failed last time, and refuses to run
+  twice at the same time so a record cannot be uploaded twice.
+- `src/lib/useAutoUpload.ts` watches the connection and pushes the queue by itself when
+  the phone comes back online (and once at start-up).
+- Photos live as files inside the app's document directory until they are uploaded.
+- The Home and My Records screens show pending/draft counts with a **Sync now** button.

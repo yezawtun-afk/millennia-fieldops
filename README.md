@@ -24,8 +24,9 @@ Maps use **Leaflet.js** with **OpenStreetMap** tiles.
 - Email/password sign-in (Supabase Auth), session kept on the phone.
 - Capture **flora & biodiversity**, **soil & water** and **environmental hazard** records.
 - Automatic **GPS** (expo-location) and **photos** (expo-camera / expo-image-picker).
-- **Offline-first**: records and photos are saved in **SQLite** (expo-sqlite) and upload
-  automatically when a connection returns ("Sync now" also available).
+- **Offline-first**: records and photos are saved in **SQLite** (expo-sqlite). Finished
+  records upload automatically when a connection returns ("Sync now" also available),
+  and unfinished ones can be parked as **drafts** and completed later from My Records.
 - **My Records** shows each record's review status and the supervisor's comment.
 - **Notifications** tell the worker when a record is approved or rejected.
 

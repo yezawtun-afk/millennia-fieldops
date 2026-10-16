@@ -22,7 +22,6 @@ export const STATUS_LABELS: Record<RecordStatus, string> = {
 export const SEVERITY_LABELS: Record<HazardSeverity, string> = {
   low: "Low",
   medium: "Medium",
-  high: "High",
   critical: "Critical",
 };
 
@@ -41,7 +40,6 @@ export const STATUS_COLORS: Record<RecordStatus, { fg: string; bg: string }> = {
 export const SEVERITY_COLORS: Record<HazardSeverity, string> = {
   low: colors.sevLow,
   medium: colors.sevMedium,
-  high: colors.sevHigh,
   critical: colors.sevCritical,
 };
 

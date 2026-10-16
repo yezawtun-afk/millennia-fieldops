@@ -24,7 +24,7 @@ export default async function DashboardPage() {
   for (const r of records) byStatus[r.status] += 1;
 
   // Counts by severity for hazards.
-  const bySeverity: Record<string, number> = { low: 0, medium: 0, high: 0, critical: 0, unrated: 0 };
+  const bySeverity: Record<string, number> = { low: 0, medium: 0, critical: 0, unrated: 0 };
   for (const r of records) {
     if (r.type !== "hazard") continue;
     bySeverity[r.severity ?? "unrated"] += 1;

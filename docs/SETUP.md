@@ -28,6 +28,12 @@ In the Supabase dashboard, open **SQL Editor -> New query**. Run these files fro
 3. `03_storage.sql` - the photo bucket and its rules
 4. `04_triggers.sql` - auto-create profiles, review notifications
 5. `05_seed.sql` - the 5 monitoring zones
+6. `06_severity_levels.sql` - **only for a database created before this file existed**:
+   rebuilds the hazard severity enum as Low / Medium / Critical. It is safe to run
+   anyway (it does nothing if there is no `high` value left).
+7. `07_demo_data.sql` - **optional demo data**: ~70 randomised records plus their
+   review notifications. It starts by deleting every existing record, so only run it
+   when you want a clean demo set. You need at least one signed-up account first.
 
 ### Create your first admin
 
@@ -101,4 +107,4 @@ The app needs camera, location and media-library permissions for photos and GPS.
 | Sign-up says "Email not confirmed" | In Supabase: **Authentication -> Providers -> Email** and turn **Confirm email** off for testing. |
 | A new user cannot do anything | New accounts start as `field_worker`. Promote them in the dashboard **Users** page (or with SQL above). |
 | Photos upload but do not show | Confirm the `record-photos` bucket exists (step 2.3) and that you are signed in. |
-| Mobile app stuck "waiting to upload" | Check the phone has internet, then press **Sync now** on the Home screen. |
+| Mobile app stuck "waiting to upload" | Check the phone has internet. It uploads on its own as soon as the connection is back; press **Sync now** on the Home screen to force it. |

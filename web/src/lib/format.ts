@@ -16,7 +16,6 @@ export const STATUS_LABELS: Record<RecordStatus, string> = {
 export const SEVERITY_LABELS: Record<HazardSeverity, string> = {
   low: "Low",
   medium: "Medium",
-  high: "High",
   critical: "Critical",
 };
 
@@ -47,7 +46,6 @@ export const STATUS_STYLES: Record<RecordStatus, string> = {
 export const SEVERITY_STYLES: Record<HazardSeverity, string> = {
   low: "bg-sev-low/15 text-sev-low",
   medium: "bg-sev-medium/15 text-sev-medium",
-  high: "bg-sev-high/15 text-sev-high",
   critical: "bg-sev-critical/15 text-sev-critical",
 };
 
@@ -60,7 +58,6 @@ export const TYPE_CHART_COLORS: Record<RecordType, string> = {
 export const SEVERITY_CHART_COLORS: Record<HazardSeverity, string> = {
   low: "#F59E0B",
   medium: "#EA580C",
-  high: "#E11D48",
   critical: "#991B1B",
 };
 

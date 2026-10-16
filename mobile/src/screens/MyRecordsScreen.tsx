@@ -1,9 +1,9 @@
 import React, { useCallback, useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
 import { fetchMyRecords } from "../lib/api";
-import { listOutbox } from "../lib/sqlite";
+import { listOutbox, removeOutbox } from "../lib/sqlite";
 import { syncOutbox } from "../lib/sync";
 import { Banner, Button, Card, Pill, SectionTitle } from "../components/ui";
 import { colors } from "../theme";
@@ -20,6 +20,9 @@ export function MyRecordsScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const drafts = outbox.filter((row) => row.status === "draft");
+  const queued = outbox.filter((row) => row.status !== "draft");
 
   const load = useCallback(async () => {
     setOutbox(await listOutbox());
@@ -59,6 +62,21 @@ export function MyRecordsScreen({ navigation }: Props) {
     await load();
   }
 
+  // Drafts are unfinished, so they are never uploaded until they are completed.
+  function confirmDeleteDraft(row: OutboxRow) {
+    Alert.alert("Delete draft", `Discard the draft "${row.payload.title}"?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          await removeOutbox(row.localId);
+          await load();
+        },
+      },
+    ]);
+  }
+
   return (
     <ScrollView
       style={styles.screen}
@@ -69,10 +87,41 @@ export function MyRecordsScreen({ navigation }: Props) {
 
       {message ? <Banner kind="info">{message}</Banner> : null}
 
-      {outbox.length > 0 ? (
+      {drafts.length > 0 ? (
         <Card style={{ marginBottom: 14 }}>
-          <SectionTitle>Pending upload ({outbox.length})</SectionTitle>
-          {outbox.map((row) => (
+          <SectionTitle>Drafts ({drafts.length})</SectionTitle>
+          {drafts.map((row) => (
+            <View key={row.localId} style={styles.queuedRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.queuedTitle}>{row.payload.title}</Text>
+                <Text style={styles.queuedMeta}>
+                  {TYPE_LABELS[row.payload.type]} - started {formatDate(row.createdAt)}
+                </Text>
+                <View style={styles.draftButtons}>
+                  <Button
+                    title="Continue"
+                    variant="secondary"
+                    style={styles.draftButton}
+                    onPress={() => navigation.navigate("New", { draftId: row.localId })}
+                  />
+                  <View style={{ width: 8 }} />
+                  <Button
+                    title="Delete"
+                    variant="danger"
+                    style={styles.draftButton}
+                    onPress={() => confirmDeleteDraft(row)}
+                  />
+                </View>
+              </View>
+            </View>
+          ))}
+        </Card>
+      ) : null}
+
+      {queued.length > 0 ? (
+        <Card style={{ marginBottom: 14 }}>
+          <SectionTitle>Pending upload ({queued.length})</SectionTitle>
+          {queued.map((row) => (
             <View key={row.localId} style={styles.queuedRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.queuedTitle}>{row.payload.title}</Text>
@@ -80,11 +129,20 @@ export function MyRecordsScreen({ navigation }: Props) {
                   {TYPE_LABELS[row.payload.type]} - {formatDate(row.payload.observed_date)}
                 </Text>
                 {row.status === "error" && row.error ? (
-                  <Text style={styles.queuedError}>{row.error}</Text>
+                  <>
+                    <Text style={styles.queuedError}>{row.error}</Text>
+                    <View style={{ height: 8 }} />
+                    <Button
+                      title="Retry now"
+                      variant="secondary"
+                      onPress={runSync}
+                      loading={syncing}
+                    />
+                  </>
                 ) : null}
               </View>
               <Pill
-                label={row.status === "error" ? "Needs retry" : "Pending upload"}
+                label={row.status === "error" ? "Upload failed" : "Pending upload"}
                 color={colors.pending}
                 background={colors.pendingSoft}
               />
@@ -147,6 +205,8 @@ const styles = StyleSheet.create({
   queuedTitle: { fontSize: 14, fontWeight: "600", color: colors.ink },
   queuedMeta: { fontSize: 12, color: colors.muted, marginTop: 2 },
   queuedError: { fontSize: 12, color: colors.rejected, marginTop: 2 },
+  draftButtons: { flexDirection: "row", marginTop: 10 },
+  draftButton: { flex: 1 },
   rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   rowLeft: { flexDirection: "row", gap: 6, alignItems: "center" },
   recordTitle: { fontSize: 15, fontWeight: "600", color: colors.ink, marginTop: 8 },

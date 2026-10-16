@@ -48,7 +48,7 @@ export function DashboardCharts({
     color: STATUS_COLORS[key],
   }));
 
-  const severityData = (["low", "medium", "high", "critical", "unrated"] as const)
+  const severityData = (["low", "medium", "critical", "unrated"] as const)
     .map((key) => ({
       name: key === "unrated" ? "Unrated" : SEVERITY_LABELS[key as HazardSeverity],
       value: bySeverity[key] ?? 0,

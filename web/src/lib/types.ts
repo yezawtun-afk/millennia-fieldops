@@ -3,7 +3,7 @@
 export type UserRole = "field_worker" | "supervisor" | "admin";
 export type RecordType = "flora" | "soil_water" | "hazard";
 export type RecordStatus = "pending" | "approved" | "rejected";
-export type HazardSeverity = "low" | "medium" | "high" | "critical";
+export type HazardSeverity = "low" | "medium" | "critical";
 
 export interface Profile {
   id: string;
