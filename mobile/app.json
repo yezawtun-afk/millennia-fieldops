@@ -6,11 +6,9 @@
     "orientation": "portrait",
     "scheme": "millenniafieldops",
     "userInterfaceStyle": "light",
-    "splash": {
-      "backgroundColor": "#0F2E22",
-      "resizeMode": "contain"
-    },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -21,7 +19,12 @@
     },
     "android": {
       "package": "my.millennia.fieldops",
-      "permissions": ["CAMERA", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "READ_MEDIA_IMAGES"]
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_MEDIA_IMAGES"
+      ]
     },
     "plugins": [
       [
@@ -35,6 +38,14 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Millennia FieldOps records the GPS location of each observation."
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0F2E22",
+          "resizeMode": "contain"
         }
       ]
     ]
