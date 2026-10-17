@@ -68,6 +68,10 @@ number automatically.
 | `preview` | `.apk`, internal distribution | Testing and the capstone demo |
 | `production` | `.aab` | Uploading to the Google Play Store |
 
+Both profiles set `autoIncrement: true`, so every new build gets a fresh Android version
+code and installs straight over the previous APK. (Without it, Android may refuse an
+install of the same version code with "App not installed".)
+
 Both profiles carry the Supabase URL and publishable key in their `env` block. This is
 deliberate: `mobile/.env` is git-ignored, so Expo's servers never see it. The publishable
 key is safe to ship inside an app - Row Level Security is what protects the data.
@@ -222,6 +226,7 @@ and supervisor).
 | `EPERM: operation not permitted, symlink ... -shallow-clone ...` during "Compressing project files" | EAS CLI filters the upload with the `ignore` package, which cannot match a **directory-only** pattern. A rule such as `web/.next/` in `.gitignore` therefore fails to exclude `web/.next`, so EAS tries to copy it and cannot recreate a junction/symlink on Windows. Write folder rules without the trailing slash (`web/.next`); git treats them the same. |
 | `Failed to resolve plugin for module "expo-image-picker" ... Do you have node modules installed?` | `mobile/node_modules` is missing or empty. Run `npm install` inside `mobile`, and re-run `tools\onedrive-links.ps1` if the folder looks empty. |
 | APK installs but shows a blank/error screen | The Supabase values were not baked in. Check the `env` block in `mobile/eas.json` matches `mobile/.env`, then rebuild. |
+| APK install says "App not installed" | An APK with the same version code is already on the phone. Either uninstall the old app first (this also clears any unsent drafts), or give the profile `"autoIncrement": true` (already set for both profiles) and rebuild. |
 | Vercel build fails with "No Next.js version detected" | The **Root Directory** is not set to `web`. |
 | Deployed site loads but every page errors | Missing environment variables on Vercel. Add them and **Redeploy**. |
 | "Create user" in the web Users page fails with 401 | `SUPABASE_SERVICE_ROLE_KEY` on Vercel is wrong or missing. Users can also self-register from the mobile app. |
