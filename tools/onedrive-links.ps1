@@ -109,9 +109,11 @@ foreach ($item in $links) {
 
 # OneDrive will try to follow (and later "restore") junctions, so also tag the
 # real location and the links as System+Hidden - OneDrive skips those.
-foreach ($item in @($target, $link)) {
-    if (Test-Path $item) {
-        $null = & attrib +S +H "$item" 2>$null
+foreach ($item in $links) {
+    foreach ($p in @($item.Target, $item.Path)) {
+        if (Test-Path $p) {
+            $null = & attrib +S +H "$p" 2>$null
+        }
     }
 }
 Write-Host ""

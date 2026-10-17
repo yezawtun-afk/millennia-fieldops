@@ -62,7 +62,15 @@ $parked = New-Object System.Collections.ArrayList
 try {
     foreach ($path in $linkPaths) {
         if (Test-IsReparsePoint -Path $path) {
-            cmd /c rmdir "$path" | Out-Null
+            # The links are tagged System+Hidden (so OneDrive ignores them), and
+            # rmdir refuses to touch such a folder until those bits are cleared.
+            $null = & attrib -S -H "$path" 2>$null
+            cmd /c rmdir "$path" 2>$null | Out-Null
+
+            if (Test-Path -LiteralPath $path) {
+                throw "Could not remove the folder link at $path. Close anything using it and try again."
+            }
+
             [void]$parked.Add($path)
             Write-Host "parked  $path" -ForegroundColor Cyan
         }
