@@ -62,10 +62,15 @@ $parked = New-Object System.Collections.ArrayList
 try {
     foreach ($path in $linkPaths) {
         if (Test-IsReparsePoint -Path $path) {
-            # The links are tagged System+Hidden (so OneDrive ignores them), and
-            # rmdir refuses to touch such a folder until those bits are cleared.
-            $null = & attrib -S -H "$path" 2>$null
-            cmd /c rmdir "$path" 2>$null | Out-Null
+            # These junctions carry the ReadOnly bit, and `rd` refuses to delete
+            # a ReadOnly directory ("Access is denied"). `attrib -r` does not
+            # clear it on a reparse point, so go through .NET, then remove the
+            # link with `rd /q` - never `rd /s`, which would walk into the real
+            # folder behind the link and delete its contents.
+            $item = Get-Item -LiteralPath $path -Force
+            $item.Attributes = ($item.Attributes -band (-bnot [System.IO.FileAttributes]::ReadOnly))
+
+            cmd /c rd /q "$path" 2>$null | Out-Null
 
             if (Test-Path -LiteralPath $path) {
                 throw "Could not remove the folder link at $path. Close anything using it and try again."
