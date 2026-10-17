@@ -4,19 +4,26 @@
 .env.*.local
 
 # Dependencies
-node_modules/
+# NOTE: keep these directory patterns free of a trailing slash. During
+# `eas build`, EAS CLI filters the upload with the `ignore` npm package, which
+# does not match a path like "web/.next" against a directory-only pattern
+# ("web/.next/"). A non-matching rule means EAS tries to copy the folder into
+# its temp workspace, and a junction there fails on Windows with
+# "EPERM: operation not permitted, symlink ...". Plain patterns still work
+# with git, which is why they are written this way.
+node_modules
 
 # Next.js
-web/.next/
-web/out/
+web/.next
+web/out
 web/next-env.d.ts
 *.tsbuildinfo
 
 # Expo / React Native
-mobile/.expo/
-mobile/.expo-shared/
-mobile/dist/
-mobile/web-build/
+mobile/.expo
+mobile/.expo-shared
+mobile/dist
+mobile/web-build
 *.jks
 *.p8
 *.p12
@@ -25,14 +32,14 @@ mobile/web-build/
 *.orig.*
 
 # Supabase CLI
-supabase/.temp/
-supabase/.branches/
+supabase/.temp
+supabase/.branches
 
 # Logs, OS and editor files
 *.log
 npm-debug.log*
 .DS_Store
 Thumbs.db
-.idea/
+.idea
 .vscode/*
 !.vscode/extensions.json

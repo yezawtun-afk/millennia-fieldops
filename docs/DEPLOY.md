@@ -155,6 +155,8 @@ existing records every time it runs - only run it when you want a fresh randomis
 | `You have access to multiple accounts` | Add `--account <name>`: `eas init --account yezawtun_afk`. |
 | `Generating a new Keystore is not supported in --non-interactive mode` | Run the build **without** `--non-interactive` so you can answer `Y` to the keystore question. |
 | `EAS project not configured` | Run `eas init --account yezawtun_afk` inside `mobile/`. |
+| `EPERM: operation not permitted, symlink ... -shallow-clone ...` during "Compressing project files" | EAS CLI filters the upload with the `ignore` package, which cannot match a **directory-only** pattern. A rule such as `web/.next/` in `.gitignore` therefore fails to exclude `web/.next`, so EAS tries to copy it and cannot recreate a junction/symlink on Windows. Write folder rules without the trailing slash (`web/.next`); git treats them the same. |
+| `Failed to resolve plugin for module "expo-image-picker" ... Do you have node modules installed?` | `mobile/node_modules` is missing or empty. Run `npm install` inside `mobile`, and re-run `tools\onedrive-links.ps1` if the folder looks empty. |
 | APK installs but shows a blank/error screen | The Supabase values were not baked in. Check the `env` block in `mobile/eas.json` matches `mobile/.env`, then rebuild. |
 | Vercel build fails with "No Next.js version detected" | The **Root Directory** is not set to `web`. |
 | Deployed site loads but every page errors | Missing environment variables on Vercel. Add them and **Redeploy**. |
