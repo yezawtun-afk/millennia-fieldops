@@ -28,8 +28,10 @@ Maps use **Leaflet.js** with **OpenStreetMap** tiles on both platforms.
 
 **End-of-project state (all verified on 17 Oct 2026):**
 
-- **Mobile:** installable Android APK built in the Expo cloud (build `faa3abd0`, profile `preview`,
-  internal distribution), package `my.millennia.fieldops`, app version 2.0.0.
+- **Mobile:** installable Android APK built in the Expo cloud (build `a093df69`, profile
+  `preview`, internal distribution), package `my.millennia.fieldops`, app version 2.0.0,
+  versionCode 2. The app also supports **over-the-air updates** (expo-updates), so later
+  JavaScript changes reach an installed phone through `eas update` without a new APK.
 - **Web:** deployed at **https://millennia-fieldops-rewrite.vercel.app/** (HTTP 200, login redirect working).
 - **Database:** schema, 5 monitoring zones, 3 role-correct profiles, 71 demo records and
   40 worker notifications all present and verified over the production REST API.
@@ -181,7 +183,7 @@ connection exists. This is what makes the app genuinely usable on the ridge with
 | Component | Infrastructure | Detail |
 | --- | --- | --- |
 | Mobile APK | Expo EAS Build (cloud) | profile `preview` → APK for internal distribution; profile `production` → AAB for Play publishing |
-| Mobile over-the-air updates | EAS Update (expo-updates) | build channels `preview` / `production`; `eas update --channel preview` publishes JavaScript changes to installed phones, which pick them up on next launch or via **Home → App updates → Check for updates**. Native changes still require a new build. |
+| Mobile over-the-air updates | EAS Update (expo-updates) | build channels `preview` / `production`; `eas update --channel preview` publishes JavaScript changes to installed phones, which pick them up on next launch or via **Home → App updates → Check for updates**. Native changes still require a new build. The Supabase values are stored as EAS *environment variables* for `preview` and `production` (not only in `mobile/.env`), so published bundles carry the backend config. |
 | Web dashboard | Vercel | root directory `web/`, env vars from `web/.env.local` |
 | Database | Supabase cloud | project `bjlyskwoxpkvepbwaxfc`; schema via `setup_all.sql` one-paste |
 
@@ -242,6 +244,25 @@ A build of this kind always hits a few hard blockers. The final rounds, in order
    remember RLS can return an empty list for a perfectly loaded table (notifications for
    the admin account read as 0 because scoped rows belong to the worker).
 
+5. **An over-the-air update that would have broken the app — caught before shipping.**
+   With `expo-updates` in place, the first `eas update` published a bundle that had been
+   exported **without** `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY`: the
+   values lived in `mobile/.env` (gitignored), while `eas update` only injects
+   `EXPO_PUBLIC_*` from the **EAS environment** named by `--environment`. The bundle was
+   therefore code that could not reach the backend at all. Detection method, which is the
+   reusable part: fetch the manifest the way an installed app does
+   (`u.expo.dev/<projectId>?channel-name=preview&runtime-version=2.0.0&platform=android`
+   with `expo-protocol-version: 1`), read the **multipart** body's `manifest` part for
+   `launchAsset.url` and its `extensions` part for the signed `assetRequestHeaders` the
+   private CDN demands (403 without them, ×3 confirmed), download the bundle and grep it
+   for the Supabase host. Fix: `eas env:set … --environment preview --environment
+   production`, then republish. Remedy in the meantime:
+   `eas update:rollback <groupId>` (with no prior update it republishes "roll back to the
+   embedded update", so phones keep the bundle inside their APK). The same byte-level
+   check was then run against the **APK** itself (unzip `assets/index.android.bundle`,
+   search for the host) — both paths now verified, and the check is repeatable
+   (`verify-ota.js`, `verify-apk.ps1` in the working notes).
+
 ---
 
 ## 9. Verification performed (17 Oct 2026)
@@ -256,7 +277,11 @@ A build of this kind always hits a few hard blockers. The final rounds, in order
 | `records` — 71 demo rows | ✅ |
 | `notifications` — worker sees 40 (per-user RLS) | ✅ |
 | Mobile splash/config sanity (`expo config --type prebuild`) | ✅ clean |
-| EAS cloud build `faa3abd0` profile `preview` | ✅ FINISHED, APK produced |
+| Mobile TypeScript check after the offline/updates/notification work (`tsc --noEmit`) | ✅ clean |
+| EAS cloud build `a093df69` profile `preview` | ✅ FINISHED, versionCode 2, APK produced |
+| Published APK contains the Supabase config (byte search of `assets/index.android.bundle`) | ✅ host + key present |
+| Over-the-air update published to channel `preview`, runtime `2.0.0` | ✅ manifest served, bundle contains the Supabase config |
+| First OTA attempt without EAS environment variables | ❌ caught and rolled back before any phone could apply it |
 
 **End-to-end demo smoke test (recommended order):** worker signs in on the APK → captures a
 record offline (airplane mode) → reconnects → auto-upload → admin approves on the web →
@@ -340,5 +365,5 @@ millennia-fieldops-rewrite/
 ---
 
 *Prepared by the Millennia FieldOps project — everything above reflects the verified
-state of the live system as of 17 October 2026 (21 commits, HEAD `cfeb302`, working
-tree clean).*
+state of the live system as of 17 October 2026 (working tree clean, everything pushed;
+mobile work in commit `de0ddea`, documentation in the commits that follow it).*

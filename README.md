@@ -23,7 +23,7 @@ Maps use **Leaflet.js** with **OpenStreetMap** tiles.
 | Component | Where | Notes |
 | --- | --- | --- |
 | Web dashboard | https://millennia-fieldops-rewrite.vercel.app/ | Next.js on Vercel |
-| Android app | EAS Build (APK, internal distribution) | build profiles in `mobile/eas.json` |
+| Android app | EAS Build (APK, internal distribution) | build profiles in `mobile/eas.json`; the newest APK is linked on the Expo build page, and later JavaScript changes arrive over the air (`eas update`) |
 | Database | Supabase | schema + 5 zones + demo data loaded |
 
 Demo accounts and a full end-of-project snapshot live in
@@ -51,7 +51,11 @@ Demo accounts and a full end-of-project snapshot live in
   phone within ~20 seconds while the app is open, with an unread badge on the tab.
 - **Updates from inside the app**: the Home screen has an "App updates" card
   (expo-updates / EAS Update), so JavaScript improvements can be published without
-  reinstalling the APK.
+  reinstalling the APK. It shows whether the app is running the bundle from the APK or a
+  downloaded update, and the app offers a restart when a new one is waiting. (The build
+  that introduced this had to be installed once - after that, updates are over the air.)
+  The Supabase values must exist as EAS environment variables for `preview`/`production`
+  before publishing, or the update ships without a backend URL; see `docs/DEPLOY.md`.
 
 ### 2. Web dashboard (`web/`) - for supervisors and admins
 - Secure login with role-based access (supervisor vs admin).
@@ -82,7 +86,9 @@ Full step-by-step instructions are in [`docs/SETUP.md`](docs/SETUP.md). In short
    (regenerate it with `tools/bundle-db-sql.ps1`, or run the numbered files
    in order). 07/08 are optional extras documented in `docs/DEPLOY.md`.
 3. Copy your project URL and publishable/anon key into `web/.env.local` and
-   `mobile/.env` (or into the EAS profile `env` block for cloud builds).
+   `mobile/.env`. For cloud builds **and over-the-air updates**, also store them on
+   EAS (the `env` block in `mobile/eas.json` covers builds; `eas env:set` covers
+   `eas update` - see `docs/DEPLOY.md`).
 4. `cd web && npm install && npm run dev` for the dashboard.
 5. `cd mobile && npm install && npx expo start` for the mobile app.
 

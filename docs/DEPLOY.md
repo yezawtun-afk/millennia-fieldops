@@ -79,6 +79,36 @@ eas update --channel preview --message "what changed"
 - Publish only *JavaScript* changes. Anything native (a new Expo package, permissions,
   icons, `app.json` plugin changes) still needs a new build — otherwise the app would
   download code it cannot run.
+- **Before the first `eas update`, the Supabase values must exist as EAS environment
+  variables**, not only in `mobile/.env`. `eas update` builds the bundle on the CLI's
+  machine and only fills in `EXPO_PUBLIC_*` from the EAS environment named by
+  `--environment`; a plain `.env` file is not enough, and the resulting bundle then has
+  no backend URL (the app opens and every request fails). Set them once:
+
+  ```powershell
+  cd "mobile"
+  eas env:set --name EXPO_PUBLIC_SUPABASE_URL --value "https://<project>.supabase.co" --environment preview --environment production --visibility plaintext --non-interactive
+  eas env:set --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "sb_publishable_..." --environment preview --environment production --visibility plaintext --non-interactive
+  ```
+
+  They are now stored on EAS for the `preview` and `production` environments, so future
+  updates and builds both pick them up.
+- **Check the published bundle before trusting it.** The quickest reliable way is to
+  fetch the manifest the app itself would fetch and look inside the bundle it points to
+  (`verify-ota.js` in the notes below does this end to end):
+
+  ```
+  GET https://u.expo.dev/<projectId>?channel-name=preview&runtime-version=<appVersion>&platform=android
+  headers: expo-platform: android, expo-protocol-version: 1, accept: multipart/mixed
+  ```
+
+  The response is multipart: the `manifest` part has `launchAsset.url`; the `extensions`
+  part has `assetRequestHeaders` (keyed by `launchAsset.key`) — the CDN returns 403
+  without that signed header. Download the bundle with it and confirm the Supabase host
+  appears in the file.
+- **Undo a bad update:** `eas update:rollback <update-group-id> --non-interactive`. With
+  no earlier update on the branch it publishes a "roll back to the embedded update", so
+  installed apps keep the bundle from their APK.
 - Bump `expo.version` in `mobile/app.json` when you do ship a new APK: `runtimeVersion`
   uses the `appVersion` policy, so a new version is treated as a new runtime and old
   builds stop receiving the new bundles.
