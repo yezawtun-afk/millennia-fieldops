@@ -159,6 +159,11 @@ Then create your first admin account:
 needs at least one field worker account to already exist. Run it only when you want a
 fresh randomised demo set.
 
+Setup done but the apps still fail after login? If accounts were created **before**
+the schema existed, they have no `profiles` row. Run `08_backfill_profiles.sql`
+(then the two `update` lines inside it, with the `--` removed, to promote your admin
+and supervisor).
+
 ---
 
 ## Troubleshooting
