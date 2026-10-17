@@ -128,10 +128,23 @@ the *Preview* environment) if you want preview deployments to work too.
 
 ## 3. Database before the first demo
 
-The Supabase project starts empty. In **SQL Editor -> New query**, run the files in
-`supabase/` **in order**: `01_schema.sql`, `02_policies.sql`, `03_storage.sql`,
-`04_triggers.sql`, `05_seed.sql`, then optionally `06_severity_levels.sql` and
-`07_demo_data.sql`. See [SETUP.md](SETUP.md) step 2 for details.
+The Supabase project starts empty - every page will error until these run.
+
+The quick way is one paste. Build the combined script:
+
+```powershell
+# from the project root
+powershell -ExecutionPolicy Bypass -File tools\bundle-db-sql.ps1
+```
+
+That writes `supabase\setup_all.sql` (all of `01`..`06` in the right order). Open it
+in VS Code, select all, copy, then in Supabase go to **SQL Editor -> New query**, paste
+and click **Run**. It takes a few seconds and should say "Success. No rows returned".
+
+> `setup_all.sql` is generated, so it is git-ignored - re-run the script if the numbered
+> files change. Prefer doing it by hand? Run `01_schema.sql`, `02_policies.sql`,
+> `03_storage.sql`, `04_triggers.sql`, `05_seed.sql` in that order, then optional
+> `06_severity_levels.sql`. See [SETUP.md](SETUP.md) step 2 for details.
 
 Then create your first admin account:
 
@@ -142,8 +155,9 @@ Then create your first admin account:
    ```
 3. Sign out and back in.
 
-`07_demo_data.sql` needs at least one field worker account to exist, and it deletes all
-existing records every time it runs - only run it when you want a fresh randomised set.
+`07_demo_data.sql` is separate on purpose: it deletes every existing record, and it
+needs at least one field worker account to already exist. Run it only when you want a
+fresh randomised demo set.
 
 ---
 

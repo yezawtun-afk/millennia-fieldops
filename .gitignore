@@ -35,6 +35,10 @@ mobile/web-build
 supabase/.temp
 supabase/.branches
 
+# Generated: combined SQL script for the Supabase SQL Editor
+# (rebuild with tools\bundle-db-sql.ps1)
+supabase/setup_all.sql
+
 # Logs, OS and editor files
 *.log
 npm-debug.log*
