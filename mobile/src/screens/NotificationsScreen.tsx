@@ -15,8 +15,6 @@ import type { TabScreenProps } from "../navigation/types";
 type Props = TabScreenProps<"Alerts">;
 type Bucket = "all" | "unread" | "read";
 
-let presentedThisSession = false;
-
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   if (Number.isNaN(diff)) return formatDateTime(iso);
@@ -48,29 +46,28 @@ function accentForMessage(msg: string): { bg: string; fg: string; icon: "checkma
 }
 
 export function NotificationsScreen({ navigation }: Props) {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
+  const userId = session?.user.id ?? profile?.id ?? null;
   const [items, setItems] = useState<AppNotification[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState<Bucket>("all");
 
   const load = useCallback(async () => {
-    if (!profile) return;
+    if (!userId) return;
     try {
-      setItems(await fetchNotifications(profile.id));
+      setItems(await fetchNotifications(userId));
     } catch {
       // offline
     }
-  }, [profile]);
+  }, [userId]);
 
+  // New reviews are announced by the watcher in RootNavigator while the app is
+  // open, so opening this tab only has to list them.
   useFocusEffect(
     useCallback(() => {
       load();
-      if (profile && !presentedThisSession) {
-        presentedThisSession = true;
-        presentUnreadNotifications(profile.id).catch(() => undefined);
-      }
-    }, [profile, load])
+    }, [load])
   );
 
   const filtered = useMemo(() => {
@@ -96,9 +93,9 @@ export function NotificationsScreen({ navigation }: Props) {
   }
 
   async function markRead() {
-    if (!profile) return;
+    if (!userId) return;
     setBusy(true);
-    await markAllRead(profile.id);
+    await markAllRead(userId);
     await load();
     setBusy(false);
   }
@@ -115,7 +112,7 @@ export function NotificationsScreen({ navigation }: Props) {
 
   async function enableAlerts() {
     await ensureNotificationPermission();
-    if (profile) await presentUnreadNotifications(profile.id);
+    if (userId) await presentUnreadNotifications(userId);
   }
 
   const unread = items.filter((i) => !i.read_at).length;

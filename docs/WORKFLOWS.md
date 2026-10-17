@@ -18,7 +18,12 @@ Notes:
   created it (`submitted_by = auth.uid()`), enforced by Row Level Security.
 - Approving/rejecting is limited to `supervisor` and `admin`.
 - The `notify_record_review` trigger writes a row into `notifications` for the
-  submitter, which the mobile app reads and (optionally) shows as a phone alert.
+  submitter. The mobile app re-checks every 20 seconds while it is open and shows a
+  phone notification for a review it has not announced yet (unread count on the tab).
+- Offline rules on the capture screen: the record and its photos are always written to
+  the phone first. "Save as draft" works with no connection (local only); "Save record"
+  needs the server, so it is disabled offline with a banner telling the worker to save a
+  draft instead. Queued records upload automatically when the connection returns.
 
 ## Field worker flow (mobile app)
 
@@ -34,25 +39,27 @@ sequenceDiagram
     SB-->>App: session + profile
 
     W->>App: Capture record (type, GPS, photos)
-    alt record not finished yet
+    alt record not finished, or the phone is offline
         App->>DB: Insert into outbox (status = draft)
-        Note over App,DB: Nothing is uploaded.<br/>Finish it later from My Records.
-    else record complete
+        Note over App,DB: Nothing is uploaded.<br/>Submit it later from My Records<br/>once there is signal.
+    else record complete and online
         App->>DB: Insert into outbox (status = pending)
         App->>SB: Try upload (photos then record)
         alt online
             SB-->>App: OK
             App->>DB: Delete outbox row
-        else offline
+        else connection drops mid-save
             App->>DB: Keep row for later
         end
     end
 
+    Note over App,SB: Offline, "Save record" is disabled and the screen<br/>says why; "Save as draft" always works because<br/>it only writes to the phone.
     Note over App,SB: When the connection comes back, the app<br/>uploads everything pending by itself.
 
     W->>App: Open Notifications
     App->>SB: select notifications (unread)
     SB-->>App: review messages
+    Note over App,SB: While the app is open it re-checks every 20s<br/>and raises a phone notification for new reviews;<br/>the tab shows an unread badge.
 ```
 
 ## Supervisor / admin flow (web dashboard)

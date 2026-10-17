@@ -61,12 +61,36 @@ eas build --platform android --profile preview
 The keystore already exists, so it will not ask again. New builds get a higher version
 number automatically.
 
+### Updating an installed app without a new APK (over-the-air)
+
+The app is built with **expo-updates**, so JavaScript-only changes can be published to
+phones that already have it installed:
+
+```powershell
+cd "mobile"
+eas update --channel preview --message "what changed"
+```
+
+- The phone picks the update up on its next launch. Users can also pull it in manually:
+  **Home -> App updates -> Check for updates**, and the app offers a restart when it finds
+  one.
+- The build listens on the channel named in `mobile/eas.json` (`preview` for the APK,
+  `production` for the Play build), so use `--channel preview` for the demo APK.
+- Publish only *JavaScript* changes. Anything native (a new Expo package, permissions,
+  icons, `app.json` plugin changes) still needs a new build — otherwise the app would
+  download code it cannot run.
+- Bump `expo.version` in `mobile/app.json` when you do ship a new APK: `runtimeVersion`
+  uses the `appVersion` policy, so a new version is treated as a new runtime and old
+  builds stop receiving the new bundles.
+
 ### What the profiles mean (`mobile/eas.json`)
 
 | Profile | Output | Use it for |
 | --- | --- | --- |
 | `preview` | `.apk`, internal distribution | Testing and the capstone demo |
 | `production` | `.aab` | Uploading to the Google Play Store |
+
+Each profile sets a `channel` (`preview`, `production`) that `eas update` publishes to.
 
 Both profiles set `autoIncrement: true`, so every new build gets a fresh Android version
 code and installs straight over the previous APK. (Without it, Android may refuse an

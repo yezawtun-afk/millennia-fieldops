@@ -1,5 +1,5 @@
-﻿import React, { useCallback, useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+﻿import React, { useCallback, useEffect, useState } from "react";
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
@@ -7,6 +7,7 @@ import { countDrafts, countPending } from "../lib/sqlite";
 import { syncOutbox } from "../lib/sync";
 import { fetchMyRecords } from "../lib/api";
 import { useOnlineStatus } from "../lib/network";
+import { appVersion, applyUpdate, checkForUpdate } from "../lib/updates";
 import { Banner, Button, Card, Pill, SectionTitle } from "../components/ui";
 import { colors } from "../theme";
 import {
@@ -40,6 +41,52 @@ export function HomeScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateNote, setUpdateNote] = useState<string | null>(null);
+
+  // Download the waiting bundle and restart into it. On success the app reloads
+  // itself, so nothing after that call runs.
+  async function applyNow() {
+    setCheckingUpdate(true);
+    setUpdateNote("Downloading the update...");
+    const result = await applyUpdate();
+    setCheckingUpdate(false);
+    if (!result.ok) setUpdateNote(result.message);
+  }
+
+  // `silent` is the version that runs on its own when the app opens: it only
+  // speaks up when there really is something to install.
+  const runUpdateCheck = useCallback(async (silent: boolean) => {
+    const check = await checkForUpdate();
+
+    if (!check.supported) {
+      if (!silent) setUpdateNote(check.message);
+      return;
+    }
+
+    if (!check.available) {
+      if (!silent) setUpdateNote("You are on the latest version.");
+      return;
+    }
+
+    if (silent) {
+      Alert.alert(
+        "Update available",
+        "A newer version of Millennia FieldOps is ready. Restart the app now to use it?",
+        [
+          { text: "Later", style: "cancel" },
+          { text: "Update now", onPress: () => void applyNow() },
+        ]
+      );
+      return;
+    }
+
+    await applyNow();
+  }, []);
+
+  useEffect(() => {
+    void runUpdateCheck(true);
+  }, [runUpdateCheck]);
 
   const summary = recent.reduce<CountSummary>((acc, r) => {
     acc.total += 1;
@@ -222,6 +269,22 @@ export function HomeScreen({ navigation }: Props) {
       )}
 
       <Card style={{ marginTop: 14, marginBottom: 8 }}>
+        <SectionTitle>App updates</SectionTitle>
+        <Text style={styles.pendingText}>
+          Version {appVersion()}. Improvements to the app can arrive without reinstalling it - check
+          any time, or accept the prompt when one is waiting.
+        </Text>
+        {updateNote ? <Text style={styles.updateNote}>{updateNote}</Text> : null}
+        <View style={{ height: 10 }} />
+        <Button
+          title={checkingUpdate ? "Checking..." : "Check for updates"}
+          variant="secondary"
+          onPress={() => void runUpdateCheck(false)}
+          loading={checkingUpdate}
+        />
+      </Card>
+
+      <Card style={{ marginBottom: 8 }}>
         <SectionTitle>Quick links</SectionTitle>
         <View style={styles.linkGrid}>
           <Pressable style={styles.linkBtn} onPress={() => navigation.navigate("Records")}>
@@ -295,6 +358,7 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 18, fontWeight: "800", color: colors.ink },
   statLabel: { fontSize: 10.5, color: colors.muted, marginTop: 2 },
   pendingText: { fontSize: 13, color: colors.ink, lineHeight: 19 },
+  updateNote: { fontSize: 12, color: colors.primary, marginTop: 6 },
   tiles: { gap: 4 },
   captureRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
   captureChip: {

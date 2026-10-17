@@ -14,7 +14,8 @@ import type { TabScreenProps } from "../navigation/types";
 type Props = TabScreenProps<"Records">;
 
 export function MyRecordsScreen({ navigation }: Props) {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
+  const userId = session?.user.id ?? profile?.id ?? null;
   const [records, setRecords] = useState<FieldRecord[]>([]);
   const [outbox, setOutbox] = useState<OutboxRow[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -26,14 +27,14 @@ export function MyRecordsScreen({ navigation }: Props) {
 
   const load = useCallback(async () => {
     setOutbox(await listOutbox());
-    if (profile) {
+    if (userId) {
       try {
-        setRecords(await fetchMyRecords(profile.id));
+        setRecords(await fetchMyRecords(userId));
       } catch {
         // offline - keep previous
       }
     }
-  }, [profile]);
+  }, [userId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -48,9 +49,9 @@ export function MyRecordsScreen({ navigation }: Props) {
   }
 
   async function runSync() {
-    if (!profile) return;
+    if (!userId) return;
     setSyncing(true);
-    const result = await syncOutbox(profile.id);
+    const result = await syncOutbox(userId);
     setSyncing(false);
     setMessage(
       result.uploaded > 0

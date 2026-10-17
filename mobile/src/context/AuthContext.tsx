@@ -1,7 +1,14 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import type { Profile } from "../lib/types";
+
+// The profile row (name, role) is cached on the phone. Starting the app with no
+// connection used to leave `profile` as null, which silently disabled anything
+// that needed the user - saving records included. With the cache, the app knows
+// who is signed in offline, and the server still re-checks everything on upload.
+const PROFILE_CACHE_PREFIX = "millennia-fieldops.profile.";
 
 interface AuthContextValue {
   session: Session | null;
@@ -33,11 +40,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq("id", userId)
       .single();
 
-    if (error) {
-      setInitError(error.message);
+    if (!error && data) {
+      setProfile(data as Profile);
+      setInitError(null);
+      // Save a copy so the next start works without a connection.
+      void AsyncStorage.setItem(
+        PROFILE_CACHE_PREFIX + userId,
+        JSON.stringify(data)
+      ).catch(() => undefined);
       return;
     }
-    setProfile(data as Profile);
+
+    // No answer from the server (usually offline): use the copy on the phone.
+    const cached = await AsyncStorage.getItem(PROFILE_CACHE_PREFIX + userId).catch(() => null);
+    if (cached) {
+      try {
+        setProfile(JSON.parse(cached) as Profile);
+        return;
+      } catch {
+        // fall through to the error below
+      }
+    }
+
+    if (error) setInitError(error.message);
   }, []);
 
   useEffect(() => {

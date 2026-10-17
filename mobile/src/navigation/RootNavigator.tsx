@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -14,6 +14,7 @@ import { MyRecordsScreen } from "../screens/MyRecordsScreen";
 import { RecordDetailsScreen } from "../screens/RecordDetailsScreen";
 import { NotificationsScreen } from "../screens/NotificationsScreen";
 import { useAutoUpload } from "../lib/useAutoUpload";
+import { watchNotifications } from "../lib/notifications";
 import type { AuthStackParamList, MainTabParamList, RootStackParamList } from "./types";
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -64,6 +65,19 @@ function MainTabs() {
   // Push anything queued as soon as the phone has a connection again.
   useAutoUpload();
 
+  // Watch for reviews while the app is open, and keep the tab badge honest.
+  const { session } = useAuth();
+  const userId = session?.user.id ?? null;
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    if (!userId) {
+      setUnread(0);
+      return;
+    }
+    return watchNotifications(userId, setUnread);
+  }, [userId]);
+
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({
@@ -90,7 +104,15 @@ function MainTabs() {
       <Tabs.Screen name="Home" component={HomeScreen} options={{ title: "Home" }} />
       <Tabs.Screen name="New" component={NewRecordScreen} options={{ title: "New record" }} />
       <Tabs.Screen name="Records" component={MyRecordsScreen} options={{ title: "My records" }} />
-      <Tabs.Screen name="Alerts" component={NotificationsScreen} options={{ title: "Notifications" }} />
+      <Tabs.Screen
+        name="Alerts"
+        component={NotificationsScreen}
+        options={{
+          title: "Notifications",
+          tabBarBadge: unread > 0 ? unread : undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.hazard, color: "#FFFFFF", fontSize: 11 },
+        }}
+      />
     </Tabs.Navigator>
   );
 }

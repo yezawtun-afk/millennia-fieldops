@@ -36,16 +36,22 @@ Demo accounts and a full end-of-project snapshot live in
 ## The three parts
 
 ### 1. Mobile app (`mobile/`) - for field workers
-- Email/password sign-in (Supabase Auth), session kept on the phone.
+- Email/password sign-in (Supabase Auth), session kept on the phone. The profile is cached
+  too, so the app still knows who you are when it starts with no connection.
 - Capture **flora & biodiversity**, **soil & water** and **environmental hazard** records.
 - Automatic **GPS** (expo-location) and **photos** (expo-camera / expo-image-picker).
-- **Offline-first**: records and photos are saved in **SQLite** (expo-sqlite). Finished
-  records upload automatically when a connection returns ("Sync now" also available),
-  and unfinished ones can be parked as **drafts** and completed later from My Records.
+- **Offline-first**: records and photos are saved in **SQLite** (expo-sqlite). Offline, the
+  app says so and asks you to use **Save as draft** (the "Save record" button needs a
+  connection); a draft is opened from My Records and submitted later. Records already
+  queued upload automatically when a connection returns ("Sync now" also available).
 - **My Records** shows each record's review status and the supervisor's comment -
   and lets the worker **delete their own record while it is still pending**
   (also useful: cancel anything still sitting in the upload queue).
-- **Notifications** tell the worker when a record is approved or rejected.
+- **Notifications** tell the worker when a record is approved or rejected - announced on the
+  phone within ~20 seconds while the app is open, with an unread badge on the tab.
+- **Updates from inside the app**: the Home screen has an "App updates" card
+  (expo-updates / EAS Update), so JavaScript improvements can be published without
+  reinstalling the APK.
 
 ### 2. Web dashboard (`web/`) - for supervisors and admins
 - Secure login with role-based access (supervisor vs admin).

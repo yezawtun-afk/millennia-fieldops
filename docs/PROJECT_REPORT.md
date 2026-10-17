@@ -100,14 +100,23 @@ connection exists. This is what makes the app genuinely usable on the ridge with
   | Environmental hazard | hazard with **low / medium / critical** severity |
 
 - Automatic GPS capture (expo-location) and photos (camera or gallery via expo-image-picker).
-- **Offline-first:** finished records go to an *outbox* and upload automatically when
-  connectivity returns (with a manual "Sync now"); unfinished records park as *drafts*
-  and can be completed later from My Records.
+- **Offline-first:** records and photos are written to the phone's own SQLite database
+  first. When the phone is offline the app says so plainly and disables "Save record"
+  (submitting needs the server), directing the worker to **Save as draft** instead; the
+  draft is reopened from My Records and submitted once there is signal. Anything already
+  queued uploads automatically when connectivity returns (with a manual "Sync now"), and
+  the signed-in profile is cached on the device so a cold start offline still works.
+  Unfinished records park as *drafts* and can be completed later.
 - My Records shows each record's review status and the supervisor's comment.
 - The worker can **delete their own record while it is still pending** (before review),
   and cancel anything still queued for upload. Once a supervisor has reviewed a record
   it becomes part of the site history and only an administrator can remove it.
-- Notifications inbox when a record is approved or rejected.
+- Notifications inbox when a record is approved or rejected, **announced on the phone
+  within about 20 seconds while the app is open** (the notification tab also carries an
+  unread badge).
+- **In-app updates** (expo-updates / EAS Update): the Home screen has an "App updates"
+  card with the installed version and a manual check, and JavaScript improvements can be
+  published to installed phones without a new APK.
 
 ### 4.2 Web dashboard (supervisors & admins)
 
@@ -172,6 +181,7 @@ connection exists. This is what makes the app genuinely usable on the ridge with
 | Component | Infrastructure | Detail |
 | --- | --- | --- |
 | Mobile APK | Expo EAS Build (cloud) | profile `preview` → APK for internal distribution; profile `production` → AAB for Play publishing |
+| Mobile over-the-air updates | EAS Update (expo-updates) | build channels `preview` / `production`; `eas update --channel preview` publishes JavaScript changes to installed phones, which pick them up on next launch or via **Home → App updates → Check for updates**. Native changes still require a new build. |
 | Web dashboard | Vercel | root directory `web/`, env vars from `web/.env.local` |
 | Database | Supabase cloud | project `bjlyskwoxpkvepbwaxfc`; schema via `setup_all.sql` one-paste |
 
@@ -262,14 +272,18 @@ worker receives notification → admin exports hazard PDF.
   in Vercel project env vars and redeploy.
 - **No automated test suite / ESLint for the mobile app** (lint suggested as follow-up).
 - **`npm audit` pass** on a branch — post-demo hygiene item, low risk for a demo system.
-- **Push notifications** are in-app inbox only (no APNs/FCM push delivery).
+- **Push notifications** are not true background push: the app announces a review within
+  about 20 seconds *while it is running*, and anything that happened while the app was
+  closed appears on the next launch. Real background delivery needs a Firebase project,
+  an Expo push token and a server-side sender (see future work).
 - Demo data must be cleared/re-run per demo (`07_demo_data.sql` deletes all records).
 
 ---
 
 ## 11. Future work
 
-1. Real push notifications to field phones (expo-notifications + FCM).
+1. Real background push notifications (Firebase project + Expo push token + a
+   server-side sender such as a Supabase Edge Function on the review trigger).
 2. Deployable AAB (profile `production`) and a Play Store listing; or Play-internal test track.
 3. Automated tests (web: Playwright login + review happy-path; API: PostgREST contract tests).
 4. Offline map tiles for full no-coverage operation.
@@ -292,7 +306,9 @@ millennia-fieldops-rewrite/
 │   └── src/
 │       ├── screens/           Home, Login, Register, NewRecord, MyRecords,
 │       │                      RecordDetails, Notifications
-│       ├── context/           AuthContext (session)
+│       ├── lib/               api · sqlite (drafts/outbox) · sync · network ·
+│       │                      notifications (watcher) · updates (OTA)
+│       ├── context/           AuthContext (session + cached profile)
 │       └── navigation/        RootNavigator
 ├── web/                       Next.js admin dashboard (deployed to Vercel)
 │   └── src/app/

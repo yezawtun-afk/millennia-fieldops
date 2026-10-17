@@ -8,9 +8,11 @@ import { syncOutbox } from "./sync";
 import { useOnlineStatus } from "./network";
 
 export function useAutoUpload(): void {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const online = useOnlineStatus();
-  const userId = profile?.id ?? null;
+  // Prefer the session id: it is on the phone already, so uploads can be retried
+  // even when the profile row could not be fetched.
+  const userId = session?.user.id ?? profile?.id ?? null;
 
   useEffect(() => {
     if (!online || !userId) return;

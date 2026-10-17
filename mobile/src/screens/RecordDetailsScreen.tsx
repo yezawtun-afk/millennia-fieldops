@@ -15,7 +15,8 @@ type Props = NativeStackScreenProps<RootStackParamList, "RecordDetails">;
 
 export function RecordDetailsScreen({ route, navigation }: Props) {
   const { id } = route.params;
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
+  const userId = session?.user.id ?? profile?.id ?? null;
   const [record, setRecord] = useState<FieldRecord | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +57,7 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
     );
   }
 
-  const isOwnRecord = Boolean(profile && record.submitted_by === profile.id);
+  const isOwnRecord = Boolean(userId && record.submitted_by === userId);
   // Your own record, not reviewed yet: you may take it back.
   const canDelete = isOwnRecord && record.status === "pending";
 

@@ -17,6 +17,7 @@ import { colors, radius } from "../theme";
 import { enqueueRecord, getOutbox, markPending, saveDraft } from "../lib/sqlite";
 import { syncOutbox } from "../lib/sync";
 import { fetchZones } from "../lib/api";
+import { useOnlineStatus } from "../lib/network";
 import { getCurrentCoordinates } from "../lib/location";
 import { captureFromCamera, pickFromLibrary } from "../lib/photos";
 import { GROWTH_STAGES, HAZARD_TYPES, HEALTH_CONDITIONS, READING_TYPES } from "../lib/format";
@@ -38,7 +39,11 @@ const SEVERITIES: { label: string; value: HazardSeverity }[] = [
 ];
 
 export function NewRecordScreen({ navigation, route }: Props) {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
+  const online = useOnlineStatus();
+  // The session survives restarts on the phone, so it is available offline even
+  // when the profile row could not be fetched (the cached profile covers that).
+  const userId = session?.user.id ?? profile?.id ?? null;
   const [type, setType] = useState<RecordType>(route.params?.type ?? "flora");
   const [zones, setZones] = useState<Zone[]>([]);
   const [zoneId, setZoneId] = useState<string | null>(null);
@@ -64,7 +69,10 @@ export function NewRecordScreen({ navigation, route }: Props) {
   const [readingUnit, setReadingUnit] = useState("");
 
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ kind: "info" | "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    kind: "info" | "success" | "error" | "warning";
+    text: string;
+  } | null>(null);
   // Set when the form is editing an unfinished draft (opened from My records).
   const [draftId, setDraftId] = useState<string | null>(null);
   // Kept so a draft remembers when the observation was actually made.
@@ -198,9 +206,9 @@ export function NewRecordScreen({ navigation, route }: Props) {
     return null;
   }
 
-  // Park an unfinished record. Nothing is uploaded and no detail is required.
+  // Park an unfinished record. This is pure local storage, so it works with no
+  // connection at all and needs no account details.
   async function saveAsDraft() {
-    if (!profile) return;
     setBusy(true);
     setMessage(null);
 
@@ -210,7 +218,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
       setBusy(false);
       Alert.alert(
         "Draft saved",
-        "This record is kept as a draft on this phone. Open My records to finish it later."
+        "This record is kept as a draft on this phone. Open My records to finish it and submit it when you have signal."
       );
       navigation.navigate("Records");
     } catch (error) {
@@ -223,11 +231,24 @@ export function NewRecordScreen({ navigation, route }: Props) {
   }
 
   async function save() {
-    if (!profile) return;
-
     const missing = missingDetail();
     if (missing) {
       setMessage({ kind: "error", text: missing });
+      return;
+    }
+
+    // Submitting needs the server. Offline the button is disabled, and this is
+    // the backstop in case the connection dropped in the meantime.
+    if (!online) {
+      setMessage({
+        kind: "warning",
+        text: "You are offline. Tap Save as draft instead - open it from My records and submit it once you have signal.",
+      });
+      return;
+    }
+
+    if (!userId) {
+      setMessage({ kind: "error", text: "Your account could not be read. Log out and sign in again." });
       return;
     }
 
@@ -245,15 +266,15 @@ export function NewRecordScreen({ navigation, route }: Props) {
 
       reset();
 
-      // Try to upload right away; if offline it stays queued.
-      const result = await syncOutbox(profile.id);
+      // Try to upload right away; if the connection drops it stays queued.
+      const result = await syncOutbox(userId);
       setBusy(false);
 
       if (result.uploaded > 0) {
         Alert.alert("Saved", "The record was uploaded for review.");
       } else {
         Alert.alert(
-          "Saved offline",
+          "Saved on the phone",
           "The record is stored on this phone and will upload automatically when you have a connection."
         );
       }
@@ -281,7 +302,27 @@ export function NewRecordScreen({ navigation, route }: Props) {
         />
 
         <View style={{ height: 16 }} />
-        {message ? <Banner kind={message.kind === "error" ? "error" : message.kind === "success" ? "success" : "info"}>{message.text}</Banner> : null}
+        {!online ? (
+          <Banner kind="warning">
+            You are offline. Save this as a draft now - open it from My records and tap Save record once
+            you have signal again.
+          </Banner>
+        ) : null}
+        {message ? (
+          <Banner
+            kind={
+              message.kind === "error"
+                ? "error"
+                : message.kind === "success"
+                  ? "success"
+                  : message.kind === "warning"
+                    ? "warning"
+                    : "info"
+            }
+          >
+            {message.text}
+          </Banner>
+        ) : null}
 
         <Card style={{ marginBottom: 14 }}>
           <Field label="Title">
@@ -410,12 +451,17 @@ export function NewRecordScreen({ navigation, route }: Props) {
           </View>
         </Card>
 
-        <Button title={busy ? "Saving..." : "Save record"} onPress={save} loading={busy} />
+        <Button
+          title={busy ? "Saving..." : online ? "Save record" : "Save record (needs connection)"}
+          onPress={save}
+          loading={busy}
+          disabled={!online}
+        />
         <View style={{ height: 10 }} />
         <Button title="Save as draft" variant="secondary" onPress={saveAsDraft} disabled={busy} />
         <Text style={styles.footerHint}>
           Records save on the phone first, then upload automatically - so you can keep working with no
-          signal. Still busy with the form? Tap "Save as draft" and finish it later from My records.
+          signal. Offline? Use "Save as draft", then submit it from My records when you are back online.
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
