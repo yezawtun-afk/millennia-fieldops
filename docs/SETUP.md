@@ -122,12 +122,14 @@ those folders reappears as a real folder. It is safe to run repeatedly.
 
 ## 6. Deploy
 
+Step-by-step instructions are in **[DEPLOY.md](DEPLOY.md)**. In short:
+
 - **Web dashboard** -> Vercel (https://vercel.com): import the repo, set the root
-  directory to `web`, and add `NEXT_PUBLIC_SUPABASE_URL` and
-  `NEXT_PUBLIC_SUPABASE_ANON_KEY` as environment variables.
+  directory to `web`, add the Supabase environment variables.
 - **Backend / database / storage** -> already live on Supabase cloud.
-- **Mobile app** -> run with Expo Go for demos, or build with `eas build`
-  (https://docs.expo.dev/build/introduction/).
+- **Mobile app** -> `eas build --platform android --profile preview` produces an
+  installable APK (Expo builds it in the cloud, no Android Studio needed). Expo Go
+  still works for quick testing.
 
 ---
 
