@@ -25,10 +25,11 @@
         "backgroundColor": "#0F2E22"
       },
       "permissions": [
-        "CAMERA",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "READ_MEDIA_IMAGES"
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "plugins": [
@@ -53,6 +54,12 @@
           "resizeMode": "contain"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "51abb8a6-6521-42ba-b27e-a421b6f72b92"
+      }
+    },
+    "owner": "yezawtun_afk"
   }
 }
