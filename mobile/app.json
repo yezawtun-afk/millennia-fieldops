@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "scheme": "millenniafieldops",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -19,6 +20,10 @@
     },
     "android": {
       "package": "my.millennia.fieldops",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F2E22"
+      },
       "permissions": [
         "CAMERA",
         "ACCESS_FINE_LOCATION",
