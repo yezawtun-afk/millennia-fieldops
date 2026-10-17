@@ -268,6 +268,10 @@ worker receives notification → admin exports hazard PDF.
 4. Offline map tiles for full no-coverage operation.
 5. Zone geofence prompts on capture (auto-select nearest zone from GPS).
 6. Reporting trends over time (e.g. correlate hazard severity by zone per month).
+7. iOS TestFlight distribution - the code is already cross-platform and the iOS
+   permission strings are configured in `app.json`; the only requirement is the paid
+   Apple Developer Program (US$99/yr). The full runbook is in `docs/DEPLOY.md` ("iOS
+   (optional)").
 
 ---
 

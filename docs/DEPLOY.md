@@ -72,6 +72,51 @@ Both profiles carry the Supabase URL and publishable key in their `env` block. T
 deliberate: `mobile/.env` is git-ignored, so Expo's servers never see it. The publishable
 key is safe to ship inside an app - Row Level Security is what protects the data.
 
+### iOS (optional): what it takes to also run the app on an iPhone
+
+The source code already supports iOS - the same React Native screens work on both
+platforms, and the iOS camera/location/photo permission texts are already configured in
+`mobile/app.json`. The gap is **signing and distribution**: Apple requires every iPhone
+app to be signed with Apple certificates and installed one of three ways, and all three
+need a paid **Apple Developer Program** account (US$99/year, ~1 day to approve):
+
+| Route | Install link style | Best for |
+| --- | --- | --- |
+| **TestFlight** (recommended) | email invite from your Apple account | team/assessor testing |
+| App Store | public | long-term release; adds a 1-3 day Apple review |
+| Ad-hoc | up to 100 registered device UDIDs | small fixed-set testing |
+
+If you enrol, the steps are:
+
+1. In `mobile/app.json`, give the iOS app its own identity. Add `"bundleIdentifier"` to
+   the `ios` block (same convention as the Android package, lowercase):
+   ```json
+   "ios": {
+     "supportsTablet": true,
+     "bundleIdentifier": "my.millennia.fieldops",
+     ...
+   }
+   ```
+2. ```powershell
+   cd "mobile"
+   eas build --platform ios --profile preview
+   ```
+   EAS Build runs the whole iOS compile **on Apple hardware in Expo's cloud** - you never
+   need a Mac. First run, it asks you to **log in with your Apple Developer account**
+   (your Apple ID email + a session-specific password created at
+   https://appleid.apple.com), then it creates the certificates, App IDs and
+   **provisioning profiles** automatically.
+3. TestFlight route: run `eas build --platform ios --profile production` instead, pick
+   **Submit to TestFlight**, and invite testers from your App Store Connect
+   account at https://appstoreconnect.apple.com (People -> TestFlight). Testers install
+   the "TestFlight" app from the App Store, open the invite, and Millennia FieldOps
+   installs like a normal app.
+
+Without an Apple Developer account there is no supported way to install the app on an
+iPhone for other people. For a capstone demo, the Android APK plus the web dashboard
+is sufficient; mention in your report that the codebase is cross-platform and that iOS
+distribution is gated only by Apple's paid signing requirement.
+
 ---
 
 ## 2. Deploy the web dashboard to Vercel
