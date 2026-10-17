@@ -72,5 +72,10 @@ function New-Monogram {
 New-Monogram -Path (Join-Path $assets "icon.png")           -Size 1024 -FontSize 700 -Transparent $false
 # Android adaptive foreground: transparent, kept inside the ~66% safe circle.
 New-Monogram -Path (Join-Path $assets "adaptive-icon.png")  -Size 1024 -FontSize 520 -Transparent $true
+# Splash screen mark: transparent, drawn on the #0F2E22 splash background.
+# expo-splash-screen requires an `image`; without one its generated theme still
+# references @drawable/splashscreen_logo and the Android resource linking step
+# fails with "resource drawable/splashscreen_logo not found".
+New-Monogram -Path (Join-Path $assets "splash-icon.png")    -Size 1024 -FontSize 620 -Transparent $true
 
 Write-Output "Done."
