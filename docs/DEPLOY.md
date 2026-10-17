@@ -254,3 +254,5 @@ and supervisor).
 | Vercel build fails with "No Next.js version detected" | The **Root Directory** is not set to `web`. |
 | Deployed site loads but every page errors | Missing environment variables on Vercel. Add them and **Redeploy**. |
 | "Create user" in the web Users page fails with 401 | `SUPABASE_SERVICE_ROLE_KEY` on Vercel is wrong or missing. Users can also self-register from the mobile app. |
+| Web says "Check for updates" is unavailable / the Home card says the build cannot update itself | That APK was built before `expo-updates` was added, so it cannot receive over-the-air bundles. Install the newest APK once; every APK built from then on can update itself. |
+| `eas update` fails with "channel not found" or "no compatible runtime" | The build profile has no `channel` (it does now: `preview` / `production`) or `expo.version` in `app.json` was bumped after the APK was built. Bump the version only together with a new APK, then update on the matching channel. |

@@ -7,7 +7,7 @@ import { countDrafts, countPending } from "../lib/sqlite";
 import { syncOutbox } from "../lib/sync";
 import { fetchMyRecords } from "../lib/api";
 import { useOnlineStatus } from "../lib/network";
-import { appVersion, applyUpdate, checkForUpdate } from "../lib/updates";
+import { appVersion, applyUpdate, checkForUpdate, runningBundle } from "../lib/updates";
 import { Banner, Button, Card, Pill, SectionTitle } from "../components/ui";
 import { colors } from "../theme";
 import {
@@ -271,8 +271,8 @@ export function HomeScreen({ navigation }: Props) {
       <Card style={{ marginTop: 14, marginBottom: 8 }}>
         <SectionTitle>App updates</SectionTitle>
         <Text style={styles.pendingText}>
-          Version {appVersion()}. Improvements to the app can arrive without reinstalling it - check
-          any time, or accept the prompt when one is waiting.
+          Version {appVersion()} ({runningBundle()}). Improvements to the app can arrive without
+          reinstalling it - check any time, or accept the prompt when one is waiting.
         </Text>
         {updateNote ? <Text style={styles.updateNote}>{updateNote}</Text> : null}
         <View style={{ height: 10 }} />

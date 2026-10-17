@@ -27,6 +27,22 @@ export function appVersion(): string {
   return Constants.expoConfig?.version ?? "unknown";
 }
 
+/**
+ * Which bundle is actually running: the one baked into the APK, or an
+ * over-the-air update that has since been downloaded. Shown on the Home card so
+ * an update landing can be seen without guessing.
+ */
+export function runningBundle(): string {
+  if (!Updates.isEnabled) return "development build (updates off)";
+  if (!Updates.updateId) return "built-in bundle";
+  const when = Updates.createdAt;
+  if (!when) return "downloaded update";
+  return `downloaded update of ${when.toLocaleDateString()} ${when.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}`;
+}
+
 /** Asks the update server whether a newer bundle exists. Downloads nothing. */
 export async function checkForUpdate(): Promise<UpdateCheck> {
   if (!Updates.isEnabled) {
