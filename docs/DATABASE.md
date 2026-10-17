@@ -96,3 +96,20 @@ erDiagram
 
 `records` is indexed on `zone_id`, `status`, `type`, `observed_date`, `submitted_by`
 and `severity` so the dashboard filters stay fast.
+
+## Row Level Security rules that matter
+
+| Rule | Where | Effect |
+| --- | --- | --- |
+| Read records | `02_policies.sql` | any signed-in user sees the whole site |
+| Insert as yourself, always `pending` | `02_policies.sql` | nobody can publish an approved record directly |
+| Edit while pending | `02_policies.sql` | the owner may fix their own record until it is reviewed |
+| Review (approve / reject) | `02_policies.sql` | supervisors and admins |
+| Delete any record | `02_policies.sql` | admins |
+| Delete your own record **while pending** | `09_delete_own_pending.sql` | field workers can take back a mistake that has not been reviewed |
+| Delete photos | `03_storage.sql` | the uploader (their own folder) or an admin |
+| Notifications | `02_policies.sql` | each user only ever sees their own |
+
+Deleting a record cascades: its review notifications go with it
+(`notifications.record_id ... on delete cascade`), and both apps clear the record's
+photos from the `record-photos` bucket at the same time.

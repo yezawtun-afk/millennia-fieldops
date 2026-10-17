@@ -5,6 +5,7 @@ import { PageHeader, TypePill, StatusBadge, SeverityBadge, EmptyState } from "@/
 import { formatDate, recordSubtitle } from "@/lib/format";
 import { RecordsFilters } from "@/components/RecordsFilters";
 import { ExportButtons } from "@/components/ExportButtons";
+import { DeleteRecordButton } from "@/components/DeleteRecordButton";
 import type { HazardSeverity } from "@/lib/types";
 
 type SearchParams = Promise<{
@@ -32,6 +33,7 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
   ]);
 
   const isReviewer = profile?.role === "supervisor" || profile?.role === "admin";
+  const isAdmin = profile?.role === "admin";
   const exportQuery = new URLSearchParams(
     Object.entries({
       q: params.q ?? "",
@@ -69,6 +71,7 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
                   <th className="px-4 py-3 font-semibold">Observed</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
                   <th className="px-4 py-3 font-semibold">Submitted by</th>
+                  {isAdmin ? <th className="px-4 py-3 text-right font-semibold">Actions</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -92,6 +95,16 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
                       <StatusBadge status={r.status} />
                     </td>
                     <td className="px-4 py-3 text-muted">{r.submitter?.full_name ?? "-"}</td>
+                    {isAdmin ? (
+                      <td className="px-4 py-3 text-right">
+                        <DeleteRecordButton
+                          compact
+                          recordId={r.id}
+                          title={r.title}
+                          photos={r.photos ?? []}
+                        />
+                      </td>
+                    ) : null}
                   </tr>
                 ))}
               </tbody>
@@ -99,6 +112,14 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
           </div>
         </div>
       )}
+
+      {isAdmin ? (
+        <p className="mt-3 text-xs text-muted">
+          As an administrator you can delete a record permanently with the bin icon. Deleting a
+          record also removes its photos and its review notifications. Field workers can delete
+          their own records only while they are still pending.
+        </p>
+      ) : null}
 
       {!isReviewer ? (
         <p className="mt-3 text-xs text-muted">

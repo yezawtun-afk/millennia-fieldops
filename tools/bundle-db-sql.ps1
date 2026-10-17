@@ -14,6 +14,8 @@
 #
 # 07_demo_data.sql is deliberately NOT included: it deletes existing records and
 # expects at least one signed-up account, so it is run separately and later.
+# 08_backfill_profiles.sql is also separate: it only repairs accounts that were
+# created before the schema existed.
 
 param(
     [string]$Root = (Split-Path -Parent $PSScriptRoot),
@@ -24,7 +26,8 @@ param(
         "03_storage.sql",
         "04_triggers.sql",
         "05_seed.sql",
-        "06_severity_levels.sql"
+        "06_severity_levels.sql",
+        "09_delete_own_pending.sql"
     )
 )
 

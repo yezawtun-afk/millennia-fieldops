@@ -1,5 +1,5 @@
 // Read helpers that talk to Supabase.
-import { supabase } from "./supabase";
+import { supabase, PHOTO_BUCKET } from "./supabase";
 import type { AppNotification, FieldRecord, Zone } from "./types";
 
 const RECORD_SELECT = "*, zone:zones ( id, name )";
@@ -44,4 +44,22 @@ export async function signPhotoUrls(paths: string[]): Promise<string[]> {
     .createSignedUrls(paths, 60 * 60);
   if (error || !data) return [];
   return data.map((item) => item.signedUrl).filter((url): url is string => Boolean(url));
+}
+
+// Deletes one of your own records. The database only allows this while the
+// record is still 'pending' (policy records_delete_own_pending), so a record
+// that a supervisor already reviewed is safe from the field app.
+export async function deleteRecord(id: string, photos: string[] = []): Promise<void> {
+  // Photos first, best effort - an orphaned file is better than a record that
+  // would not delete because storage was unhappy.
+  if (photos.length > 0) {
+    try {
+      await supabase.storage.from(PHOTO_BUCKET).remove(photos);
+    } catch {
+      // ignore
+    }
+  }
+
+  const { error } = await supabase.from("records").delete().eq("id", id);
+  if (error) throw new Error(error.message);
 }

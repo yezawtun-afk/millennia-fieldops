@@ -2,7 +2,7 @@ import React, { useCallback, useState } from "react";
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
-import { fetchMyRecords } from "../lib/api";
+import { deleteRecord, fetchMyRecords } from "../lib/api";
 import { listOutbox, removeOutbox } from "../lib/sqlite";
 import { syncOutbox } from "../lib/sync";
 import { Banner, Button, Card, Pill, SectionTitle } from "../components/ui";
@@ -63,18 +63,53 @@ export function MyRecordsScreen({ navigation }: Props) {
   }
 
   // Drafts are unfinished, so they are never uploaded until they are completed.
-  function confirmDeleteDraft(row: OutboxRow) {
-    Alert.alert("Delete draft", `Discard the draft "${row.payload.title}"?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          await removeOutbox(row.localId);
-          await load();
+  // Queued rows have not reached the server yet either, so both can simply be
+  // removed from the local outbox.
+  function confirmDeleteOutbox(row: OutboxRow, kind: "draft" | "queued") {
+    Alert.alert(
+      kind === "draft" ? "Delete draft" : "Cancel upload",
+      kind === "draft"
+        ? `Discard the draft "${row.payload.title}"?`
+        : `Remove "${row.payload.title}" from the upload queue? It has not reached the server yet.`,
+      [
+        { text: "Keep", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            await removeOutbox(row.localId);
+            await load();
+          },
         },
-      },
-    ]);
+      ]
+    );
+  }
+
+  // A record that already reached the server can still be taken back while it is
+  // pending. The database enforces the same rule, so a reviewed record is safe.
+  function confirmDeleteRecord(record: FieldRecord) {
+    Alert.alert(
+      "Delete record",
+      `Delete "${record.title}"? This cannot be undone - the record and its photos are removed for everyone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteRecord(record.id, record.photos ?? []);
+              await load();
+            } catch {
+              Alert.alert(
+                "Could not delete",
+                "Check your connection. Only your own records that are still pending can be deleted."
+              );
+            }
+          },
+        },
+      ]
+    );
   }
 
   return (
@@ -109,7 +144,7 @@ export function MyRecordsScreen({ navigation }: Props) {
                     title="Delete"
                     variant="danger"
                     style={styles.draftButton}
-                    onPress={() => confirmDeleteDraft(row)}
+                    onPress={() => confirmDeleteOutbox(row, "draft")}
                   />
                 </View>
               </View>
@@ -140,6 +175,12 @@ export function MyRecordsScreen({ navigation }: Props) {
                     />
                   </>
                 ) : null}
+                <View style={{ height: 8 }} />
+                <Button
+                  title="Delete"
+                  variant="danger"
+                  onPress={() => confirmDeleteOutbox(row, "queued")}
+                />
               </View>
               <Pill
                 label={row.status === "error" ? "Upload failed" : "Pending upload"}
@@ -184,12 +225,25 @@ export function MyRecordsScreen({ navigation }: Props) {
             {record.supervisor_feedback ? (
               <Text style={styles.feedback}>Supervisor: {record.supervisor_feedback}</Text>
             ) : null}
-            <View style={{ height: 8 }} />
-            <Button
-              title="View details"
-              variant="secondary"
-              onPress={() => navigation.navigate("RecordDetails", { id: record.id })}
-            />
+            <View style={styles.cardButtons}>
+              <Button
+                title="View details"
+                variant="secondary"
+                style={styles.cardButton}
+                onPress={() => navigation.navigate("RecordDetails", { id: record.id })}
+              />
+              {record.status === "pending" ? (
+                <>
+                  <View style={{ width: 8 }} />
+                  <Button
+                    title="Delete"
+                    variant="danger"
+                    style={styles.cardButton}
+                    onPress={() => confirmDeleteRecord(record)}
+                  />
+                </>
+              ) : null}
+            </View>
           </Card>
         ))
       )}
@@ -212,5 +266,7 @@ const styles = StyleSheet.create({
   recordTitle: { fontSize: 15, fontWeight: "600", color: colors.ink, marginTop: 8 },
   recordMeta: { fontSize: 12, color: colors.muted, marginTop: 2 },
   feedback: { fontSize: 13, color: colors.ink, marginTop: 8, fontStyle: "italic" },
+  cardButtons: { flexDirection: "row", marginTop: 10 },
+  cardButton: { flex: 1 },
   muted: { fontSize: 13, color: colors.muted },
 });

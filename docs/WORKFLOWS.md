@@ -90,7 +90,7 @@ sequenceDiagram
 | Create a record | Yes (own) | Yes (own) | Yes (own) |
 | Read all records | Yes | Yes | Yes |
 | Approve / reject a record | No | Yes | Yes |
-| Delete a record | No | No | Yes |
+| Delete a record | Yes (own, while pending) | No | Yes |
 | Manage zones | No | No | Yes |
 | Manage users / roles / deactivation | No | No | Yes |
 | Export CSV / PDF | No | Yes | Yes |

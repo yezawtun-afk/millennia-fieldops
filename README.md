@@ -42,7 +42,9 @@ Demo accounts and a full end-of-project snapshot live in
 - **Offline-first**: records and photos are saved in **SQLite** (expo-sqlite). Finished
   records upload automatically when a connection returns ("Sync now" also available),
   and unfinished ones can be parked as **drafts** and completed later from My Records.
-- **My Records** shows each record's review status and the supervisor's comment.
+- **My Records** shows each record's review status and the supervisor's comment -
+  and lets the worker **delete their own record while it is still pending**
+  (also useful: cancel anything still sitting in the upload queue).
 - **Notifications** tell the worker when a record is approved or rejected.
 
 ### 2. Web dashboard (`web/`) - for supervisors and admins
@@ -52,6 +54,8 @@ Demo accounts and a full end-of-project snapshot live in
 - Interactive **Leaflet map** of the site with records and monitoring zones.
 - Review and verification: approve/reject with a comment (sent back to the worker).
 - **User management**: create accounts, assign roles, and **deactivate/reactivate** accounts.
+- **Delete records**: administrators can remove a record permanently (bin icon in the
+  records list or on the record page); its photos and notifications go with it.
 - Monitoring **zones** management.
 - **Reports and export**: CSV of filtered records and a **PDF hazard summary**.
 

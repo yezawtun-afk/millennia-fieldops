@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, Image, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { fetchRecord, signPhotoUrls } from "../lib/api";
+import { deleteRecord, fetchRecord, signPhotoUrls } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 import { openInOpenStreetMap } from "../lib/location";
 import { Button, Card, Pill, SectionTitle } from "../components/ui";
 import { colors, radius } from "../theme";
@@ -12,11 +13,13 @@ import type { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "RecordDetails">;
 
-export function RecordDetailsScreen({ route }: Props) {
+export function RecordDetailsScreen({ route, navigation }: Props) {
   const { id } = route.params;
+  const { profile } = useAuth();
   const [record, setRecord] = useState<FieldRecord | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -50,6 +53,39 @@ export function RecordDetailsScreen({ route }: Props) {
       <View style={styles.centered}>
         <Text style={styles.muted}>This record could not be loaded. You may be offline.</Text>
       </View>
+    );
+  }
+
+  const isOwnRecord = Boolean(profile && record.submitted_by === profile.id);
+  // Your own record, not reviewed yet: you may take it back.
+  const canDelete = isOwnRecord && record.status === "pending";
+
+  function confirmDelete() {
+    if (!record) return;
+    Alert.alert(
+      "Delete record",
+      `Delete "${record.title}"? This cannot be undone - the record and its photos are removed for everyone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              await deleteRecord(record.id, record.photos ?? []);
+              navigation.goBack();
+            } catch {
+              Alert.alert(
+                "Could not delete",
+                "You need a connection to delete an uploaded record, and only records that are still pending can be removed."
+              );
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ]
     );
   }
 
@@ -148,7 +184,14 @@ export function RecordDetailsScreen({ route }: Props) {
       <Card style={{ marginTop: 14 }}>
         <SectionTitle>Review</SectionTitle>
         {record.status === "pending" ? (
-          <Text style={styles.muted}>Awaiting review by a supervisor.</Text>
+          <View style={styles.reviewText}>
+            <Text style={styles.muted}>Awaiting review by a supervisor.</Text>
+            {canDelete ? (
+              <Text style={styles.muted}>
+                You can still delete this record yourself until it is reviewed.
+              </Text>
+            ) : null}
+          </View>
         ) : (
           <>
             <Text style={styles.body}>
@@ -161,6 +204,17 @@ export function RecordDetailsScreen({ route }: Props) {
           </>
         )}
       </Card>
+
+      {canDelete ? (
+        <View style={{ marginTop: 14 }}>
+          <Button
+            title={deleting ? "Deleting..." : "Delete this record"}
+            variant="danger"
+            onPress={confirmDelete}
+            loading={deleting}
+          />
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
@@ -180,4 +234,5 @@ const styles = StyleSheet.create({
   photoRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   photo: { width: 100, height: 100, borderRadius: radius.md, backgroundColor: colors.line },
   feedback: { fontSize: 13, color: colors.ink, marginTop: 8, fontStyle: "italic" },
+  reviewText: { gap: 6 },
 });

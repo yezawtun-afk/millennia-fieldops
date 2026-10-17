@@ -106,7 +106,9 @@ create policy zones_delete_admin on public.zones
 --   insert: only as yourself, and always starting as 'pending'
 --   update: a reviewer may update anything; an owner may edit their own
 --           record while it is still pending
---   delete: administrators only
+--   delete: administrators only (policy records_delete_admin);
+--           the submitter may also delete their own record while it is still
+--           pending - that policy lives in 09_delete_own_pending.sql
 -- ---------------------------------------------------------------------------
 drop policy if exists records_select on public.records;
 create policy records_select on public.records

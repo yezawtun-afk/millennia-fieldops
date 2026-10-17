@@ -7,6 +7,7 @@ import { signPhotoUrls } from "@/lib/photos";
 import { Card, StatusBadge, TypePill, SeverityBadge } from "@/components/ui";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { ReviewPanel } from "@/components/ReviewPanel";
+import { DeleteRecordButton } from "@/components/DeleteRecordButton";
 import { MapView } from "@/components/MapView";
 import type { HazardSeverity } from "@/lib/types";
 
@@ -18,6 +19,7 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
   const photoUrls = Object.values(await signPhotoUrls(record.photos ?? []));
 
   const isReviewer = profile.role === "supervisor" || profile.role === "admin";
+  const isAdmin = profile.role === "admin";
 
   const facts: { label: string; value: string | null }[] =
     record.type === "flora"
@@ -60,6 +62,14 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
           <StatusBadge status={record.status} />
           {record.type === "hazard" ? (
             <SeverityBadge severity={record.severity as HazardSeverity | null} />
+          ) : null}
+          {isAdmin ? (
+            <DeleteRecordButton
+              recordId={record.id}
+              title={record.title}
+              photos={record.photos ?? []}
+              redirectTo="/records"
+            />
           ) : null}
         </div>
       </div>

@@ -104,6 +104,9 @@ connection exists. This is what makes the app genuinely usable on the ridge with
   connectivity returns (with a manual "Sync now"); unfinished records park as *drafts*
   and can be completed later from My Records.
 - My Records shows each record's review status and the supervisor's comment.
+- The worker can **delete their own record while it is still pending** (before review),
+  and cancel anything still queued for upload. Once a supervisor has reviewed a record
+  it becomes part of the site history and only an administrator can remove it.
 - Notifications inbox when a record is approved or rejected.
 
 ### 4.2 Web dashboard (supervisors & admins)
@@ -114,6 +117,9 @@ connection exists. This is what makes the app genuinely usable on the ridge with
 - Records management: search, filter, full detail view with photos.
 - Interactive Leaflet map of the site: records plotted over the monitoring zones.
 - Review and verification: approve / reject with a comment, sent back to the worker.
+- **Delete records** (administrators): permanently remove a record from the list or the
+  record page, with a two-click confirmation; its photos and notifications are removed
+  with it.
 - Hazard report export to PDF (`/api/export` route using pdfkit).
 - User management: create accounts, assign roles, deactivate / reactivate.
 - Zone management: create and edit the monitoring zones shown on the map.
@@ -126,8 +132,9 @@ connection exists. This is what makes the app genuinely usable on the ridge with
 - `handle_new_user()` trigger: every new sign-up gets a `profiles` row automatically.
 - Review notification trigger: approving/rejecting a record inserts a notification for
   the submitter.
-- Deployed SQL lives in 9 numbered files (`01_schema` … `08_backfill_profiles`,
-  `07_demo_data`), plus a generated one-paste bundle `setup_all.sql`
+- Deployed SQL lives in 10 numbered files (`01_schema` through
+  `09_delete_own_pending`, plus `07_demo_data` and `08_backfill_profiles` which are
+  optional/repair scripts), together with a generated one-paste bundle `setup_all.sql`
   (see `tools/bundle-db-sql.ps1`).
 
 ---
@@ -295,8 +302,8 @@ millennia-fieldops-rewrite/
 │       ├── (app)/zones/       zone management
 │       ├── (app)/users/       user management
 │       └── api/export/     →  hazard PDF export (pdfkit)
-├── supabase/                  01_schema … 07_demo_data, 08_backfill_profiles,
-│                              generated setup_all.sql bundle (gitignored)
+├── supabase/                  01_schema … 09_delete_own_pending, 07_demo_data,
+│                              08_backfill_profiles, generated setup_all.sql (gitignored)
 ├── tools/                     make-app-icons.ps1 · bundle-db-sql.ps1 · onedrive-links.ps1
 └── docs/                      README · ARCHITECTURE · DATABASE · WORKFLOWS
                                · SETUP · DEPLOY · PROJECT_REPORT (this file)
