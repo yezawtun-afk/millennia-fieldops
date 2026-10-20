@@ -193,7 +193,7 @@ connection exists. This is what makes the app genuinely usable on the ridge with
 | Component | Infrastructure | Detail |
 | --- | --- | --- |
 | Mobile APK | Expo EAS Build (cloud) | profile `preview` → APK for internal distribution; profile `production` → AAB for Play publishing |
-| Mobile over-the-air updates | EAS Update (expo-updates) | build channels `preview` / `production`; `eas update --channel preview` publishes JavaScript changes to installed phones, which pick them up on next launch or via **Home → App updates → Check for updates**. Native changes still require a new build. The Supabase values are stored as EAS *environment variables* for `preview` and `production` (not only in `mobile/.env`), so published bundles carry the backend config. |
+| Mobile over-the-air updates | EAS Update (expo-updates) | build channels `preview` / `production`; `eas update --channel preview` publishes JavaScript changes to installed phones, which pick them up on next launch or via **Home → App → Check for update**. The version number (`2.0.0`) is the native runtime and does not change when an update is published. Native changes still require a new build. The Supabase values are stored as EAS *environment variables* for `preview` and `production` (not only in `mobile/.env`), so published bundles carry the backend config. |
 | Web dashboard | Vercel | root directory `web/`, env vars from `web/.env.local` |
 | Database | Supabase cloud | project `bjlyskwoxpkvepbwaxfc`; schema via `setup_all.sql` one-paste |
 

@@ -49,11 +49,13 @@ Demo accounts and a full end-of-project snapshot live in
   (also useful: cancel anything still sitting in the upload queue).
 - **Notifications** tell the worker when a record is approved or rejected - announced on the
   phone within ~20 seconds while the app is open, with an unread badge on the tab.
-- **Updates from inside the app**: the Home screen has an "App updates" card
+- **Updates from inside the app**: the Home screen has an "App" card
   (expo-updates / EAS Update), so JavaScript improvements can be published without
   reinstalling the APK. It shows whether the app is running the bundle from the APK or a
   downloaded update, and the app offers a restart when a new one is waiting. (The build
   that introduced this had to be installed once - after that, updates are over the air.)
+  A published update never changes the version number: `2.0.0` identifies the native
+  build, not the JavaScript running inside it.
   The Supabase values must exist as EAS environment variables for `preview`/`production`
   before publishing, or the update ships without a backend URL; see `docs/DEPLOY.md`.
 

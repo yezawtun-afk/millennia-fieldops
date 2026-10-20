@@ -72,8 +72,11 @@ eas update --channel preview --message "what changed"
 ```
 
 - The phone picks the update up on its next launch. Users can also pull it in manually:
-  **Home -> App updates -> Check for updates**, and the app offers a restart when it finds
-  one.
+  **Home -> App -> Check for update**, and the app offers a restart when it finds one.
+- A published update does **not** change the version number. `2.0.0` is the *runtime*
+  version (the native build); the update only replaces the JavaScript bundle. If the card
+  says "You are on the latest version", no newer bundle has been published for that
+  channel and runtime yet — publish one with `eas update` above.
 - The build listens on the channel named in `mobile/eas.json` (`preview` for the APK,
   `production` for the Play build), so use `--channel preview` for the demo APK.
 - Publish only *JavaScript* changes. Anything native (a new Expo package, permissions,
@@ -94,8 +97,7 @@ eas update --channel preview --message "what changed"
   They are now stored on EAS for the `preview` and `production` environments, so future
   updates and builds both pick them up.
 - **Check the published bundle before trusting it.** The quickest reliable way is to
-  fetch the manifest the app itself would fetch and look inside the bundle it points to
-  (`verify-ota.js` in the notes below does this end to end):
+  fetch the manifest the app itself would fetch and look inside the bundle it points to:
 
   ```
   GET https://u.expo.dev/<projectId>?channel-name=preview&runtime-version=<appVersion>&platform=android
@@ -287,5 +289,6 @@ and supervisor).
 | Vercel build fails with "No Next.js version detected" | The **Root Directory** is not set to `web`. |
 | Deployed site loads but every page errors | Missing environment variables on Vercel. Add them and **Redeploy**. |
 | "Create user" in the web Users page fails with 401 | `SUPABASE_SERVICE_ROLE_KEY` on Vercel is wrong or missing. Users can also self-register from the mobile app. |
-| Web says "Check for updates" is unavailable / the Home card says the build cannot update itself | That APK was built before `expo-updates` was added, so it cannot receive over-the-air bundles. Install the newest APK once; every APK built from then on can update itself. |
+| App says "Check for update" is unavailable / the Home card says the build cannot update itself | That APK was built before `expo-updates` was added, so it cannot receive over-the-air bundles. Install the newest APK once; every APK built from then on can update itself. |
+| "Check for update" says you are on the latest version, but the design is still the old one | Nothing newer was published. `eas update` publishes the *current working tree*, so commit your changes first, then publish on the build's channel (`eas update --channel preview --environment preview`). The version row stays `2.0.0` on purpose — it is the native build, not the JavaScript bundle. |
 | `eas update` fails with "channel not found" or "no compatible runtime" | The build profile has no `channel` (it does now: `preview` / `production`) or `expo.version` in `app.json` was bumped after the APK was built. Bump the version only together with a new APK, then update on the matching channel. |
