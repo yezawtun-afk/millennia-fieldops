@@ -63,7 +63,8 @@ Demo accounts and a full end-of-project snapshot live in
 - Secure login with role-based access (supervisor vs admin).
 - Dashboard statistics: counts by type, status, **zone** and date, plus hazards by severity.
 - Records management: search, filter, view full details and photos.
-- Interactive **Leaflet map** of the site with records and monitoring zones.
+- Interactive **Leaflet map** of the site, opening on Millennia Village (2.752616,
+  101.906463) with records plotted over the monitoring zones.
 - Review and verification: approve/reject with a comment (sent back to the worker).
 - **User management**: create accounts, assign roles, and **deactivate/reactivate** accounts.
 - **Delete records**: administrators can remove a record permanently (bin icon in the

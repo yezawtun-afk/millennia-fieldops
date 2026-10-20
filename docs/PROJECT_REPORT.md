@@ -3,7 +3,7 @@
 **Project:** Millennia FieldOps (updated build)
 **Type:** Capstone project — field data collection system for Millennia Village quarry restoration
 **Repository:** https://github.com/yezawtun-afk/millennia-fieldops-rewrite (branch `main`)
-**Report date:** 17 October 2026
+**Report date:** 20 October 2026
 **Status:** **Live and demo-ready** — mobile APK built, web dashboard deployed, database seeded.
 
 ---
@@ -24,17 +24,19 @@ The system was built with three parts sharing **one Supabase backend**:
 | Web admin dashboard | `web/` | Next.js (App Router) + TypeScript + Tailwind CSS | Supervisors & admins |
 | Backend & database | `supabase/` | Supabase (PostgreSQL, Auth, Storage, REST) | Shared |
 
-Maps use **Leaflet.js** with **OpenStreetMap** tiles on both platforms.
+Maps use **Leaflet.js** with **OpenStreetMap** tiles; the web map opens on the village
+itself (**2.752616, 101.906463**), with the five monitoring zones drawn around it.
 
-**End-of-project state (all verified on 17 Oct 2026):**
+**End-of-project state (all verified on 20 Oct 2026):**
 
-- **Mobile:** installable Android APK built in the Expo cloud (build `a093df69`, profile
+- **Mobile:** installable Android APK built in the Expo cloud (build `b0700c82`, profile
   `preview`, internal distribution), package `my.millennia.fieldops`, app version 2.0.0,
-  versionCode 2. The app also supports **over-the-air updates** (expo-updates), so later
+  versionCode 3. The app also supports **over-the-air updates** (expo-updates), so later
   JavaScript changes reach an installed phone through `eas update` without a new APK.
 - **Web:** deployed at **https://millennia-fieldops-rewrite.vercel.app/** (HTTP 200, login redirect working).
-- **Database:** schema, 5 monitoring zones, 3 role-correct profiles, 71 demo records and
-  40 worker notifications all present and verified over the production REST API.
+- **Database:** schema, 5 monitoring zones, 4 profiles (admin, supervisor, two field
+  workers), 70 demo records and 40 worker notifications all present and verified over
+  the production REST API.
 - All 21 commits pushed; working tree clean.
 
 ---
@@ -205,9 +207,10 @@ connection exists. This is what makes the app genuinely usable on the ridge with
 | `supervisor@millennia.my` | `Super1234` | supervisor |
 | `worker@millennia.my` | `Worker1234` | field_worker |
 
-**Live database contents (verified 17 Oct 2026):** 5 zones, 3 role-correct profiles,
-71 demo records across all types/severities/statuses (from `07_demo_data.sql`),
-40 notifications visible to the worker account.
+**Live database contents (verified 20 Oct 2026):** 5 zones laid around Millennia Village
+(2.752616, 101.906463), 4 profiles (admin, supervisor, two field workers), 70 demo records
+across all types/severities/statuses (from `07_demo_data.sql`), and 40 notifications
+visible to the worker account. Every record sits inside its zone's radius.
 
 **Build/Expo details:** project linked as `@yezawtun_afk/millennia-fieldops`
 (projectId `51abb8a6-6521-42ba-b27e-a421b6f72b92`), Android keystore generated and
@@ -275,21 +278,23 @@ A build of this kind always hits a few hard blockers. The final rounds, in order
 
 ---
 
-## 9. Verification performed (17 Oct 2026)
+## 9. Verification performed (17–20 Oct 2026)
 
 | Check | Result |
 | --- | --- |
 | Vercel site reachable, `/` redirects to `/login`, page title correct | ✅ |
 | Supabase auth health (`/auth/v1/health`) | ✅ 200 |
 | Login for admin / supervisor / worker test accounts | ✅ all three |
-| `zones` table — 5 named zones with correct colours/radii | ✅ |
-| `profiles` — 3 rows, roles admin / supervisor / field_worker | ✅ |
-| `records` — 71 demo rows | ✅ |
+| `zones` table — 5 named zones around the village, colours/radii intact | ✅ |
+| Every record inside its own zone's radius, none further than 1.5 km from the site | ✅ 70 of 70 |
+| `profiles` — 4 rows, roles admin / supervisor / field_worker | ✅ |
+| `records` — 70 demo rows (14 per zone) | ✅ |
 | `notifications` — worker sees 40 (per-user RLS) | ✅ |
 | Mobile splash/config sanity (`expo config --type prebuild`) | ✅ clean |
 | Mobile TypeScript check after the offline/updates/notification work (`tsc --noEmit`) | ✅ clean |
-| EAS cloud build `a093df69` profile `preview` | ✅ FINISHED, versionCode 2, APK produced |
-| Published APK contains the Supabase config (byte search of `assets/index.android.bundle`) | ✅ host + key present |
+| Web TypeScript check and production build after the restyle | ✅ clean, 10 routes |
+| EAS cloud build `b0700c82` profile `preview` | ✅ FINISHED, versionCode 3, APK produced |
+| Published APK contains the Supabase config (byte search of the bundle) | ✅ host + key present |
 | Over-the-air update published to channel `preview`, runtime `2.0.0` | ✅ manifest served, bundle contains the Supabase config |
 | First OTA attempt without EAS environment variables | ❌ caught and rolled back before any phone could apply it |
 
@@ -375,5 +380,5 @@ millennia-fieldops-rewrite/
 ---
 
 *Prepared by the Millennia FieldOps project — everything above reflects the verified
-state of the live system as of 17 October 2026 (working tree clean, everything pushed;
-mobile work in commit `de0ddea`, documentation in the commits that follow it).*
+state of the live system as of 20 October 2026 (working tree clean, everything pushed;
+the restyle and review fixes are in commit `540914d`, the re-siting in `d89d05c`).*

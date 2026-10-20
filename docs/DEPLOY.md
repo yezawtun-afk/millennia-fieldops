@@ -265,7 +265,9 @@ Then create your first admin account:
 
 `07_demo_data.sql` is separate on purpose: it deletes every existing record, and it
 needs at least one field worker account to already exist. Run it only when you want a
-fresh randomised demo set.
+fresh randomised demo set. Records are placed from each zone's centre and radius, so
+`05_seed.sql` followed by `07_demo_data.sql` rebuilds the demo at the village
+coordinates in the seed file.
 
 Setup done but the apps still fail after login? If accounts were created **before**
 the schema existed, they have no `profiles` row. Run `08_backfill_profiles.sql`

@@ -27,7 +27,8 @@ In the Supabase dashboard, open **SQL Editor -> New query**. Run these files fro
 2. `02_policies.sql` - Row Level Security
 3. `03_storage.sql` - the photo bucket and its rules
 4. `04_triggers.sql` - auto-create profiles, review notifications
-5. `05_seed.sql` - the 5 monitoring zones
+5. `05_seed.sql` - the 5 monitoring zones. Safe to re-run: it upserts on the zone
+   name, so running it again moves the five village zones to the coordinates in the file.
 6. `06_severity_levels.sql` - **only for a database created before this file existed**:
    rebuilds the hazard severity enum as Low / Medium / Critical. It is safe to run
    anyway (it does nothing if there is no `high` value left).
