@@ -22,7 +22,10 @@ export interface MapZone {
   name: string;
 }
 
-const DEFAULT_CENTER: [number, number] = [2.9125, 101.8435];
+// Millennia Village: the map opens on the site itself, not on whatever happens
+// to be the average of the pins, so one far-away GPS reading cannot drag it off.
+export const SITE_CENTER: [number, number] = [2.752615639977973, 101.90646329852517];
+const SITE_ZOOM = 16;
 
 export function LeafletMap({
   markers,
@@ -33,21 +36,14 @@ export function LeafletMap({
   zones: MapZone[];
   height: number | string;
 }) {
-  const points: [number, number][] = [
-    ...markers.map((m) => [m.lat, m.lng] as [number, number]),
-    ...zones.map((z) => [z.lat, z.lng] as [number, number]),
-  ];
-  const center: [number, number] =
-    points.length > 0
-      ? [
-          points.reduce((s, p) => s + p[0], 0) / points.length,
-          points.reduce((s, p) => s + p[1], 0) / points.length,
-        ]
-      : DEFAULT_CENTER;
-
   return (
     <div className="overflow-hidden" style={{ height }}>
-      <MapContainer center={center} zoom={15} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+      <MapContainer
+        center={SITE_CENTER}
+        zoom={SITE_ZOOM}
+        style={{ height: "100%", width: "100%" }}
+        scrollWheelZoom
+      >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

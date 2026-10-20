@@ -11,8 +11,8 @@ const EMPTY = {
   name: "",
   description: "",
   color: "#1f6b4a",
-  center_lat: "2.9125",
-  center_lng: "101.8435",
+  center_lat: "2.752615639977973",
+  center_lng: "101.90646329852517",
   radius_m: "150",
 };
 

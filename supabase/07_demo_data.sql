@@ -24,6 +24,8 @@ delete from public.records;
 -- ---------------------------------------------------------------------------
 -- Random mix of records: ~70 rows spread over the last ~75 days, across all
 -- zones, all three types and all three statuses, with type-appropriate detail.
+-- Positions are derived from each zone's centre and radius (05_seed.sql), so
+-- re-running 05 and then this file re-sites every record with the village.
 -- ---------------------------------------------------------------------------
 with zone_list as (
   select
@@ -108,8 +110,10 @@ select
   end,
   z.id,
   d.observed_at,
-  z.center_lat + (d.lat_jitter - 0.5) * 0.0014,
-  z.center_lng + (d.lng_jitter - 0.5) * 0.0014,
+  -- Scatter the pin inside its zone (jitter scaled by the zone radius), so the
+  -- map fills each circle instead of stacking every record at the centre.
+  z.center_lat + (d.lat_jitter - 0.5) * (z.radius_m / 110574.0) * 1.5,
+  z.center_lng + (d.lng_jitter - 0.5) * (z.radius_m / (111320.0 * cos(radians(z.center_lat)))) * 1.5,
   '[]'::jsonb,
   d.note,
   d.rstatus,
