@@ -38,28 +38,31 @@ export const TYPE_TILE_STYLES: Record<RecordType, string> = {
 };
 
 export const STATUS_STYLES: Record<RecordStatus, string> = {
-  pending: "bg-pending-soft text-pending",
-  approved: "bg-approved-soft text-approved",
-  rejected: "bg-rejected-soft text-rejected",
+  pending: "bg-warning-soft text-warning-ink",
+  approved: "bg-positive-soft text-positive-ink",
+  rejected: "bg-negative-soft text-negative-ink",
 };
 
 export const SEVERITY_STYLES: Record<HazardSeverity, string> = {
-  low: "bg-sev-low/15 text-sev-low",
-  medium: "bg-sev-medium/15 text-sev-medium",
-  critical: "bg-sev-critical/15 text-sev-critical",
+  low: "bg-sev-low/10 text-sev-low",
+  medium: "bg-sev-medium/10 text-sev-medium",
+  critical: "bg-sev-critical/10 text-sev-critical",
 };
 
 export const TYPE_CHART_COLORS: Record<RecordType, string> = {
-  flora: "#16A34A",
-  soil_water: "#0284C7",
-  hazard: "#DC2626",
+  flora: "#1F6B4A",
+  soil_water: "#2B6CB0",
+  hazard: "#C4242A",
 };
 
 export const SEVERITY_CHART_COLORS: Record<HazardSeverity, string> = {
-  low: "#F59E0B",
-  medium: "#EA580C",
+  low: "#8A6516",
+  medium: "#C2410C",
   critical: "#991B1B",
 };
+
+// The single chart hue, and the ramp used where severity has to advance.
+export const CHART_HUE = "#1F6B4A";
 
 export const GROWTH_STAGES = ["Not specified", "Seedling", "Sapling", "Mature"];
 export const HEALTH_CONDITIONS = ["Healthy", "Stressed", "Diseased", "Dying", "Dead"];

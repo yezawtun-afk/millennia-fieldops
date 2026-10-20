@@ -3,10 +3,8 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
+import { btnGhost, selectClass } from "@/components/ui";
 import type { Zone } from "@/lib/types";
-
-const selectClass =
-  "rounded-md border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-primary";
 
 export function RecordsFilters({ zones }: { zones: Zone[] }) {
   const router = useRouter();
@@ -26,51 +24,79 @@ export function RecordsFilters({ zones }: { zones: Zone[] }) {
       if (value) params.set(key, value);
       else params.delete(key);
     }
-    router.push(`${pathname}?${params.toString()}`);
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
   }
 
-  const hasFilters = ["q", "type", "status", "severity", "zone"].some((k) => searchParams.get(k));
+  const hasFilters = ["q", "type", "status", "severity", "zone"].some((key) =>
+    searchParams.get(key)
+  );
 
   return (
-    <div className="mb-4 grid gap-2 rounded-lg border border-line bg-white p-3 sm:grid-cols-2 lg:grid-cols-5">
+    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
       <form
-        onSubmit={(e) => {
-          e.preventDefault();
+        onSubmit={(event) => {
+          event.preventDefault();
           apply({ q });
         }}
-        className="relative block sm:col-span-2 lg:col-span-1"
+        className="relative w-full sm:w-[260px]"
+        role="search"
       >
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+        <Search
+          className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-faint"
+          strokeWidth={1.7}
+        />
         <input
           value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search title, species, notes..."
-          className="w-full rounded-md border border-line bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-primary"
+          onChange={(event) => setQ(event.target.value)}
+          placeholder="Search title, species, notes"
+          aria-label="Search records"
+          className="h-9 w-full rounded-control border border-control bg-sheet pl-8 pr-3 text-[13px] text-ink placeholder:text-faint focus:border-accent focus:outline-none"
         />
       </form>
 
-      <select value={searchParams.get("type") ?? ""} onChange={(e) => apply({ type: e.target.value })} className={selectClass}>
+      <select
+        value={searchParams.get("type") ?? ""}
+        onChange={(event) => apply({ type: event.target.value })}
+        aria-label="Filter by type"
+        className={`${selectClass} sm:w-[136px]`}
+      >
         <option value="">All types</option>
         <option value="flora">Flora</option>
-        <option value="soil_water">Soil/Water</option>
+        <option value="soil_water">Soil &amp; water</option>
         <option value="hazard">Hazard</option>
       </select>
 
-      <select value={searchParams.get("status") ?? ""} onChange={(e) => apply({ status: e.target.value })} className={selectClass}>
+      <select
+        value={searchParams.get("status") ?? ""}
+        onChange={(event) => apply({ status: event.target.value })}
+        aria-label="Filter by status"
+        className={`${selectClass} sm:w-[150px]`}
+      >
         <option value="">All statuses</option>
         <option value="pending">Pending review</option>
         <option value="approved">Approved</option>
         <option value="rejected">Rejected</option>
       </select>
 
-      <select value={searchParams.get("severity") ?? ""} onChange={(e) => apply({ severity: e.target.value })} className={selectClass}>
+      <select
+        value={searchParams.get("severity") ?? ""}
+        onChange={(event) => apply({ severity: event.target.value })}
+        aria-label="Filter by severity"
+        className={`${selectClass} sm:w-[146px]`}
+      >
         <option value="">All severities</option>
         <option value="low">Low</option>
         <option value="medium">Medium</option>
         <option value="critical">Critical</option>
       </select>
 
-      <select value={searchParams.get("zone") ?? ""} onChange={(e) => apply({ zone: e.target.value })} className={selectClass}>
+      <select
+        value={searchParams.get("zone") ?? ""}
+        onChange={(event) => apply({ zone: event.target.value })}
+        aria-label="Filter by zone"
+        className={`${selectClass} sm:w-[150px]`}
+      >
         <option value="">All zones</option>
         {zones.map((zone) => (
           <option key={zone.id} value={zone.id}>
@@ -83,9 +109,9 @@ export function RecordsFilters({ zones }: { zones: Zone[] }) {
         <button
           type="button"
           onClick={() => router.push(pathname)}
-          className="flex items-center gap-1 rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-muted hover:text-ink"
+          className={`${btnGhost} sm:ml-auto`}
         >
-          <X className="h-4 w-4" /> Clear
+          <X className="h-4 w-4" strokeWidth={1.7} /> Clear filters
         </button>
       ) : null}
     </div>

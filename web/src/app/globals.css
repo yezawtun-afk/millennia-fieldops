@@ -1,41 +1,76 @@
 @import "tailwindcss";
 
-/* Millennia FieldOps colours and fonts.
-   These become Tailwind classes such as bg-forest, text-flora, border-line. */
+/* Millennia FieldOps design tokens.
+   Direction: "framed sheet" (tasteskill): a tinted green-grey frame holds the
+   navigation, and the work sits on a white sheet inset from the window edge.
+   One ground, one ink, one accent. Colour goes on data, not on chrome. */
 @theme {
-  --color-forest: #0f2e22;
-  --color-forest-soft: #16382b;
-  --color-forest-line: #23483a;
-  --color-primary: #1f6b4a;
-  --color-primary-dark: #175539;
-  --color-primary-soft: #e8f0ea;
-  --color-page: #f7f8f7;
+  /* Surfaces: frame -> sheet -> panel, separated by one tone step, never shadow */
+  --color-frame: #edf0ea;
+  --color-frame-soft: #e3e8e0;
+  --color-sheet: #ffffff;
+  --color-ground: #fbfcfb;
+  --color-panel: #f7f8f6;
+
+  /* Three steps of line: edge, row rule, control border */
+  --color-line: #e7eae5;
+  --color-rule: #f1f3ef;
+  --color-control: #d3d8d2;
+
+  /* Three tiers of text, all at 4.5:1 or better on white */
   --color-ink: #14181b;
-  --color-muted: #6b7280;
-  --color-line: #e4e7e5;
+  --color-muted: #5b615c;
+  --color-faint: #6b6f6a;
 
-  --color-flora: #16a34a;
-  --color-flora-soft: #e7f6ec;
-  --color-water: #0284c7;
-  --color-water-soft: #e3f2fb;
-  --color-hazard: #dc2626;
-  --color-hazard-soft: #fdeaea;
+  /* The one action: near-black with the forest cast of the product */
+  --color-primary: #16342a;
+  --color-primary-hover: #0e2820;
+  --color-accent: #1f6b4a;
+  --color-accent-soft: #eaf1ec;
 
-  --color-pending: #f59e0b;
-  --color-pending-soft: #fdf3e0;
-  --color-approved: #16a34a;
-  --color-approved-soft: #e7f6ec;
-  --color-rejected: #dc2626;
-  --color-rejected-soft: #fdeaea;
+  /* Status: pale tint + dark ink of the same hue */
+  --color-positive: #247b50;
+  --color-positive-soft: #dcfae5;
+  --color-positive-ink: #04250e;
+  --color-negative: #c4242a;
+  --color-negative-soft: #ffedea;
+  --color-negative-ink: #831c1e;
+  --color-warning: #92400e;
+  --color-warning-soft: #fffbeb;
+  --color-warning-ink: #92400e;
 
-  --color-sev-low: #f59e0b;
-  --color-sev-medium: #ea580c;
+  /* Data hues: three at most on a screen, always on data, never on chrome */
+  --color-flora: #1f6b4a;
+  --color-flora-soft: #e7f2ea;
+  --color-water: #2b6cb0;
+  --color-water-soft: #e8f0f9;
+  --color-hazard: #c4242a;
+  --color-hazard-soft: #fdeeee;
+  --color-sev-low: #8a6516;
+  --color-sev-medium: #c2410c;
   --color-sev-critical: #991b1b;
 
-  --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  /* Names still used by a few panels, mapped onto the palette above. */
+  --color-page: #f7f8f6;
+  --color-primary-soft: #eaf1ec;
+  --color-primary-dark: #0e2820;
+  --color-forest: #16342a;
+  --color-forest-soft: #eef1ec;
+  --color-pending: #92400e;
+  --color-pending-soft: #fffbeb;
+  --color-approved: #247b50;
+  --color-approved-soft: #dcfae5;
+  --color-rejected: #c4242a;
+  --color-rejected-soft: #ffedea;
+
+  --radius-sheet: 16px;
+  --radius-card: 8px;
+  --radius-control: 6px;
+
+  --font-sans: var(--font-plex), "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-/* Base look: off-white page, calm text colour. */
 html,
 body {
   height: 100%;
@@ -43,13 +78,22 @@ body {
 
 body {
   margin: 0;
-  background-color: var(--color-page);
+  background-color: var(--color-frame);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Touch targets at least 44 px tall on phones. */
+/* Numbers line up wherever they are compared. */
+.num,
+table,
+.kpi-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Touch targets at least 44px tall on phones. */
 @media (max-width: 640px) {
   button,
   a,
@@ -59,13 +103,13 @@ body {
   }
 }
 
-/* Leaflet needs its panes to sit under our sidebar and dialogs. */
+/* Leaflet needs its panes to sit under the sidebar and dialogs. */
 .leaflet-container {
   font-family: var(--font-sans);
   z-index: 0;
 }
 
-/* A simple slide-in animation for the phone drawer. */
+/* The phone drawer is the only thing that moves on its own. */
 @keyframes fieldops-drawer-in {
   from {
     transform: translateX(-100%);
@@ -79,7 +123,18 @@ body {
   animation: fieldops-drawer-in 0.18s ease-out;
 }
 
-/* Photos in a report should keep their shape. */
+@media (prefers-reduced-motion: reduce) {
+  .drawer-in {
+    animation: none;
+  }
+}
+
 .photo-thumb {
   object-fit: cover;
+}
+
+/* Focus is always visible and always the same ring. */
+:where(a, button, select, input, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }

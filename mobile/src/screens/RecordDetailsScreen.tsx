@@ -6,7 +6,7 @@ import { deleteRecord, fetchRecord, signPhotoUrls } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { openInOpenStreetMap } from "../lib/location";
 import { Button, Card, Pill, SectionTitle } from "../components/ui";
-import { colors, radius } from "../theme";
+import { colors, radius, spacing, type } from "../theme";
 import { STATUS_COLORS, STATUS_LABELS, TYPE_COLORS, TYPE_LABELS, formatDate, formatDateTime, SEVERITY_COLORS } from "../lib/format";
 import type { FieldRecord } from "../lib/types";
 import type { RootStackParamList } from "../navigation/types";
@@ -105,8 +105,13 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
           ]
         : [
             { label: "Reading type", value: record.reading_type },
-            { label: "Value", value: record.reading_value != null ? String(record.reading_value) : null },
-            { label: "Unit", value: record.reading_unit },
+            {
+              label: "Value",
+              value:
+                record.reading_value != null
+                  ? `${record.reading_value}${record.reading_unit ? ` ${record.reading_unit}` : ""}`
+                  : null,
+            },
           ];
 
   return (
@@ -123,23 +128,27 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
           background={STATUS_COLORS[record.status].bg}
         />
         {record.type === "hazard" && record.severity ? (
-          <Pill label={record.severity} color="#FFFFFF" background={SEVERITY_COLORS[record.severity]} />
+          <Pill
+            label={record.severity}
+            color={SEVERITY_COLORS[record.severity].fg}
+            background={SEVERITY_COLORS[record.severity].bg}
+          />
         ) : null}
       </View>
 
       <Text style={styles.title}>{record.title}</Text>
       <Text style={styles.meta}>
-        {record.zone?.name ?? "No zone"} - observed {formatDate(record.observed_date)}
+        {record.zone?.name ?? "No zone"} · observed {formatDate(record.observed_date)}
       </Text>
 
       {record.notes ? (
-        <Card style={{ marginTop: 14 }}>
+        <Card padded style={styles.cardSpacing}>
           <SectionTitle>Notes</SectionTitle>
           <Text style={styles.body}>{record.notes}</Text>
         </Card>
       ) : null}
 
-      <Card style={{ marginTop: 14 }}>
+      <Card padded style={styles.cardSpacing}>
         <SectionTitle>Observation</SectionTitle>
         {facts
           .filter((f) => f.value)
@@ -150,9 +159,9 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
             </View>
           ))}
         {record.latitude != null && record.longitude != null ? (
-          <View style={styles.factRow}>
+          <View style={[styles.factRow, styles.factRowLast]}>
             <Text style={styles.factLabel}>Coordinates</Text>
-            <Text style={styles.factValue}>
+            <Text style={[styles.factValue, styles.mono]}>
               {record.latitude.toFixed(5)}, {record.longitude.toFixed(5)}
             </Text>
           </View>
@@ -160,7 +169,7 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
       </Card>
 
       {photos.length > 0 ? (
-        <Card style={{ marginTop: 14 }}>
+        <Card padded style={styles.cardSpacing}>
           <SectionTitle>Photos</SectionTitle>
           <View style={styles.photoRow}>
             {photos.map((uri) => (
@@ -171,7 +180,7 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
       ) : null}
 
       {record.latitude != null && record.longitude != null ? (
-        <View style={{ marginTop: 14 }}>
+        <View style={{ marginTop: spacing.lg }}>
           <Button
             title="Open location in OpenStreetMap"
             variant="secondary"
@@ -182,7 +191,7 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
         </View>
       ) : null}
 
-      <Card style={{ marginTop: 14 }}>
+      <Card padded style={styles.cardSpacing}>
         <SectionTitle>Review</SectionTitle>
         {record.status === "pending" ? (
           <View style={styles.reviewText}>
@@ -207,7 +216,7 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
       </Card>
 
       {canDelete ? (
-        <View style={{ marginTop: 14 }}>
+        <View style={{ marginTop: spacing.lg }}>
           <Button
             title={deleting ? "Deleting..." : "Delete this record"}
             variant="danger"
@@ -222,18 +231,43 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
-  content: { padding: 16, paddingBottom: 40 },
-  centered: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.page, padding: 24 },
+  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  centered: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.page,
+    padding: spacing.xl,
+  },
   rowLeft: { flexDirection: "row", gap: 6, alignItems: "center", flexWrap: "wrap" },
-  title: { fontSize: 20, fontWeight: "800", color: colors.ink, marginTop: 12 },
-  meta: { fontSize: 13, color: colors.muted, marginTop: 4 },
-  body: { fontSize: 14, color: colors.ink, lineHeight: 20 },
-  muted: { fontSize: 13, color: colors.muted },
-  factRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 6 },
+  title: { ...type.title, fontSize: 22, marginTop: spacing.md },
+  meta: { ...type.subhead, marginTop: 3 },
+  cardSpacing: { marginTop: spacing.lg },
+  body: { fontSize: 15, color: colors.ink, lineHeight: 21 },
+  muted: { fontSize: 14, color: colors.muted, lineHeight: 20 },
+  factRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+    gap: spacing.lg,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.line,
+  },
+  factRowLast: { borderBottomWidth: 0, paddingBottom: 0 },
   factLabel: { fontSize: 13, color: colors.muted },
-  factValue: { fontSize: 14, color: colors.ink, fontWeight: "600", flexShrink: 1, textAlign: "right" },
-  photoRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  photo: { width: 100, height: 100, borderRadius: radius.md, backgroundColor: colors.line },
-  feedback: { fontSize: 13, color: colors.ink, marginTop: 8, fontStyle: "italic" },
+  factValue: { fontSize: 15, color: colors.ink, fontWeight: "500", flexShrink: 1, textAlign: "right" },
+  mono: { fontVariant: ["tabular-nums"] },
+  photoRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  photo: { width: 104, height: 104, borderRadius: radius.sm, backgroundColor: colors.line },
+  feedback: {
+    fontSize: 14,
+    color: colors.ink,
+    marginTop: spacing.md,
+    lineHeight: 20,
+    backgroundColor: colors.panel,
+    borderRadius: radius.sm,
+    padding: spacing.md,
+  },
   reviewText: { gap: 6 },
 });

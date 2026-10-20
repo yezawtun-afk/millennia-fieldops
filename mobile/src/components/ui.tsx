@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -9,16 +9,40 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { colors, radius } from "../theme";
+import { Ionicons } from "@expo/vector-icons";
+import { colors, radius, spacing, type } from "../theme";
 
 // ---- Screen / layout ------------------------------------------------------
 
-export function Card({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
-  return <View style={[styles.card, style]}>{children}</View>;
+// A grouped surface: white, continuous corners, no heavy border. Rows inside
+// are separated by hairlines rather than each getting its own card.
+export function Card({
+  children,
+  style,
+  padded,
+}: {
+  children: React.ReactNode;
+  style?: ViewStyle | ViewStyle[];
+  /** Use for a card that holds a form or prose rather than full-bleed rows. */
+  padded?: boolean;
+}) {
+  return <View style={[styles.card, padded ? styles.cardPadded : null, style]}>{children}</View>;
 }
 
-export function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <Text style={styles.sectionTitle}>{children}</Text>;
+export function SectionTitle({
+  children,
+  action,
+}: {
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
+  if (!action) return <Text style={styles.sectionTitle}>{children}</Text>;
+  return (
+    <View style={styles.sectionTitleRow}>
+      <Text style={styles.sectionTitle}>{children}</Text>
+      {action}
+    </View>
+  );
 }
 
 export function Label({ children }: { children: React.ReactNode }) {
@@ -27,9 +51,80 @@ export function Label({ children }: { children: React.ReactNode }) {
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <View style={{ marginBottom: 14 }}>
+    <View style={{ marginBottom: spacing.lg }}>
       <Label>{label}</Label>
       {children}
+    </View>
+  );
+}
+
+export function Divider() {
+  return <View style={styles.divider} />;
+}
+
+// A tappable row inside a grouped card: identity and one supporting line,
+// chevron on the right.
+export function ListRow({
+  title,
+  meta,
+  right,
+  icon,
+  onPress,
+  last,
+}: {
+  title: string;
+  meta?: string;
+  right?: React.ReactNode;
+  icon?: React.ReactNode;
+  onPress?: () => void;
+  last?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole={onPress ? "button" : undefined}
+      style={({ pressed }) => [
+        styles.listRow,
+        !last && styles.listRowLine,
+        pressed && onPress ? { backgroundColor: colors.panel } : null,
+      ]}
+    >
+      {icon ? <View style={styles.listRowIcon}>{icon}</View> : null}
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={styles.listRowTitle} numberOfLines={1}>
+          {title}
+        </Text>
+        {meta ? (
+          <Text style={styles.listRowMeta} numberOfLines={1}>
+            {meta}
+          </Text>
+        ) : null}
+      </View>
+      {right}
+      {onPress ? (
+        <Ionicons name="chevron-forward" size={16} color={colors.faint} style={{ marginLeft: 4 }} />
+      ) : null}
+    </Pressable>
+  );
+}
+
+// A single readout in a divided strip: label above, figure below.
+export function StatCell({
+  label,
+  value,
+  tone = colors.ink,
+  last,
+}: {
+  label: string;
+  value: number | string;
+  tone?: string;
+  last?: boolean;
+}) {
+  return (
+    <View style={[styles.statCell, !last && styles.statCellLine]}>
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={[styles.statValue, { color: tone }]}>{value}</Text>
     </View>
   );
 }
@@ -37,16 +132,37 @@ export function Field({ label, children }: { label: string; children: React.Reac
 // ---- Text input -----------------------------------------------------------
 
 export function Input(props: TextInputProps) {
+  const [focused, setFocused] = useState(false);
   return (
     <TextInput
-      placeholderTextColor={colors.muted}
+      placeholderTextColor={colors.faint}
       {...props}
-      style={[styles.input, props.multiline ? styles.inputMultiline : null, props.style]}
+      onFocus={(event) => {
+        setFocused(true);
+        props.onFocus?.(event);
+      }}
+      onBlur={(event) => {
+        setFocused(false);
+        props.onBlur?.(event);
+      }}
+      style={[
+        styles.input,
+        props.multiline ? styles.inputMultiline : null,
+        focused ? styles.inputFocused : null,
+        props.style,
+      ]}
     />
   );
 }
 
 // ---- Buttons --------------------------------------------------------------
+
+const buttonVariants = {
+  primary: { bg: colors.primary, fg: colors.onTint, border: colors.primary },
+  secondary: { bg: colors.card, fg: colors.ink, border: colors.control },
+  ghost: { bg: "transparent", fg: colors.ink, border: "transparent" },
+  danger: { bg: colors.rejected, fg: colors.onTint, border: colors.rejected },
+} as const;
 
 export function Button({
   title,
@@ -58,25 +174,28 @@ export function Button({
 }: {
   title: string;
   onPress: () => void;
-  variant?: "primary" | "secondary" | "danger";
+  variant?: keyof typeof buttonVariants;
   disabled?: boolean;
   loading?: boolean;
-  style?: ViewStyle;
+  style?: ViewStyle | ViewStyle[];
 }) {
-  const palette =
-    variant === "primary"
-      ? { bg: colors.primary, fg: "#FFFFFF", border: colors.primary }
-      : variant === "danger"
-        ? { bg: colors.rejected, fg: "#FFFFFF", border: colors.rejected }
-        : { bg: colors.card, fg: colors.ink, border: colors.line };
+  const palette = buttonVariants[variant];
+  const inactive = disabled || loading;
 
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled || loading}
-      style={[
+      disabled={inactive}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: !!inactive, busy: !!loading }}
+      style={({ pressed }) => [
         styles.button,
-        { backgroundColor: palette.bg, borderColor: palette.border, opacity: disabled || loading ? 0.6 : 1 },
+        {
+          backgroundColor: palette.bg,
+          borderColor: palette.border,
+          opacity: inactive ? 0.45 : pressed ? 0.75 : 1,
+        },
         style,
       ]}
     >
@@ -103,7 +222,7 @@ export function Pill({
   icon?: React.ReactNode;
 }) {
   return (
-    <View style={[styles.pill, styles.pillRow, { backgroundColor: background }]}>
+    <View style={[styles.pill, { backgroundColor: background }]}>
       {icon}
       <Text style={[styles.pillText, { color }]}>{label}</Text>
     </View>
@@ -129,7 +248,13 @@ export function ChipGroup({
           <Pressable
             key={option}
             onPress={() => onChange(option)}
-            style={[styles.chip, selected && styles.chipSelected]}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
+            style={({ pressed }) => [
+              styles.chip,
+              selected && styles.chipSelected,
+              pressed && { opacity: 0.7 },
+            ]}
           >
             <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
           </Pressable>
@@ -150,16 +275,26 @@ export function Banner({
 }) {
   const palette =
     kind === "error"
-      ? { bg: colors.rejectedSoft, fg: colors.rejected }
+      ? { bg: colors.rejectedSoft, fg: colors.rejectedInk, icon: "alert-circle-outline" as const }
       : kind === "success"
-        ? { bg: colors.approvedSoft, fg: colors.approved }
+        ? { bg: colors.approvedSoft, fg: colors.approvedInk, icon: "checkmark-circle-outline" as const }
         : kind === "warning"
-          ? { bg: colors.pendingSoft, fg: "#92400E" }
-          : { bg: colors.primarySoft, fg: colors.primaryDark };
+          ? { bg: colors.pendingSoft, fg: colors.pendingInk, icon: "time-outline" as const }
+          : { bg: colors.primarySoft, fg: colors.primaryDark, icon: "information-circle-outline" as const };
 
   return (
     <View style={[styles.banner, { backgroundColor: palette.bg }]}>
-      <Text style={{ color: palette.fg, fontSize: 13 }}>{children}</Text>
+      <Ionicons name={palette.icon} size={16} color={palette.fg} />
+      <Text style={[styles.bannerText, { color: palette.fg }]}>{children}</Text>
+    </View>
+  );
+}
+
+export function EmptyState({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <View style={styles.empty}>
+      <Text style={styles.emptyTitle}>{title}</Text>
+      {hint ? <Text style={styles.emptyHint}>{hint}</Text> : null}
     </View>
   );
 }
@@ -167,46 +302,102 @@ export function Banner({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.line,
-    padding: 16,
+    borderRadius: radius.md,
+    borderCurve: "continuous",
+    overflow: "hidden",
   },
-  sectionTitle: { fontSize: 15, fontWeight: "700", color: colors.ink, marginBottom: 10 },
-  label: { fontSize: 13, fontWeight: "600", color: colors.ink, marginBottom: 6 },
+  cardPadded: { padding: spacing.lg },
+  sectionTitle: { ...type.heading, fontSize: 15 },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: spacing.sm,
+  },
+  label: { ...type.label, marginBottom: 6 },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line },
+  listRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 13,
+    minHeight: 56,
+  },
+  listRowLine: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
+  listRowIcon: { width: 32, alignItems: "center" },
+  listRowTitle: { ...type.body, fontSize: 15, fontWeight: "500" },
+  listRowMeta: { ...type.caption, marginTop: 1 },
+  statCell: { flex: 1, paddingVertical: spacing.md, paddingHorizontal: spacing.sm },
+  statCellLine: { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: colors.line },
+  statLabel: { ...type.label, fontSize: 11 },
+  statValue: { ...type.number, fontSize: 22, marginTop: 2 },
   input: {
     borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: radius.sm,
+    borderColor: colors.control,
+    borderRadius: radius.md,
+    borderCurve: "continuous",
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 11,
+    minHeight: 46,
     fontSize: 15,
     color: colors.ink,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.card,
   },
-  inputMultiline: { minHeight: 80, textAlignVertical: "top" },
+  inputFocused: { borderColor: colors.primary },
+  inputMultiline: { minHeight: 88, textAlignVertical: "top" },
   button: {
     borderWidth: 1,
     borderRadius: radius.md,
-    paddingVertical: 13,
+    borderCurve: "continuous",
+    minHeight: 46,
+    paddingHorizontal: spacing.lg,
     alignItems: "center",
     justifyContent: "center",
   },
-  buttonText: { fontSize: 15, fontWeight: "700" },
-  pill: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999, alignSelf: "flex-start" },
-  pillRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  pillText: { fontSize: 12, fontWeight: "700" },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  buttonText: { fontSize: 15, fontWeight: "600" },
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radius.full,
+    alignSelf: "flex-start",
+  },
+  pillText: { fontSize: 11, fontWeight: "500" },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   chip: {
     borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 999,
+    borderColor: colors.control,
+    backgroundColor: colors.card,
+    borderRadius: radius.full,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 9,
+    minHeight: 38,
+    justifyContent: "center",
   },
-  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipSelected: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
   chipText: { fontSize: 13, color: colors.ink },
-  chipTextSelected: { color: "#FFFFFF", fontWeight: "600" },
-  banner: { borderRadius: radius.md, padding: 12, marginBottom: 12 },
+  chipTextSelected: { color: colors.primaryDark, fontWeight: "600" },
+  banner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.sm,
+    borderRadius: radius.md,
+    borderCurve: "continuous",
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  bannerText: { flex: 1, fontSize: 13, lineHeight: 18 },
+  empty: {
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    borderCurve: "continuous",
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+    alignItems: "center",
+  },
+  emptyTitle: { ...type.body, fontWeight: "500" },
+  emptyHint: { ...type.caption, marginTop: 4, textAlign: "center" },
 });

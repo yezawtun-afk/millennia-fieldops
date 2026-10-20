@@ -41,12 +41,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .single();
 
     if (!error && data) {
-      setProfile(data as Profile);
+      const row = data as Profile;
+
+      // Deactivated accounts are refused at the database level too, but signing
+      // out here stops the app from pretending it is still connected.
+      if (row.is_active === false) {
+        await supabase.auth.signOut();
+        setProfile(null);
+        setInitError("This account has been deactivated. Ask an administrator to reactivate it.");
+        return;
+      }
+
+      setProfile(row);
       setInitError(null);
       // Save a copy so the next start works without a connection.
       void AsyncStorage.setItem(
         PROFILE_CACHE_PREFIX + userId,
-        JSON.stringify(data)
+        JSON.stringify(row)
       ).catch(() => undefined);
       return;
     }

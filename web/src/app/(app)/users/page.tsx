@@ -20,7 +20,7 @@ export default async function UsersPage() {
   return (
     <div>
       <PageHeader
-        title="User management"
+        title="Accounts"
         subtitle="Create accounts, assign roles and deactivate access."
       />
       <UsersManager initialUsers={users} currentUserId={profile.id} />

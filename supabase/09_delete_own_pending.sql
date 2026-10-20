@@ -28,4 +28,4 @@
 drop policy if exists records_delete_own_pending on public.records;
 create policy records_delete_own_pending on public.records
   for delete to authenticated
-  using (submitted_by = auth.uid() and status = 'pending');
+  using (public.is_active_user() and submitted_by = auth.uid() and status = 'pending');

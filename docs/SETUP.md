@@ -34,6 +34,17 @@ In the Supabase dashboard, open **SQL Editor -> New query**. Run these files fro
 7. `07_demo_data.sql` - **optional demo data**: ~70 randomised records plus their
    review notifications. It starts by deleting every existing record, so only run it
    when you want a clean demo set. You need at least one signed-up account first.
+8. `08_backfill_profiles.sql` - **optional repair** for accounts created before the
+   profile trigger existed; it adds the missing `profiles` rows.
+9. `09_delete_own_pending.sql` - lets a field worker delete their own record while it
+   is still pending (administrators keep full delete).
+
+The generated `setup_all.sql` bundles 01-06 and 09 in one paste; the two optional
+files are kept separate because they change data.
+
+> **Already have a live database?** Re-run `02_policies.sql` and
+> `09_delete_own_pending.sql` to pick up the current rules (deactivated accounts are
+> now blocked at the database, not only in the app). Both files are safe to run again.
 
 ### Create your first admin
 

@@ -2,6 +2,7 @@
 // then removes them from the local outbox.
 import { supabase, PHOTO_BUCKET } from "./supabase";
 import { listOutbox, markError, removeOutbox } from "./sqlite";
+import { deletePhoto } from "./photos";
 import type { OutboxRecord } from "./types";
 
 export interface SyncResult {
@@ -69,6 +70,10 @@ async function runSync(userId: string): Promise<SyncResult> {
     try {
       await pushRecord(row.payload, userId);
       await removeOutbox(row.localId);
+      // The upload succeeded, so the copies on this phone have no job left.
+      for (const uri of row.payload.photos) {
+        await deletePhoto(uri);
+      }
       uploaded += 1;
     } catch (error) {
       failed += 1;

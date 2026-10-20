@@ -21,12 +21,13 @@ const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const Tabs = createBottomTabNavigator<MainTabParamList>();
 
-// The app mark shown in the header, matching the dashboard's brand block.
+// The app mark shown in the header: the leaf from the dashboard, not a
+// letter in a box.
 function HeaderBrand() {
   return (
     <View style={headerStyles.brand}>
       <View style={headerStyles.badge}>
-        <Text style={headerStyles.badgeText}>M</Text>
+        <Ionicons name="leaf-outline" size={15} color={colors.primary} />
       </View>
       <View>
         <Text style={headerStyles.brandTitle}>Millennia FieldOps</Text>
@@ -55,7 +56,7 @@ function HeaderLogout() {
 
   return (
     <Pressable onPress={confirm} hitSlop={12} accessibilityLabel="Log out" style={headerStyles.logout}>
-      <Ionicons name="log-out-outline" size={18} color="#FFFFFF" />
+      <Ionicons name="log-out-outline" size={18} color={colors.muted} />
       <Text style={headerStyles.logoutText}>Log out</Text>
     </Pressable>
   );
@@ -81,13 +82,19 @@ function MainTabs() {
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({
-        headerStyle: { backgroundColor: colors.forest },
-        headerTintColor: "#FFFFFF",
+        headerStyle: { backgroundColor: colors.page },
+        headerTintColor: colors.ink,
+        headerShadowVisible: false,
         headerTitleAlign: "left",
         headerTitle: () => <HeaderBrand />,
         headerRight: () => <HeaderLogout />,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
+        tabBarStyle: {
+          backgroundColor: colors.card,
+          borderTopColor: colors.line,
+        },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: "500" },
         tabBarIcon: ({ color, size }) => {
           const name =
             route.name === "Home"
@@ -144,9 +151,10 @@ export function RootNavigator() {
         name="RecordDetails"
         component={RecordDetailsScreen}
         options={{
-          title: "Record details",
-          headerStyle: { backgroundColor: colors.forest },
-          headerTintColor: "#FFFFFF",
+          title: "Record",
+          headerStyle: { backgroundColor: colors.page },
+          headerTintColor: colors.ink,
+          headerShadowVisible: false,
         }}
       />
     </RootStack.Navigator>
@@ -158,14 +166,13 @@ const headerStyles = StyleSheet.create({
   badge: {
     width: 28,
     height: 28,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
+    borderRadius: 7,
+    backgroundColor: colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
   },
-  badgeText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
-  brandTitle: { color: "#FFFFFF", fontSize: 13, fontWeight: "700", lineHeight: 16 },
-  brandSub: { color: "rgba(255,255,255,0.6)", fontSize: 10, lineHeight: 12 },
+  brandTitle: { color: colors.ink, fontSize: 14, fontWeight: "600", lineHeight: 17 },
+  brandSub: { color: colors.muted, fontSize: 11, lineHeight: 13 },
   logout: { flexDirection: "row", alignItems: "center", gap: 4 },
-  logoutText: { color: "#FFFFFF", fontSize: 13, fontWeight: "600" },
+  logoutText: { color: colors.muted, fontSize: 13, fontWeight: "500" },
 });

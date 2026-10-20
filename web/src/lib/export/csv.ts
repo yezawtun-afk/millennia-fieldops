@@ -25,7 +25,10 @@ function speciesOrHazard(r: FieldRecord): string {
 }
 
 function cell(value: unknown): string {
-  const text = value == null ? "" : String(value);
+  let text = value == null ? "" : String(value);
+  // Spreadsheet apps run a cell that starts with = + - @ as a formula. A
+  // leading apostrophe keeps user-written notes as text.
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 

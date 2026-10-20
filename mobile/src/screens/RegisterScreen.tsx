@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } fr
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAuth } from "../context/AuthContext";
 import { Banner, Button, Card, Field, Input } from "../components/ui";
-import { colors } from "../theme";
+import { colors, spacing, type } from "../theme";
 import type { AuthStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Register">;
@@ -37,16 +37,16 @@ export function RegisterScreen({ navigation }: Props) {
       setMessage("Check your email to confirm the account, then sign in.");
       return;
     }
-    // Signed up and signed in: the navigator will switch automatically.
+    // Signed up and signed in: the navigator switches automatically.
   }
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Create an account</Text>
-        <Text style={styles.subtitle}>Join Millennia FieldOps as a field worker.</Text>
+        <Text style={styles.subtitle}>Join as a field worker. Your supervisor can change the role.</Text>
 
-        <Card>
+        <Card style={styles.card}>
           {error ? <Banner kind="error">{error}</Banner> : null}
           {message ? <Banner kind="success">{message}</Banner> : null}
 
@@ -58,16 +58,23 @@ export function RegisterScreen({ navigation }: Props) {
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
+              autoComplete="email"
               keyboardType="email-address"
               placeholder="you@millennia.my"
             />
           </Field>
           <Field label="Password">
-            <Input value={password} onChangeText={setPassword} secureTextEntry placeholder="At least 6 characters" />
+            <Input
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoComplete="new-password"
+              placeholder="At least 6 characters"
+            />
           </Field>
 
           <Button title="Sign up" onPress={onSubmit} loading={busy} />
-          <View style={{ height: 10 }} />
+          <View style={{ height: spacing.md }} />
           <Button title="Back to sign in" variant="secondary" onPress={() => navigation.goBack()} />
         </Card>
       </ScrollView>
@@ -77,7 +84,20 @@ export function RegisterScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.page },
-  content: { padding: 20, paddingTop: 60, flexGrow: 1, justifyContent: "center" },
-  title: { fontSize: 22, fontWeight: "800", color: colors.ink, textAlign: "center" },
-  subtitle: { fontSize: 13, color: colors.muted, textAlign: "center", marginTop: 4, marginBottom: 20 },
+  content: {
+    padding: spacing.xl,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.xxl,
+    flexGrow: 1,
+    justifyContent: "center",
+  },
+  title: { ...type.title, fontSize: 22, textAlign: "center" },
+  subtitle: {
+    ...type.subhead,
+    textAlign: "center",
+    marginTop: 3,
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.md,
+  },
+  card: { padding: spacing.lg },
 });

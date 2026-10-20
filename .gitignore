@@ -39,6 +39,17 @@ supabase/.branches
 # (rebuild with tools\bundle-db-sql.ps1)
 supabase/setup_all.sql
 
+# Generated design-review output (screenshots + report from the taste skill)
+.taste/
+
+# Local AI-assistant tooling (skills installed with `npx skills add`).
+# Delete these lines if you want to share the skills with the repo.
+.agents/
+agent/skills/
+.claude/
+.taste-skill/
+skills-lock.json
+
 # Logs, OS and editor files
 *.log
 npm-debug.log*

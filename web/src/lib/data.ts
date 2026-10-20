@@ -18,6 +18,13 @@ export interface RecordFilters {
   zoneId?: string;
 }
 
+// PostgREST reads the inside of an `or=` filter as syntax, so commas,
+// parentheses and quotes in a search term have to be quoted and escaped or the
+// whole request fails.
+function quoteFilterValue(value: string): string {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
 // Builds the shared query used by the records table and the export files.
 export async function queryRecords(filters: RecordFilters = {}): Promise<FieldRecord[]> {
   const supabase = await createClient();
@@ -28,13 +35,47 @@ export async function queryRecords(filters: RecordFilters = {}): Promise<FieldRe
   if (filters.severity) query = query.eq("severity", filters.severity);
   if (filters.zoneId) query = query.eq("zone_id", filters.zoneId);
   if (filters.q) {
-    const term = `%${filters.q}%`;
+    const term = quoteFilterValue(`%${filters.q}%`);
     query = query.or(
-      `title.ilike.${term},species_name.ilike.${term},hazard_type.ilike.${term},reading_type.ilike.${term},notes.ilike.${term}`
+      [
+        `title.ilike.${term}`,
+        `species_name.ilike.${term}`,
+        `hazard_type.ilike.${term}`,
+        `reading_type.ilike.${term}`,
+        `notes.ilike.${term}`,
+      ].join(",")
     );
   }
 
   const { data, error } = await query.limit(1000);
+  if (error) throw new Error(error.message);
+  return (data as unknown as FieldRecord[]) ?? [];
+}
+
+// Exact counts, so the dashboard figures do not depend on the 1000-row cap.
+export async function countRecords(filters: RecordFilters = {}): Promise<number> {
+  const supabase = await createClient();
+  let query = supabase.from("records").select("id", { count: "exact", head: true });
+
+  if (filters.type) query = query.eq("type", filters.type);
+  if (filters.status) query = query.eq("status", filters.status);
+  if (filters.severity) query = query.eq("severity", filters.severity);
+  if (filters.zoneId) query = query.eq("zone_id", filters.zoneId);
+
+  const { count, error } = await query;
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+// The oldest records still waiting, for the dashboard review queue.
+export async function getPendingQueue(limit = 3): Promise<FieldRecord[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("records")
+    .select(RECORD_SELECT)
+    .eq("status", "pending")
+    .order("created_at", { ascending: true })
+    .limit(limit);
   if (error) throw new Error(error.message);
   return (data as unknown as FieldRecord[]) ?? [];
 }

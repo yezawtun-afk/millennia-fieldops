@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { getProfile } from "@/lib/supabase/server";
 import { getZones, queryRecords } from "@/lib/data";
-import { PageHeader, TypePill, StatusBadge, SeverityBadge, EmptyState } from "@/components/ui";
+import {
+  PageHeader,
+  TypePill,
+  StatusBadge,
+  SeverityBadge,
+  EmptyState,
+  tdClass,
+  thClass,
+} from "@/components/ui";
 import { formatDate, recordSubtitle } from "@/lib/format";
 import { RecordsFilters } from "@/components/RecordsFilters";
 import { ExportButtons } from "@/components/ExportButtons";
@@ -44,11 +52,17 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
     }).filter(([, v]) => v)
   ).toString();
 
+  const pendingShown = records.filter((record) => record.status === "pending").length;
+
   return (
     <div>
       <PageHeader
         title="Records"
-        subtitle={`${records.length} record${records.length === 1 ? "" : "s"} shown`}
+        subtitle={
+          records.length === 0
+            ? "No records match the current filters."
+            : `${records.length} record${records.length === 1 ? "" : "s"} shown${pendingShown > 0 ? `, ${pendingShown} still waiting review` : ""}.`
+        }
         actions={<ExportButtons query={exportQuery} />}
       />
 
@@ -57,51 +71,63 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
       {records.length === 0 ? (
         <EmptyState
           title="No records match those filters"
-          hint="Try clearing the search box or picking another zone."
+          hint="Clear the search box, or pick another type, status or zone."
         />
       ) : (
-        <div className="overflow-hidden rounded-lg border border-line bg-white">
+        <div className="overflow-hidden rounded-card border border-line bg-sheet">
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-page text-left text-xs uppercase tracking-wide text-muted">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">Record</th>
-                  <th className="px-4 py-3 font-semibold">Type</th>
-                  <th className="px-4 py-3 font-semibold">Zone</th>
-                  <th className="px-4 py-3 font-semibold">Observed</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold">Submitted by</th>
-                  {isAdmin ? <th className="px-4 py-3 text-right font-semibold">Actions</th> : null}
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b border-rule">
+                  <th className={thClass}>Record</th>
+                  <th className={thClass}>Type</th>
+                  <th className={thClass}>Zone</th>
+                  <th className={`${thClass} text-right`}>Observed</th>
+                  <th className={thClass}>Status</th>
+                  <th className={`${thClass} hidden 2xl:table-cell`}>Submitted by</th>
+                  {isAdmin ? <th className={`${thClass} text-right`}>Actions</th> : null}
                 </tr>
               </thead>
               <tbody>
-                {records.map((r) => (
-                  <tr key={r.id} className="border-t border-line hover:bg-page">
-                    <td className="px-4 py-3">
-                      <Link href={`/records/${r.id}`} className="font-semibold text-ink hover:underline">
-                        {r.title}
+                {records.map((record) => (
+                  <tr
+                    key={record.id}
+                    className="border-b border-rule transition-colors last:border-b-0 hover:bg-panel"
+                  >
+                    <td className={tdClass}>
+                      <Link
+                        href={`/records/${record.id}`}
+                        className="font-medium text-ink hover:text-accent"
+                      >
+                        {record.title}
                       </Link>
-                      <div className="mt-0.5 flex items-center gap-2 text-xs text-muted">
-                        <span>{recordSubtitle(r)}</span>
-                        {r.type === "hazard" ? <SeverityBadge severity={r.severity as HazardSeverity | null} /> : null}
-                      </div>
+                      <span className="mt-0.5 flex items-center gap-2 text-[12px] text-muted">
+                        <span className="truncate">{recordSubtitle(record)}</span>
+                        {record.type === "hazard" ? (
+                          <SeverityBadge severity={record.severity as HazardSeverity | null} />
+                        ) : null}
+                      </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <TypePill type={r.type} />
+                    <td className={tdClass}>
+                      <TypePill type={record.type} />
                     </td>
-                    <td className="px-4 py-3 text-muted">{r.zone?.name ?? "-"}</td>
-                    <td className="px-4 py-3 text-muted">{formatDate(r.observed_date)}</td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={r.status} />
+                    <td className={`${tdClass} text-muted`}>{record.zone?.name ?? "-"}</td>
+                    <td className={`${tdClass} whitespace-nowrap text-right tabular-nums text-muted`}>
+                      {formatDate(record.observed_date)}
                     </td>
-                    <td className="px-4 py-3 text-muted">{r.submitter?.full_name ?? "-"}</td>
+                    <td className={tdClass}>
+                      <StatusBadge status={record.status} />
+                    </td>
+                    <td className={`${tdClass} hidden whitespace-nowrap text-muted 2xl:table-cell`}>
+                      {record.submitter?.full_name ?? "-"}
+                    </td>
                     {isAdmin ? (
-                      <td className="px-4 py-3 text-right">
+                      <td className={`${tdClass} text-right`}>
                         <DeleteRecordButton
                           compact
-                          recordId={r.id}
-                          title={r.title}
-                          photos={r.photos ?? []}
+                          recordId={record.id}
+                          title={record.title}
+                          photos={record.photos ?? []}
                         />
                       </td>
                     ) : null}
@@ -114,16 +140,15 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
       )}
 
       {isAdmin ? (
-        <p className="mt-3 text-xs text-muted">
-          As an administrator you can delete a record permanently with the bin icon. Deleting a
-          record also removes its photos and its review notifications. Field workers can delete
-          their own records only while they are still pending.
+        <p className="mt-3 max-w-[85ch] text-[12px] leading-relaxed text-muted">
+          Deleting a record also removes its photos and review notifications. Field workers can
+          delete their own records only while they are still pending.
         </p>
       ) : null}
 
       {!isReviewer ? (
-        <p className="mt-3 text-xs text-muted">
-          You are signed in as a field worker - open a record to view it, but only supervisors and
+        <p className="mt-3 max-w-[85ch] text-[12px] leading-relaxed text-muted">
+          You are signed in as a field worker. Open a record to view it; only supervisors and
           administrators can approve or reject.
         </p>
       ) : null}

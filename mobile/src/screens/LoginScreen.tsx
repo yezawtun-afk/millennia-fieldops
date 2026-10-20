@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { Banner, Button, Card, Field, Input } from "../components/ui";
-import { colors } from "../theme";
+import { colors, radius, spacing, type } from "../theme";
 import type { AuthStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
@@ -24,20 +25,17 @@ export function LoginScreen({ navigation }: Props) {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>M</Text>
+          <View style={styles.mark}>
+            <Ionicons name="leaf-outline" size={22} color={colors.primary} />
           </View>
           <Text style={styles.title}>Millennia FieldOps</Text>
-          <Text style={styles.subtitle}>Field data capture for Millennia Village</Text>
+          <Text style={styles.subtitle}>Millennia Village · field data capture</Text>
         </View>
 
-        <Card>
+        <Card style={styles.card}>
           {error ? <Banner kind="error">{error}</Banner> : null}
 
           <Field label="Email">
@@ -45,17 +43,24 @@ export function LoginScreen({ navigation }: Props) {
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
+              autoComplete="email"
               keyboardType="email-address"
               placeholder="you@millennia.my"
             />
           </Field>
           <Field label="Password">
-            <Input value={password} onChangeText={setPassword} secureTextEntry placeholder="Your password" />
+            <Input
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoComplete="password"
+              placeholder="Your password"
+            />
           </Field>
 
           <Button title="Sign in" onPress={onSubmit} loading={busy} />
 
-          <View style={{ height: 10 }} />
+          <View style={{ height: spacing.md }} />
           <Button
             title="Create an account"
             variant="secondary"
@@ -64,8 +69,8 @@ export function LoginScreen({ navigation }: Props) {
         </Card>
 
         <Text style={styles.hint}>
-          Accounts created here start as field workers. A supervisor or administrator gives them a
-          wider role from the web dashboard.
+          New accounts start as field workers. A supervisor or administrator widens the role from
+          the web dashboard.
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -74,19 +79,32 @@ export function LoginScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.page },
-  content: { padding: 20, paddingTop: 60, flexGrow: 1, justifyContent: "center" },
-  header: { alignItems: "center", marginBottom: 24 },
-  logo: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
+  content: {
+    padding: spacing.xl,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.xxl,
+    flexGrow: 1,
+    justifyContent: "center",
+  },
+  header: { alignItems: "center", marginBottom: spacing.xl },
+  mark: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    borderCurve: "continuous",
+    backgroundColor: colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
-  logoText: { color: "#FFFFFF", fontSize: 26, fontWeight: "800" },
-  title: { fontSize: 22, fontWeight: "800", color: colors.ink },
-  subtitle: { fontSize: 13, color: colors.muted, marginTop: 4 },
-  hint: { fontSize: 12, color: colors.muted, textAlign: "center", marginTop: 18, lineHeight: 18 },
+  title: { ...type.title, fontSize: 22 },
+  subtitle: { ...type.subhead, marginTop: 3 },
+  card: { padding: spacing.lg },
+  hint: {
+    ...type.caption,
+    textAlign: "center",
+    marginTop: spacing.lg,
+    lineHeight: 17,
+    paddingHorizontal: spacing.md,
+  },
 });

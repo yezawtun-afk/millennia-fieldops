@@ -92,7 +92,10 @@ connection exists. This is what makes the app genuinely usable on the ridge with
 ### 4.1 Mobile app (field workers)
 
 - Email/password sign-in and self-registration (Supabase Auth, session persisted on device).
-- Field dashboard home screen with role, zone overview and pending stats.
+- Field dashboard home screen: greeting and role, a strip of approved / in review /
+  rejected / draft counts (taken from every record, not just the visible list), one-tap
+  capture by record type, the upload queue with **Sync now**, the five most recent
+  records with their review status, and the app version / update check.
 - Capture three record types:
 
   | Type | Caption |
@@ -116,16 +119,21 @@ connection exists. This is what makes the app genuinely usable on the ridge with
 - Notifications inbox when a record is approved or rejected, **announced on the phone
   within about 20 seconds while the app is open** (the notification tab also carries an
   unread badge).
-- **In-app updates** (expo-updates / EAS Update): the Home screen has an "App updates"
-  card with the installed version and a manual check, and JavaScript improvements can be
-  published to installed phones without a new APK.
+- **In-app updates** (expo-updates / EAS Update): the Home screen's App card shows the
+  installed version and a manual check, and JavaScript improvements can be published to
+  installed phones without a new APK.
 
 ### 4.2 Web dashboard (supervisors & admins)
 
-- Secure login with role-based access control on routes and data.
-- Dashboard statistics: counts by type, by status, by zone and by date, plus hazards by
-  severity, with charts.
-- Records management: search, filter, full detail view with photos.
+- Secure login with role-based access control on routes and data. Deactivated accounts are
+  refused by the database as well as by the app.
+- Dashboard overview: exact totals for records, records waiting review, approved, rejected
+  and active hazards; submissions per week across the last eight weeks; a by-zone table
+  split by record type; a review queue (oldest first); hazard counts by severity; and the
+  five most recent submissions. Charts are drawn directly in the page - one hue per chart,
+  no charting library.
+- Records management: search (title, species, notes), filter by type, status, severity and
+  zone, and a detail view with signed photo links.
 - Interactive Leaflet map of the site: records plotted over the monitoring zones.
 - Review and verification: approve / reject with a comment, sent back to the worker.
 - **Delete records** (administrators): permanently remove a record from the list or the
@@ -143,8 +151,8 @@ connection exists. This is what makes the app genuinely usable on the ridge with
 - `handle_new_user()` trigger: every new sign-up gets a `profiles` row automatically.
 - Review notification trigger: approving/rejecting a record inserts a notification for
   the submitter.
-- Deployed SQL lives in 10 numbered files (`01_schema` through
-  `09_delete_own_pending`, plus `07_demo_data` and `08_backfill_profiles` which are
+- Deployed SQL lives in 9 numbered files (`01_schema` through
+  `09_delete_own_pending`; `07_demo_data` and `08_backfill_profiles` are
   optional/repair scripts), together with a generated one-paste bundle `setup_all.sql`
   (see `tools/bundle-db-sql.ps1`).
 
@@ -167,8 +175,10 @@ connection exists. This is what makes the app genuinely usable on the ridge with
 - **Authentication:** Supabase Auth (email/password). Sessions are persisted on the mobile
   device and in SSR cookies on the web.
 - **Authorisation:** Row Level Security policies (02_policies.sql) are the enforcement
-  point — a field worker can only see their own records and their own notifications;
-  supervisors/admins see everything; deactivated users (`is_active = false`) are locked out.
+  point — every signed-in active user may read the site's records and zones, while a
+  field worker can only delete their own record and only while it is pending, and only
+  sees their own notifications. Supervisors/admins review everything; deactivated users
+  (`is_active = false`) are refused by every policy.
 - **Key hygiene:** the mobile and web apps only carry the *publishable/anon* key, which is
   public by design — RLS is what protects data. The **service role key** is required only
   for server-side admin actions (web "create user" flows) and belongs in server-side env

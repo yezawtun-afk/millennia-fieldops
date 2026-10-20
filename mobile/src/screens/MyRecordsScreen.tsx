@@ -1,17 +1,29 @@
 import React, { useCallback, useState } from "react";
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { deleteRecord, fetchMyRecords } from "../lib/api";
 import { listOutbox, removeOutbox } from "../lib/sqlite";
+import { deletePhoto } from "../lib/photos";
 import { syncOutbox } from "../lib/sync";
-import { Banner, Button, Card, Pill, SectionTitle } from "../components/ui";
-import { colors } from "../theme";
-import { STATUS_COLORS, STATUS_LABELS, TYPE_COLORS, TYPE_LABELS, formatDate, SEVERITY_COLORS } from "../lib/format";
+import { Banner, Button, Card, ListRow, Pill, SectionTitle } from "../components/ui";
+import { colors, radius, spacing, type } from "../theme";
+import { STATUS_LABELS, formatDate } from "../lib/format";
 import type { FieldRecord, OutboxRow } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
 
 type Props = TabScreenProps<"Records">;
+
+function statusPill(status: FieldRecord["status"]) {
+  const palette =
+    status === "pending"
+      ? { fg: colors.pendingInk, bg: colors.pendingSoft }
+      : status === "approved"
+        ? { fg: colors.approvedInk, bg: colors.approvedSoft }
+        : { fg: colors.rejectedInk, bg: colors.rejectedSoft };
+  return <Pill label={STATUS_LABELS[status]} color={palette.fg} background={palette.bg} />;
+}
 
 export function MyRecordsScreen({ navigation }: Props) {
   const { profile, session } = useAuth();
@@ -27,18 +39,17 @@ export function MyRecordsScreen({ navigation }: Props) {
 
   const load = useCallback(async () => {
     setOutbox(await listOutbox());
-    if (userId) {
-      try {
-        setRecords(await fetchMyRecords(userId));
-      } catch {
-        // offline - keep previous
-      }
+    if (!userId) return;
+    try {
+      setRecords(await fetchMyRecords(userId));
+    } catch {
+      // Offline: keep what is already on screen.
     }
   }, [userId]);
 
   useFocusEffect(
     useCallback(() => {
-      load();
+      void load();
     }, [load])
   );
 
@@ -55,33 +66,32 @@ export function MyRecordsScreen({ navigation }: Props) {
     setSyncing(false);
     setMessage(
       result.uploaded > 0
-        ? `Uploaded ${result.uploaded} record(s).`
+        ? `Uploaded ${result.uploaded} record${result.uploaded === 1 ? "" : "s"}.`
         : result.failed > 0
-          ? `${result.failed} record(s) still waiting - check your connection.`
+          ? `${result.failed} record${result.failed === 1 ? "" : "s"} still waiting. Check the connection.`
           : "Nothing to upload."
     );
     await load();
   }
 
-  // Drafts are unfinished, so they are never uploaded until they are completed.
-  // Queued rows have not reached the server yet either, so both can simply be
-  // removed from the local outbox.
+  // A discarded draft never reached the server, so its local photos go too.
+  async function discard(row: OutboxRow) {
+    await removeOutbox(row.localId);
+    for (const uri of row.payload.photos) {
+      await deletePhoto(uri);
+    }
+    await load();
+  }
+
   function confirmDeleteOutbox(row: OutboxRow, kind: "draft" | "queued") {
     Alert.alert(
       kind === "draft" ? "Delete draft" : "Cancel upload",
       kind === "draft"
-        ? `Discard the draft "${row.payload.title}"?`
+        ? `Discard the draft "${row.payload.title}" and its photos?`
         : `Remove "${row.payload.title}" from the upload queue? It has not reached the server yet.`,
       [
         { text: "Keep", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            await removeOutbox(row.localId);
-            await load();
-          },
-        },
+        { text: "Delete", style: "destructive", onPress: () => void discard(row) },
       ]
     );
   }
@@ -91,7 +101,7 @@ export function MyRecordsScreen({ navigation }: Props) {
   function confirmDeleteRecord(record: FieldRecord) {
     Alert.alert(
       "Delete record",
-      `Delete "${record.title}"? This cannot be undone - the record and its photos are removed for everyone.`,
+      `Delete "${record.title}"? This cannot be undone. The record and its photos are removed for everyone.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -117,157 +127,156 @@ export function MyRecordsScreen({ navigation }: Props) {
     <ScrollView
       style={styles.screen}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+      }
     >
-      <Text style={styles.heading}>My records</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>My records</Text>
+        <Text style={styles.subhead}>
+          {records.length} submitted · {queued.length + drafts.length} on this phone
+        </Text>
+      </View>
 
       {message ? <Banner kind="info">{message}</Banner> : null}
 
       {drafts.length > 0 ? (
-        <Card style={{ marginBottom: 14 }}>
-          <SectionTitle>Drafts ({drafts.length})</SectionTitle>
-          {drafts.map((row) => (
-            <View key={row.localId} style={styles.queuedRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.queuedTitle}>{row.payload.title}</Text>
-                <Text style={styles.queuedMeta}>
-                  {TYPE_LABELS[row.payload.type]} - started {formatDate(row.createdAt)}
-                </Text>
-                <View style={styles.draftButtons}>
-                  <Button
-                    title="Continue"
-                    variant="secondary"
-                    style={styles.draftButton}
-                    onPress={() => navigation.navigate("New", { draftId: row.localId })}
-                  />
-                  <View style={{ width: 8 }} />
-                  <Button
-                    title="Delete"
-                    variant="danger"
-                    style={styles.draftButton}
+        <>
+          <SectionTitle>Drafts</SectionTitle>
+          <Card>
+            {drafts.map((row, index) => (
+              <ListRow
+                key={row.localId}
+                title={row.payload.title}
+                meta={`Not finished · started ${formatDate(row.createdAt)}`}
+                last={index === drafts.length - 1}
+                onPress={() => navigation.navigate("New", { draftId: row.localId })}
+                right={
+                  <Pressable
+                    accessibilityLabel={`Delete draft ${row.payload.title}`}
+                    hitSlop={8}
                     onPress={() => confirmDeleteOutbox(row, "draft")}
-                  />
-                </View>
-              </View>
-            </View>
-          ))}
-        </Card>
+                    style={styles.trash}
+                  >
+                    <Ionicons name="trash-outline" size={17} color={colors.muted} />
+                  </Pressable>
+                }
+              />
+            ))}
+          </Card>
+          <View style={{ height: spacing.xl }} />
+        </>
       ) : null}
 
       {queued.length > 0 ? (
-        <Card style={{ marginBottom: 14 }}>
-          <SectionTitle>Pending upload ({queued.length})</SectionTitle>
-          {queued.map((row) => (
-            <View key={row.localId} style={styles.queuedRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.queuedTitle}>{row.payload.title}</Text>
-                <Text style={styles.queuedMeta}>
-                  {TYPE_LABELS[row.payload.type]} - {formatDate(row.payload.observed_date)}
-                </Text>
-                {row.status === "error" && row.error ? (
-                  <>
-                    <Text style={styles.queuedError}>{row.error}</Text>
-                    <View style={{ height: 8 }} />
-                    <Button
-                      title="Retry now"
-                      variant="secondary"
-                      onPress={runSync}
-                      loading={syncing}
+        <>
+          <SectionTitle>Waiting to upload</SectionTitle>
+          <Card>
+            {queued.map((row, index) => (
+              <ListRow
+                key={row.localId}
+                title={row.payload.title}
+                meta={
+                  row.status === "error" && row.error
+                    ? row.error
+                    : `Queued · ${formatDate(row.payload.observed_date)}`
+                }
+                last={index === queued.length - 1}
+                right={
+                  <View style={styles.rowRight}>
+                    <Pill
+                      label={row.status === "error" ? "Failed" : "Queued"}
+                      color={row.status === "error" ? colors.rejectedInk : colors.pendingInk}
+                      background={row.status === "error" ? colors.rejectedSoft : colors.pendingSoft}
                     />
-                  </>
-                ) : null}
-                <View style={{ height: 8 }} />
-                <Button
-                  title="Delete"
-                  variant="danger"
-                  onPress={() => confirmDeleteOutbox(row, "queued")}
-                />
-              </View>
-              <Pill
-                label={row.status === "error" ? "Upload failed" : "Pending upload"}
-                color={colors.pending}
-                background={colors.pendingSoft}
+                    <Pressable
+                      accessibilityLabel={`Remove ${row.payload.title} from the queue`}
+                      hitSlop={8}
+                      onPress={() => confirmDeleteOutbox(row, "queued")}
+                      style={styles.trash}
+                    >
+                      <Ionicons name="trash-outline" size={17} color={colors.muted} />
+                    </Pressable>
+                  </View>
+                }
               />
-            </View>
-          ))}
-          <View style={{ height: 10 }} />
-          <Button title={syncing ? "Syncing..." : "Sync now"} onPress={runSync} loading={syncing} />
-        </Card>
+            ))}
+          </Card>
+          <Button
+            title={syncing ? "Syncing" : "Sync now"}
+            variant="secondary"
+            onPress={runSync}
+            loading={syncing}
+            style={{ marginTop: spacing.md }}
+          />
+          <View style={{ height: spacing.xl }} />
+        </>
       ) : null}
 
+      <SectionTitle>Submitted</SectionTitle>
       {records.length === 0 ? (
         <Card>
-          <Text style={styles.muted}>You have not submitted any records yet.</Text>
+          <View style={styles.empty}>
+            <Text style={styles.emptyTitle}>No records submitted yet</Text>
+            <Text style={styles.emptyHint}>Records you capture appear here once they upload.</Text>
+          </View>
         </Card>
       ) : (
-        records.map((record) => (
-          <Card key={record.id} style={{ marginBottom: 10 }}>
-            <View style={styles.rowBetween}>
-              <View style={styles.rowLeft}>
-                <Pill
-                  label={TYPE_LABELS[record.type]}
-                  color={TYPE_COLORS[record.type].fg}
-                  background={TYPE_COLORS[record.type].bg}
-                />
-                {record.type === "hazard" && record.severity ? (
-                  <Pill label={record.severity} color="#FFFFFF" background={SEVERITY_COLORS[record.severity]} />
-                ) : null}
-              </View>
-              <Pill
-                label={STATUS_LABELS[record.status]}
-                color={STATUS_COLORS[record.status].fg}
-                background={STATUS_COLORS[record.status].bg}
-              />
-            </View>
-            <Text style={styles.recordTitle}>{record.title}</Text>
-            <Text style={styles.recordMeta}>
-              {record.zone?.name ?? "No zone"} - {formatDate(record.observed_date)}
-            </Text>
-            {record.supervisor_feedback ? (
-              <Text style={styles.feedback}>Supervisor: {record.supervisor_feedback}</Text>
-            ) : null}
-            <View style={styles.cardButtons}>
-              <Button
-                title="View details"
-                variant="secondary"
-                style={styles.cardButton}
-                onPress={() => navigation.navigate("RecordDetails", { id: record.id })}
-              />
-              {record.status === "pending" ? (
-                <>
-                  <View style={{ width: 8 }} />
-                  <Button
-                    title="Delete"
-                    variant="danger"
-                    style={styles.cardButton}
-                    onPress={() => confirmDeleteRecord(record)}
-                  />
-                </>
-              ) : null}
-            </View>
-          </Card>
-        ))
+        <Card>
+          {records.map((record, index) => (
+            <ListRow
+              key={record.id}
+              title={record.title}
+              meta={`${record.zone?.name ?? "No zone"} · ${formatDate(record.observed_date)}`}
+              last={index === records.length - 1}
+              onPress={() => navigation.navigate("RecordDetails", { id: record.id })}
+              right={
+                <View style={styles.rowRight}>
+                  {statusPill(record.status)}
+                  {record.status === "pending" ? (
+                    <Pressable
+                      accessibilityLabel={`Delete ${record.title}`}
+                      hitSlop={8}
+                      onPress={() => confirmDeleteRecord(record)}
+                      style={styles.trash}
+                    >
+                      <Ionicons name="trash-outline" size={17} color={colors.muted} />
+                    </Pressable>
+                  ) : null}
+                </View>
+              }
+            />
+          ))}
+        </Card>
       )}
+
+      {records.some((record) => record.supervisor_feedback) ? (
+        <Text style={styles.footnote}>
+          A supervisor left a comment on a record. Open it to read the note.
+        </Text>
+      ) : null}
+
+      <View style={{ height: spacing.xxl }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
-  content: { padding: 16, paddingBottom: 40 },
-  heading: { fontSize: 20, fontWeight: "800", color: colors.ink, marginBottom: 14 },
-  queuedRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
-  queuedTitle: { fontSize: 14, fontWeight: "600", color: colors.ink },
-  queuedMeta: { fontSize: 12, color: colors.muted, marginTop: 2 },
-  queuedError: { fontSize: 12, color: colors.rejected, marginTop: 2 },
-  draftButtons: { flexDirection: "row", marginTop: 10 },
-  draftButton: { flex: 1 },
-  rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  rowLeft: { flexDirection: "row", gap: 6, alignItems: "center" },
-  recordTitle: { fontSize: 15, fontWeight: "600", color: colors.ink, marginTop: 8 },
-  recordMeta: { fontSize: 12, color: colors.muted, marginTop: 2 },
-  feedback: { fontSize: 13, color: colors.ink, marginTop: 8, fontStyle: "italic" },
-  cardButtons: { flexDirection: "row", marginTop: 10 },
-  cardButton: { flex: 1 },
-  muted: { fontSize: 13, color: colors.muted },
+  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  header: { paddingTop: spacing.sm, paddingBottom: spacing.lg },
+  title: { ...type.title },
+  subhead: { ...type.subhead, marginTop: 2 },
+  rowRight: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  trash: {
+    width: 30,
+    height: 30,
+    borderRadius: radius.sm,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  empty: { paddingVertical: spacing.lg, alignItems: "center", gap: 2 },
+  emptyTitle: { fontSize: 15, fontWeight: "500", color: colors.ink },
+  emptyHint: { ...type.caption, textAlign: "center" },
+  footnote: { ...type.caption, marginTop: spacing.md, paddingHorizontal: spacing.xs },
 });

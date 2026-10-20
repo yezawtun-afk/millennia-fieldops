@@ -19,10 +19,28 @@ export function LoginForm() {
     setError(null);
 
     const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
     if (signInError) {
       setError(signInError.message);
+      setBusy(false);
+      return;
+    }
+
+    // A deactivated account can still authenticate; the profile row is what
+    // says whether it may work. Check it before letting them in.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_active")
+      .eq("id", signInData.user.id)
+      .single();
+
+    if (profile && profile.is_active === false) {
+      await supabase.auth.signOut();
+      setError("That account has been deactivated. Ask an administrator to reactivate it.");
       setBusy(false);
       return;
     }
@@ -58,7 +76,7 @@ export function LoginForm() {
       />
 
       {error ? (
-        <p className="rounded-md border border-rejected/30 bg-rejected-soft px-3 py-2 text-sm text-rejected">
+        <p className="rounded-control border border-negative/25 bg-negative-soft px-3 py-2 text-[12px] text-negative-ink">
           {error}
         </p>
       ) : null}

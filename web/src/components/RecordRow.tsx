@@ -1,6 +1,7 @@
 "use client";
 
-// One record line, used by the dashboard lists.
+// One record line, used by the dashboard lists. Photo paths come in as
+// short-lived signed URLs from the server, because the bucket is private.
 import { useRouter } from "next/navigation";
 import { Camera, ChevronRight, Leaf, Droplets, TriangleAlert } from "lucide-react";
 import { formatDate, recordSubtitle } from "@/lib/format";
@@ -14,35 +15,41 @@ const TYPE_TILE: Record<string, string> = {
   hazard: "bg-hazard-soft text-hazard",
 };
 
-export function RecordRow({ record }: { record: FieldRecord }) {
+export function RecordRow({
+  record,
+  photoUrl,
+}: {
+  record: FieldRecord;
+  photoUrl?: string | null;
+}) {
   const router = useRouter();
   const Icon = TYPE_ICONS[record.type] || Camera;
-  const photo = record.photos?.[0];
+  const photo = photoUrl ?? (record.photos?.[0]?.startsWith("http") ? record.photos[0] : null);
 
   return (
     <button
       type="button"
       onClick={() => router.push(`/records/${record.id}`)}
-      className="flex w-full items-center gap-3 border-b border-line px-4 py-3 text-left last:border-b-0 hover:bg-page"
+      className="flex w-full items-center gap-3 border-b border-rule px-4 py-2.5 text-left transition-colors last:border-b-0 hover:bg-panel"
     >
       {photo ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={photo} alt="" className="photo-thumb h-10 w-10 shrink-0 rounded-md border border-line" />
+        <img src={photo} alt="" className="photo-thumb h-9 w-9 shrink-0 rounded-[6px] border border-line" />
       ) : (
         <span
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${
-            TYPE_TILE[record.type] || "bg-page text-muted"
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] ${
+            TYPE_TILE[record.type] || "bg-panel text-muted"
           }`}
         >
-          <Icon className="h-5 w-5" />
+          <Icon className="h-4 w-4" strokeWidth={1.7} />
         </span>
       )}
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold text-ink">{record.title}</span>
-        <span className="block truncate text-xs text-muted">
+        <span className="block truncate text-[13px] font-medium text-ink">{record.title}</span>
+        <span className="block truncate text-[12px] text-muted">
           {recordSubtitle(record)}
-          {record.zone?.name ? ` - ${record.zone.name}` : ""} - {formatDate(record.observed_date)}
+          {record.zone?.name ? ` · ${record.zone.name}` : ""} · {formatDate(record.observed_date)}
         </span>
       </span>
 
@@ -51,7 +58,7 @@ export function RecordRow({ record }: { record: FieldRecord }) {
         {record.type === "hazard" ? <SeverityBadge severity={record.severity} /> : null}
       </span>
 
-      <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
+      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-faint" />
     </button>
   );
 }

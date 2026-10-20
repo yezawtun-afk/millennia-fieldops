@@ -240,14 +240,17 @@ The quick way is one paste. Build the combined script:
 powershell -ExecutionPolicy Bypass -File tools\bundle-db-sql.ps1
 ```
 
-That writes `supabase\setup_all.sql` (all of `01`..`06` in the right order). Open it
-in VS Code, select all, copy, then in Supabase go to **SQL Editor -> New query**, paste
-and click **Run**. It takes a few seconds and should say "Success. No rows returned".
+That writes `supabase\setup_all.sql` (every numbered setup file - `01`..`06` plus
+`09_delete_own_pending` - in the right order). Open it in VS Code, select all, copy,
+then in Supabase go to **SQL Editor -> New query**, paste and click **Run**. It takes a
+few seconds and should say "Success. No rows returned".
 
 > `setup_all.sql` is generated, so it is git-ignored - re-run the script if the numbered
 > files change. Prefer doing it by hand? Run `01_schema.sql`, `02_policies.sql`,
-> `03_storage.sql`, `04_triggers.sql`, `05_seed.sql` in that order, then optional
-> `06_severity_levels.sql`. See [SETUP.md](SETUP.md) step 2 for details.
+> `03_storage.sql`, `04_triggers.sql`, `05_seed.sql`, `09_delete_own_pending.sql` in
+> that order, then the optional `06_severity_levels.sql`. See [SETUP.md](SETUP.md)
+> step 2 for details. On a live database, re-run only `02_policies.sql` and
+> `09_delete_own_pending.sql`.
 
 Then create your first admin account:
 

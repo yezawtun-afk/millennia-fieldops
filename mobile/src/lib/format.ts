@@ -32,15 +32,15 @@ export const TYPE_COLORS: Record<RecordType, { fg: string; bg: string }> = {
 };
 
 export const STATUS_COLORS: Record<RecordStatus, { fg: string; bg: string }> = {
-  pending: { fg: colors.pending, bg: colors.pendingSoft },
-  approved: { fg: colors.approved, bg: colors.approvedSoft },
-  rejected: { fg: colors.rejected, bg: colors.rejectedSoft },
+  pending: { fg: colors.pendingInk, bg: colors.pendingSoft },
+  approved: { fg: colors.approvedInk, bg: colors.approvedSoft },
+  rejected: { fg: colors.rejectedInk, bg: colors.rejectedSoft },
 };
 
-export const SEVERITY_COLORS: Record<HazardSeverity, string> = {
-  low: colors.sevLow,
-  medium: colors.sevMedium,
-  critical: colors.sevCritical,
+export const SEVERITY_COLORS: Record<HazardSeverity, { fg: string; bg: string }> = {
+  low: { fg: colors.sevLow, bg: colors.sevLowSoft },
+  medium: { fg: colors.sevMedium, bg: colors.sevMediumSoft },
+  critical: { fg: colors.sevCritical, bg: colors.sevCriticalSoft },
 };
 
 // Dropdown options for the capture form.

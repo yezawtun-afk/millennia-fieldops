@@ -20,7 +20,7 @@ export default async function ZonesPage() {
   return (
     <div>
       <PageHeader
-        title="Monitoring zones"
+        title="Zones"
         subtitle="Zones are drawn as circles on the site map and group field records."
       />
       <ZonesManager initialZones={zones} />

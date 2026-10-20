@@ -7,7 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { fetchNotifications } from "../lib/api";
 import { ensureNotificationPermission, markAllRead, presentUnreadNotifications } from "../lib/notifications";
 import { Button, Card, Pill, SectionTitle } from "../components/ui";
-import { colors } from "../theme";
+import { colors, radius, spacing, type } from "../theme";
 import { formatDateTime } from "../lib/format";
 import type { AppNotification } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
@@ -126,14 +126,22 @@ export function NotificationsScreen({ navigation }: Props) {
       <View style={styles.headerRow}>
         <View>
           <Text style={styles.heading}>Notifications</Text>
-          <Text style={styles.subline}>{unread} unread - {items.length} total</Text>
+          <Text style={styles.subline}>
+            {unread} unread · {items.length} total
+          </Text>
         </View>
-        {unread > 0 ? <Pill label={`${unread} new`} color={colors.hazard} background={colors.hazardSoft} /> : null}
+        {unread > 0 ? (
+          <Pill label={`${unread} new`} color={colors.rejectedInk} background={colors.rejectedSoft} />
+        ) : null}
       </View>
 
       <View style={styles.actions}>
-        <Button title="Enable phone alerts" variant="secondary" onPress={enableAlerts} style={styles.actionBtn} />
-        <View style={{ width: 10 }} />
+        <Button
+          title="Enable phone alerts"
+          variant="secondary"
+          onPress={enableAlerts}
+          style={styles.actionBtn}
+        />
         <Button
           title={busy ? "Marking..." : "Mark all read"}
           variant="secondary"
@@ -148,7 +156,13 @@ export function NotificationsScreen({ navigation }: Props) {
           <Pressable
             key={b}
             onPress={() => setFilter(b)}
-            style={({ pressed }) => [styles.chip, filter === b && styles.chipActive, pressed && { opacity: 0.7 }]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: filter === b }}
+            style={({ pressed }) => [
+              styles.chip,
+              filter === b && styles.chipActive,
+              pressed && { opacity: 0.7 },
+            ]}
           >
             <Text style={[styles.chipText, filter === b && styles.chipTextActive]}>
               {b === "all" ? "All" : b === "unread" ? "Unread" : "Read"}
@@ -158,7 +172,7 @@ export function NotificationsScreen({ navigation }: Props) {
       </View>
 
       {items.length === 0 ? (
-        <Card>
+        <Card padded>
           <Ionicons name="notifications-off-outline" size={26} color={colors.muted} />
           <Text style={styles.emptyTitle}>No notifications yet</Text>
           <Text style={styles.muted}>
@@ -166,31 +180,36 @@ export function NotificationsScreen({ navigation }: Props) {
           </Text>
         </Card>
       ) : filtered.length === 0 ? (
-        <Card>
+        <Card padded>
           <Text style={styles.muted}>Nothing to show in this filter.</Text>
         </Card>
       ) : (
         Array.from(grouped.entries()).map(([title, rows]) => (
-          <View key={title} style={{ marginBottom: 10 }}>
+          <View key={title} style={{ marginBottom: spacing.md }}>
             <SectionTitle>{title}</SectionTitle>
-            {rows.map((item) => {
-              const { bg, fg, icon } = accentForMessage(item.message);
-              return (
-                <Card key={item.id} style={{ marginBottom: 10, borderLeftWidth: 4, borderLeftColor: fg }}>
-                  <View style={styles.itemHeader}>
-                    <View style={styles.leftBadge}>
-                      <Ionicons name={icon} size={16} color={fg} />
-                      <Text style={[styles.statusText, { color: fg }]}>{icon === "checkmark-circle" ? "Approved" : icon === "close-circle" ? "Rejected" : "Update"}</Text>
+            <View style={{ gap: spacing.sm }}>
+              {rows.map((item) => {
+                const { bg, fg, icon } = accentForMessage(item.message);
+                return (
+                  <Card key={item.id} padded>
+                    <View style={styles.itemHeader}>
+                      <View style={[styles.leftBadge, { backgroundColor: bg, borderRadius: radius.full }]}>
+                        <Ionicons name={icon} size={14} color={fg} />
+                        <Text style={[styles.statusText, { color: fg }]}>
+                          {icon === "checkmark-circle"
+                            ? "Approved"
+                            : icon === "close-circle"
+                              ? "Rejected"
+                              : "Update"}
+                        </Text>
+                      </View>
+                      <View style={styles.itemHeadRight}>
+                        {!item.read_at ? <View style={styles.dot} /> : null}
+                        <Pill label={relativeTime(item.created_at)} color={colors.muted} background={colors.panel} />
+                      </View>
                     </View>
-                    <View style={styles.itemHeadRight}>
-                      {!item.read_at ? <View style={styles.dot} /> : null}
-                      <Pill label={relativeTime(item.created_at)} color={colors.muted} background={colors.card} />
-                    </View>
-                  </View>
-                  <Text style={styles.body}>{item.message}</Text>
-                  {item.record_id ? (
-                    <>
-                      <View style={{ height: 8 }} />
+                    <Text style={styles.body}>{item.message}</Text>
+                    {item.record_id ? (
                       <View style={styles.rowActions}>
                         <Button
                           title="Open record"
@@ -199,17 +218,21 @@ export function NotificationsScreen({ navigation }: Props) {
                           style={{ flex: 1 }}
                         />
                         {!item.read_at ? (
-                          <Pressable style={styles.dismissBtn} onPress={() => dismiss(item)}>
-                            <Ionicons name="remove-circle-outline" size={18} color={colors.muted} />
+                          <Pressable
+                            style={styles.dismissBtn}
+                            onPress={() => dismiss(item)}
+                            accessibilityRole="button"
+                          >
+                            <Ionicons name="checkmark" size={17} color={colors.muted} />
                             <Text style={styles.dismissText}>Mark read</Text>
                           </Pressable>
                         ) : null}
                       </View>
-                    </>
-                  ) : null}
-                </Card>
-              );
-            })}
+                    ) : null}
+                  </Card>
+                );
+              })}
+            </View>
           </View>
         ))
       )}
@@ -219,27 +242,35 @@ export function NotificationsScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
-  content: { padding: 16, paddingBottom: 40 },
+  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  heading: { fontSize: 20, fontWeight: "800", color: colors.ink },
-  subline: { fontSize: 12, color: colors.muted, marginTop: 2 },
-  actions: { flexDirection: "row", marginTop: 14 },
+  heading: { ...type.title },
+  subline: { ...type.caption, marginTop: 2 },
+  actions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md },
   actionBtn: { flex: 1 },
-  chipsRow: { flexDirection: "row", gap: 8, marginTop: 14, marginBottom: 4 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line },
+  chipsRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md, marginBottom: spacing.lg },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radius.full,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.control,
+    minHeight: 36,
+    justifyContent: "center",
+  },
   chipActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
-  chipText: { fontSize: 13, color: colors.muted, fontWeight: "600" },
-  chipTextActive: { color: colors.primary },
-  itemHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  leftBadge: { flexDirection: "row", alignItems: "center", gap: 6 },
-  statusText: { fontSize: 13, fontWeight: "700" },
+  chipText: { fontSize: 13, color: colors.ink, fontWeight: "500" },
+  chipTextActive: { color: colors.primaryDark, fontWeight: "600" },
+  itemHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
+  leftBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 9, paddingVertical: 3 },
+  statusText: { fontSize: 11, fontWeight: "600" },
   itemHeadRight: { flexDirection: "row", alignItems: "center", gap: 6 },
-  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.hazard },
-  body: { fontSize: 14, color: colors.ink, lineHeight: 20, marginTop: 4 },
-  meta: { fontSize: 12, color: colors.muted, marginTop: 6 },
-  emptyTitle: { fontSize: 15, fontWeight: "700", color: colors.ink, marginTop: 8 },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.rejected },
+  body: { fontSize: 14, color: colors.ink, lineHeight: 20, marginTop: spacing.sm },
   muted: { fontSize: 13, color: colors.muted, lineHeight: 19, marginTop: 4 },
-  rowActions: { flexDirection: "row", alignItems: "center", gap: 8 },
-  dismissBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 6, paddingHorizontal: 10 },
-  dismissText: { fontSize: 12, color: colors.muted },
+  emptyTitle: { fontSize: 15, fontWeight: "600", color: colors.ink, marginTop: spacing.sm },
+  rowActions: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.md },
+  dismissBtn: { flexDirection: "row", alignItems: "center", gap: 3, paddingVertical: 8, paddingHorizontal: 10 },
+  dismissText: { fontSize: 12, fontWeight: "500", color: colors.muted },
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ComponentType, InputHTMLAttributes, ReactNode } from "react";
+import { Loader2 } from "lucide-react";
 
 // A text input with a small icon inside, used on the sign-in page.
 export function IconField({
@@ -18,26 +19,28 @@ export function IconField({
   return (
     <label className="block">
       <span className="mb-1.5 flex items-center justify-between">
-        <span className="text-sm font-medium text-ink">{label}</span>
+        <span className="text-[12px] font-medium text-muted">{label}</span>
         {right}
       </span>
       <span className="relative block">
         {Icon ? (
-          <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <Icon
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint"
+          />
         ) : null}
         <input
           {...inputProps}
-          className={`w-full rounded-md border border-line bg-white py-2.5 ${
+          className={`h-10 w-full rounded-control border border-control bg-sheet ${
             Icon ? "pl-9" : "pl-3"
-          } pr-3 text-sm text-ink outline-none placeholder:text-muted/70 focus:border-primary focus:ring-2 focus:ring-primary/20`}
+          } pr-3 text-[14px] text-ink placeholder:text-faint focus:border-accent focus:outline-none`}
         />
       </span>
-      {hint ? <span className="mt-1 block text-xs text-muted">{hint}</span> : null}
+      {hint ? <span className="mt-1 block text-[12px] text-muted">{hint}</span> : null}
     </label>
   );
 }
 
-// Green full-width button used as the main action on forms.
+// The one filled action on a form.
 export function PrimaryButton({
   children,
   busy,
@@ -50,9 +53,10 @@ export function PrimaryButton({
     <button
       {...props}
       disabled={busy || props.disabled}
-      className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark disabled:opacity-60"
+      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-[14px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
     >
-      {busy ? "Please wait..." : children}
+      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+      {busy ? "Signing in" : children}
     </button>
   );
 }

@@ -14,7 +14,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select role from public.profiles where id = auth.uid();
+  select role from public.profiles where id = auth.uid() and is_active;
 $$;
 
 create or replace function public.is_reviewer()
@@ -25,7 +25,7 @@ security definer
 set search_path = public
 as $$
   select coalesce(
-    (select role from public.profiles where id = auth.uid()) in ('supervisor', 'admin'),
+    (select role in ('supervisor', 'admin') and is_active from public.profiles where id = auth.uid()),
     false
   );
 $$;
@@ -38,9 +38,20 @@ security definer
 set search_path = public
 as $$
   select coalesce(
-    (select role from public.profiles where id = auth.uid()) = 'admin',
+    (select role = 'admin' and is_active from public.profiles where id = auth.uid()),
     false
   );
+$$;
+
+-- A deactivated account keeps its history but loses every read and write.
+create or replace function public.is_active_user()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce((select is_active from public.profiles where id = auth.uid()), false);
 $$;
 
 -- ---------------------------------------------------------------------------
@@ -60,7 +71,7 @@ alter table public.notifications enable row level security;
 drop policy if exists profiles_select on public.profiles;
 create policy profiles_select on public.profiles
   for select to authenticated
-  using (true);
+  using (id = auth.uid() or public.is_active_user());
 
 drop policy if exists profiles_update_own on public.profiles;
 create policy profiles_update_own on public.profiles
@@ -82,7 +93,7 @@ create policy profiles_update_admin on public.profiles
 drop policy if exists zones_select on public.zones;
 create policy zones_select on public.zones
   for select to authenticated
-  using (true);
+  using (public.is_active_user());
 
 drop policy if exists zones_insert_admin on public.zones;
 create policy zones_insert_admin on public.zones
@@ -113,12 +124,12 @@ create policy zones_delete_admin on public.zones
 drop policy if exists records_select on public.records;
 create policy records_select on public.records
   for select to authenticated
-  using (true);
+  using (public.is_active_user());
 
 drop policy if exists records_insert_own on public.records;
 create policy records_insert_own on public.records
   for insert to authenticated
-  with check (submitted_by = auth.uid() and status = 'pending');
+  with check (public.is_active_user() and submitted_by = auth.uid() and status = 'pending');
 
 drop policy if exists records_update_reviewer on public.records;
 create policy records_update_reviewer on public.records
@@ -129,7 +140,7 @@ create policy records_update_reviewer on public.records
 drop policy if exists records_update_owner_pending on public.records;
 create policy records_update_owner_pending on public.records
   for update to authenticated
-  using (submitted_by = auth.uid() and status = 'pending')
+  using (public.is_active_user() and submitted_by = auth.uid() and status = 'pending')
   with check (submitted_by = auth.uid());
 
 drop policy if exists records_delete_admin on public.records;
@@ -146,10 +157,10 @@ create policy records_delete_admin on public.records
 drop policy if exists notifications_select_own on public.notifications;
 create policy notifications_select_own on public.notifications
   for select to authenticated
-  using (user_id = auth.uid());
+  using (public.is_active_user() and user_id = auth.uid());
 
 drop policy if exists notifications_update_own on public.notifications;
 create policy notifications_update_own on public.notifications
   for update to authenticated
-  using (user_id = auth.uid())
+  using (public.is_active_user() and user_id = auth.uid())
   with check (user_id = auth.uid());

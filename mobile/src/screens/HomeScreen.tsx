@@ -1,5 +1,5 @@
 ﻿import React, { useCallback, useEffect, useState } from "react";
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
@@ -8,36 +8,40 @@ import { syncOutbox } from "../lib/sync";
 import { fetchMyRecords } from "../lib/api";
 import { useOnlineStatus } from "../lib/network";
 import { appVersion, applyUpdate, checkForUpdate, runningBundle } from "../lib/updates";
-import { Banner, Button, Card, Pill, SectionTitle } from "../components/ui";
-import { colors } from "../theme";
+import { Banner, Button, Card, ListRow, Pill, SectionTitle, StatCell } from "../components/ui";
+import { colors, radius, spacing, type } from "../theme";
 import {
   ROLE_LABELS,
-  STATUS_COLORS,
   STATUS_LABELS,
   TYPE_COLORS,
-  TYPE_LABELS,
   formatDate,
-  SEVERITY_COLORS,
 } from "../lib/format";
-import type { FieldRecord } from "../lib/types";
+import type { FieldRecord, RecordType } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
 
 type Props = TabScreenProps<"Home">;
 
-type CountSummary = { approved: number; pending: number; rejected: number; total: number };
+type Summary = { approved: number; pending: number; rejected: number };
 
-function greetingLine(name: string): string {
+function greeting(): string {
   const hour = new Date().getHours();
-  const lead = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  return `${lead}, ${name}`;
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
 }
+
+const CAPTURE_OPTIONS: { type: RecordType; label: string; meta: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { type: "flora", label: "Flora observation", meta: "Species, health, count", icon: "leaf-outline" },
+  { type: "soil_water", label: "Soil & water reading", meta: "pH, moisture, turbidity", icon: "water-outline" },
+  { type: "hazard", label: "Hazard report", meta: "Debris, erosion, drainage", icon: "warning-outline" },
+];
 
 export function HomeScreen({ navigation }: Props) {
   const { profile } = useAuth();
   const online = useOnlineStatus();
-  const [pending, setPending] = useState(0);
+  const [records, setRecords] = useState<FieldRecord[]>([]);
+  const [queued, setQueued] = useState(0);
   const [drafts, setDrafts] = useState(0);
-  const [recent, setRecent] = useState<FieldRecord[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -88,24 +92,27 @@ export function HomeScreen({ navigation }: Props) {
     void runUpdateCheck(true);
   }, [runUpdateCheck]);
 
-  const summary = recent.reduce<CountSummary>((acc, r) => {
-    acc.total += 1;
-    if (r.status === "approved") acc.approved += 1;
-    else if (r.status === "rejected") acc.rejected += 1;
-    else acc.pending += 1;
-    return acc;
-  }, { approved: 0, pending: 0, rejected: 0, total: 0 });
+  // Counts come from every record this user has, not from the five shown below.
+  const summary = records.reduce<Summary>(
+    (acc, record) => {
+      if (record.status === "approved") acc.approved += 1;
+      else if (record.status === "rejected") acc.rejected += 1;
+      else acc.pending += 1;
+      return acc;
+    },
+    { approved: 0, pending: 0, rejected: 0 }
+  );
+
+  const recent = records.slice(0, 5);
 
   const refresh = useCallback(async () => {
-    const queued = await countPending();
-    setPending(queued);
+    setQueued(await countPending());
     setDrafts(await countDrafts());
-    if (profile) {
-      try {
-        setRecent((await fetchMyRecords(profile.id)).slice(0, 6));
-      } catch {
-        // offline - keep what we have
-      }
+    if (!profile) return;
+    try {
+      setRecords(await fetchMyRecords(profile.id));
+    } catch {
+      // Offline: keep the records already loaded.
     }
   }, [profile]);
 
@@ -117,17 +124,21 @@ export function HomeScreen({ navigation }: Props) {
     setSyncing(false);
     await refresh();
     if (result.uploaded > 0 && result.failed === 0) {
-      setMessage(`Uploaded ${result.uploaded} record(s).`);
+      setMessage(`Uploaded ${result.uploaded} record${result.uploaded === 1 ? "" : "s"}.`);
     } else if (result.failed > 0) {
-      setMessage(`${result.failed} record(s) could not upload yet. They stay in the queue.`);
+      setMessage(
+        `${result.failed} record${result.failed === 1 ? "" : "s"} could not upload yet. ${
+          online ? "They will retry." : "They wait for a connection."
+        }`
+      );
     } else {
       setMessage("Everything is already uploaded.");
     }
-  }, [profile, refresh]);
+  }, [profile, refresh, online]);
 
   useFocusEffect(
     useCallback(() => {
-      refresh();
+      void refresh();
     }, [refresh])
   );
 
@@ -137,248 +148,247 @@ export function HomeScreen({ navigation }: Props) {
     setRefreshing(false);
   }
 
+  const firstName = profile?.full_name.split(" ")[0] ?? "field worker";
+
   return (
     <ScrollView
       style={styles.screen}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
     >
-      {/* Hero header with greeting and network pill */}
-      <View style={styles.hero}>
-        <View style={styles.heroTop}>
-          <View style={styles.heroText}>
-            <Text style={styles.greeting}>
-              {greetingLine(profile ? profile.full_name.split(" ")[0] : "field worker")}
+      <View style={styles.header}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.greeting}>{greeting()}</Text>
+          <Text style={styles.name}>{firstName}</Text>
+          <Text style={styles.meta}>
+            {profile ? `${ROLE_LABELS[profile.role]} · Millennia Village` : "Millennia Village"}
+          </Text>
+        </View>
+        <Pill
+          label={online ? "Online" : "Offline"}
+          color={online ? colors.primaryDark : colors.pendingInk}
+          background={online ? colors.primarySoft : colors.pendingSoft}
+          icon={
+            <Ionicons
+              name={online ? "wifi" : "cloud-offline-outline"}
+              size={11}
+              color={online ? colors.primaryDark : colors.pendingInk}
+            />
+          }
+        />
+      </View>
+
+      <View style={styles.strip}>
+        <StatCell label="Approved" value={summary.approved} />
+        <StatCell label="In review" value={summary.pending} tone={summary.pending > 0 ? colors.pendingInk : colors.ink} />
+        <StatCell label="Rejected" value={summary.rejected} />
+        <StatCell label="Drafts" value={drafts} last />
+      </View>
+
+      {queued > 0 ? (
+        <View style={styles.queue}>
+          <View style={styles.queueTop}>
+            <Ionicons name="cloud-upload-outline" size={18} color={colors.pendingInk} />
+            <Text style={styles.queueText}>
+              {queued} record{queued === 1 ? "" : "s"} waiting to upload
             </Text>
-            <Text style={styles.sub}>{profile ? `${ROLE_LABELS[profile.role]} - Millennia Village` : "Millennia Village"}</Text>
-            {profile?.email ? <Text style={styles.email}>{profile.email}</Text> : null}
           </View>
-          <Pill
-            label={online ? "Online" : "Offline"}
-            color={online ? colors.primary : "#92400E"}
-            background={online ? colors.primarySoft : colors.pendingSoft}
-            icon={
-              <Ionicons
-                name={online ? "wifi" : "wifi-outline"}
-                size={11}
-                color={online ? colors.primary : "#92400E"}
-              />
-            }
+          <Button
+            title={syncing ? "Syncing" : "Sync now"}
+            variant="secondary"
+            onPress={runSync}
+            loading={syncing}
+            style={{ marginTop: spacing.sm }}
           />
         </View>
-        <View style={styles.heroFoot}>
-          <Text style={styles.heroFootText}>Declared task: capture field data with GPS and photographs, even offline.</Text>
-        </View>
-      </View>
-
-      {/* Live status strip */}
-      <View style={styles.strip}>
-        <StatChip label="Approved" value={summary.approved} color={colors.approved} />
-        <StatChip label="Pending" value={pending > 0 ? pending : summary.pending} color={colors.pending} />
-        <StatChip label="Drafts" value={drafts} color={colors.hazard} />
-        <StatChip label="Rejected" value={summary.rejected} color={colors.rejected} />
-      </View>
-
-      {/* Pending upload card (only when something waits) */}
-      {pending > 0 ? (
-        <Card style={{ marginBottom: 14 }}>
-          <SectionTitle>Pending upload</SectionTitle>
-          <Text style={styles.pendingText}>
-            {pending} record(s) are saved on this phone and will upload when you have a connection.
-          </Text>
-          <View style={{ height: 10 }} />
-          <Button title={syncing ? "Syncing..." : "Sync now"} onPress={runSync} loading={syncing} />
-        </Card>
       ) : null}
 
-      {/* Drafts card */}
       {drafts > 0 ? (
-        <Card style={{ marginBottom: 14 }}>
-          <SectionTitle>Unfinished drafts</SectionTitle>
-          <Text style={styles.pendingText}>
-            {drafts} record(s) were parked as a draft. Finish them to send them for review.
+        <View style={styles.draftNote}>
+          <Text style={styles.draftText}>
+            {drafts} unfinished draft{drafts === 1 ? "" : "s"} on this phone.
           </Text>
-          <View style={{ height: 10 }} />
-          <Button title="Open my records" variant="secondary" onPress={() => navigation.navigate("Records")} />
-        </Card>
+          <Text style={styles.draftLink} onPress={() => navigation.navigate("Records")}>
+            Finish in My records
+          </Text>
+        </View>
       ) : null}
 
       {message ? <Banner kind="info">{message}</Banner> : null}
 
-      {/* Quick capture actions */}
-      <SectionTitle>Quick capture</SectionTitle>
-      <View style={styles.captureRow}>
-        <CaptureChip
-          label="Flora"
-          icon="leaf-outline"
-          fg={TYPE_COLORS.flora.fg}
-          bg={TYPE_COLORS.flora.bg}
-          onPress={() => navigation.navigate("New", { type: "flora" })}
-        />
-        <CaptureChip
-          label="Soil & water"
-          icon="water-outline"
-          fg={TYPE_COLORS.soil_water.fg}
-          bg={TYPE_COLORS.soil_water.bg}
-          onPress={() => navigation.navigate("New", { type: "soil_water" })}
-        />
-        <CaptureChip
-          label="Hazard"
-          icon="warning-outline"
-          fg={TYPE_COLORS.hazard.fg}
-          bg={TYPE_COLORS.hazard.bg}
-          onPress={() => navigation.navigate("New", { type: "hazard" })}
-        />
-      </View>
+      <SectionTitle>Capture</SectionTitle>
+      <Card>
+        {CAPTURE_OPTIONS.map((option, index) => (
+          <ListRow
+            key={option.type}
+            title={option.label}
+            meta={option.meta}
+            last={index === CAPTURE_OPTIONS.length - 1}
+            icon={
+              <View
+                style={[
+                  styles.captureIcon,
+                  { backgroundColor: TYPE_COLORS[option.type].bg },
+                ]}
+              >
+                <Ionicons name={option.icon} size={18} color={TYPE_COLORS[option.type].fg} />
+              </View>
+            }
+            onPress={() => navigation.navigate("New", { type: option.type })}
+          />
+        ))}
+      </Card>
 
-      <View style={styles.rowBetween}>
-        <SectionTitle>My latest records</SectionTitle>
-        <Pressable onPress={() => navigation.navigate("Records")} hitSlop={6}>
-          <Text style={styles.linkText}>See all</Text>
-        </Pressable>
-      </View>
+      <View style={{ height: spacing.xl }} />
+
+      <SectionTitle
+        action={
+          <Text style={styles.link} onPress={() => navigation.navigate("Records")}>
+            See all
+          </Text>
+        }
+      >
+        Recent records
+      </SectionTitle>
 
       {recent.length === 0 ? (
         <Card>
-          <Text style={styles.muted}>
-            No records yet. Tap a "Quick capture" chip above, or use the New tab.
-          </Text>
+          <View style={styles.empty}>
+            <Text style={styles.emptyTitle}>Nothing captured yet</Text>
+            <Text style={styles.emptyHint}>Pick a record type above to start. It works offline.</Text>
+          </View>
         </Card>
       ) : (
-        recent.map((record) => (
-          <Card key={record.id} style={{ marginBottom: 10 }}>
-            <View style={styles.rowBetween}>
-              <View style={styles.rowLeft}>
-                <Pill label={TYPE_LABELS[record.type]} color={TYPE_COLORS[record.type].fg} background={TYPE_COLORS[record.type].bg} />
-                {record.type === "hazard" && record.severity ? (
-                  <Pill label={record.severity} color="#FFFFFF" background={SEVERITY_COLORS[record.severity]} />
-                ) : null}
-              </View>
-              <Pill label={STATUS_LABELS[record.status]} color={STATUS_COLORS[record.status].fg} background={STATUS_COLORS[record.status].bg} />
-            </View>
-            <Text style={styles.recordTitle}>{record.title}</Text>
-            <Text style={styles.recordMeta}>
-              {record.zone?.name ?? "No zone"} - {formatDate(record.observed_date)}
-            </Text>
-            <View style={{ height: 8 }} />
-            <View style={styles.cardActions}>
-              <Button title="Open details" variant="secondary" onPress={() => navigation.navigate("RecordDetails", { id: record.id })} style={{ flex: 1 }} />
-            </View>
-          </Card>
-        ))
+        <Card>
+          {recent.map((record, index) => (
+            <ListRow
+              key={record.id}
+              title={record.title}
+              meta={`${record.zone?.name ?? "No zone"} · ${formatDate(record.observed_date)}`}
+              last={index === recent.length - 1}
+              onPress={() => navigation.navigate("RecordDetails", { id: record.id })}
+              right={
+                <Pill
+                  label={STATUS_LABELS[record.status]}
+                  color={
+                    record.status === "pending"
+                      ? colors.pendingInk
+                      : record.status === "approved"
+                        ? colors.approvedInk
+                        : colors.rejectedInk
+                  }
+                  background={
+                    record.status === "pending"
+                      ? colors.pendingSoft
+                      : record.status === "approved"
+                        ? colors.approvedSoft
+                        : colors.rejectedSoft
+                  }
+                />
+              }
+            />
+          ))}
+        </Card>
       )}
 
-      <Card style={{ marginTop: 14, marginBottom: 8 }}>
-        <SectionTitle>App updates</SectionTitle>
-        <Text style={styles.pendingText}>
-          Version {appVersion()} ({runningBundle()}). Improvements to the app can arrive without
-          reinstalling it - check any time, or accept the prompt when one is waiting.
-        </Text>
-        {updateNote ? <Text style={styles.updateNote}>{updateNote}</Text> : null}
-        <View style={{ height: 10 }} />
-        <Button
-          title={checkingUpdate ? "Checking..." : "Check for updates"}
-          variant="secondary"
-          onPress={() => void runUpdateCheck(false)}
-          loading={checkingUpdate}
+      <View style={{ height: spacing.xl }} />
+
+      <SectionTitle>App</SectionTitle>
+      <Card>
+        <ListRow
+          title="Version"
+          meta={`${appVersion()} · ${runningBundle()}`}
+          right={
+            <Text style={styles.checkLink} onPress={() => void runUpdateCheck(false)}>
+              {checkingUpdate ? "Checking" : "Check for update"}
+            </Text>
+          }
+          last
         />
+        {updateNote ? (
+          <Text style={styles.updateNote}>{updateNote}</Text>
+        ) : (
+          <Text style={styles.updateHint}>
+            Improvements can arrive without reinstalling the app.
+          </Text>
+        )}
       </Card>
 
-      <Card style={{ marginBottom: 8 }}>
-        <SectionTitle>Quick links</SectionTitle>
-        <View style={styles.linkGrid}>
-          <Pressable style={styles.linkBtn} onPress={() => navigation.navigate("Records")}>
-            <Ionicons name="list-outline" size={20} color={colors.primary} />
-            <Text style={styles.linkLabel}>My records</Text>
-          </Pressable>
-          <Pressable style={styles.linkBtn} onPress={() => navigation.navigate("Alerts")}>
-            <Ionicons name="notifications-outline" size={20} color={colors.primary} />
-            <Text style={styles.linkLabel}>Alerts</Text>
-          </Pressable>
-          <Pressable style={styles.linkBtn} onPress={() => navigation.navigate("New", { type: "hazard" })}>
-            <Ionicons name="alert-circle-outline" size={20} color={colors.hazard} />
-            <Text style={styles.linkLabel}>Report hazard</Text>
-          </Pressable>
-          <Pressable style={styles.linkBtn} onPress={runSync}>
-            <Ionicons name={syncing ? "sync-circle" : "sync-outline"} size={20} color={colors.primary} />
-            <Text style={styles.linkLabel}>Sync now</Text>
-          </Pressable>
-        </View>
-      </Card>
+      <View style={{ height: spacing.xl }} />
     </ScrollView>
-  );
-}
-
-function StatChip({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <View style={styles.statChip}>
-      <View style={[styles.statDot, { backgroundColor: color }]} />
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
-function CaptureChip({ label, icon, fg, bg, onPress }: { label: string; icon: any; fg: string; bg: string; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.captureChip, { backgroundColor: bg }, pressed && { opacity: 0.6 }]}
-      accessibilityRole="button"
-    >
-      <Ionicons name={icon} size={26} color={fg} />
-      <Text style={[styles.captureChipLabel, { color: fg }]}>{label}</Text>
-    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
-  content: { padding: 16, paddingBottom: 40 },
-  hero: { backgroundColor: colors.forest, padding: 16, borderRadius: 16, marginBottom: 14 },
-  heroTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
-  heroText: { flex: 1 },
-  greeting: { fontSize: 20, fontWeight: "800", color: "#FFFFFF" },
-  sub: { fontSize: 12.5, color: "rgba(255,255,255,0.75)", marginTop: 2 },
-  email: { fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 2 },
-  heroFoot: { marginTop: 10, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255,255,255,0.25)" },
-  heroFootText: { fontSize: 12, color: "rgba(255,255,255,0.65)" },
-  strip: { flexDirection: "row", gap: 8, marginBottom: 14 },
-  statChip: {
-    flex: 1,
+  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+
+  header: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
+  },
+  greeting: { ...type.caption, fontSize: 13 },
+  name: { ...type.title, marginTop: 1 },
+  meta: { ...type.subhead, marginTop: 2 },
+
+  strip: {
+    flexDirection: "row",
     backgroundColor: colors.card,
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.line,
+    borderRadius: radius.md,
+    borderCurve: "continuous",
+    overflow: "hidden",
+    paddingHorizontal: spacing.xs,
   },
-  statDot: { width: 7, height: 7, borderRadius: 4, marginBottom: 4 },
-  statValue: { fontSize: 18, fontWeight: "800", color: colors.ink },
-  statLabel: { fontSize: 10.5, color: colors.muted, marginTop: 2 },
-  pendingText: { fontSize: 13, color: colors.ink, lineHeight: 19 },
-  updateNote: { fontSize: 12, color: colors.primary, marginTop: 6 },
-  tiles: { gap: 4 },
-  captureRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
-  captureChip: {
-    flex: 1,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: "center",
-    gap: 6,
-    borderWidth: 1,
-    borderColor: colors.line,
+
+  queue: {
+    marginTop: spacing.md,
+    backgroundColor: colors.pendingSoft,
+    borderRadius: radius.md,
+    borderCurve: "continuous",
+    padding: spacing.lg,
   },
-  captureChipLabel: { fontSize: 13, fontWeight: "700" },
-  rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  rowLeft: { flexDirection: "row", gap: 6, alignItems: "center" },
-  recordTitle: { fontSize: 15, fontWeight: "600", color: colors.ink, marginTop: 8 },
-  recordMeta: { fontSize: 12, color: colors.muted, marginTop: 2 },
-  muted: { fontSize: 13, color: colors.muted },
-  cardActions: { flexDirection: "row", gap: 8 },
-  linkText: { fontSize: 13, color: colors.primary, fontWeight: "600" },
-  linkGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  linkBtn: { width: "47%", flexDirection: "row", alignItems: "center", gap: 8, padding: 12, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.line },
-  linkLabel: { fontSize: 13, fontWeight: "600", color: colors.ink },
+  queueTop: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  queueText: { fontSize: 14, fontWeight: "500", color: colors.pendingInk },
+
+  draftNote: {
+    marginTop: spacing.md,
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    borderCurve: "continuous",
+    padding: spacing.lg,
+    gap: 2,
+  },
+  draftText: { ...type.body, fontSize: 14 },
+  draftLink: { fontSize: 13, fontWeight: "500", color: colors.primary },
+
+  captureIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.sm,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  link: { fontSize: 13, fontWeight: "500", color: colors.primary },
+  checkLink: { fontSize: 13, fontWeight: "500", color: colors.primary },
+
+  empty: { paddingVertical: spacing.lg, alignItems: "center", gap: 2 },
+  emptyTitle: { fontSize: 15, fontWeight: "500", color: colors.ink },
+  emptyHint: { ...type.caption, textAlign: "center" },
+
+  updateNote: {
+    ...type.caption,
+    color: colors.primaryDark,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
+  updateHint: {
+    ...type.caption,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingTop: 2,
+  },
 });

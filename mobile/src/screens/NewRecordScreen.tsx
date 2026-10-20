@@ -13,13 +13,13 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
 import { Banner, Button, Card, ChipGroup, Field, Input, SectionTitle } from "../components/ui";
-import { colors, radius } from "../theme";
+import { colors, radius, spacing, type } from "../theme";
 import { enqueueRecord, getOutbox, markPending, saveDraft } from "../lib/sqlite";
 import { syncOutbox } from "../lib/sync";
 import { fetchZones } from "../lib/api";
 import { useOnlineStatus } from "../lib/network";
 import { getCurrentCoordinates } from "../lib/location";
-import { captureFromCamera, pickFromLibrary } from "../lib/photos";
+import { captureFromCamera, deletePhoto, pickFromLibrary } from "../lib/photos";
 import { GROWTH_STAGES, HAZARD_TYPES, HEALTH_CONDITIONS, READING_TYPES } from "../lib/format";
 import type { HazardSeverity, OutboxRecord, RecordType, Zone } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
@@ -158,6 +158,13 @@ export function NewRecordScreen({ navigation, route }: Props) {
     if (uri) setPhotos((prev) => [...prev, uri]);
   }
 
+  // Removing a photo from the form should also remove the copy on the phone;
+  // otherwise every discarded shot stays in the app folder for good.
+  function removePhoto(uri: string) {
+    setPhotos((prev) => prev.filter((item) => item !== uri));
+    void deletePhoto(uri);
+  }
+
   async function captureGps() {
     setGpsBusy(true);
     const result = await getCurrentCoordinates();
@@ -291,6 +298,13 @@ export function NewRecordScreen({ navigation, route }: Props) {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.header}>
+          <Text style={styles.title}>{draftId ? "Finish the draft" : "New record"}</Text>
+          <Text style={styles.subhead}>
+            Saved on the phone first. It uploads by itself when there is signal.
+          </Text>
+        </View>
+
         <SectionTitle>Record type</SectionTitle>
         <ChipGroup
           options={TYPE_OPTIONS.map((o) => o.label)}
@@ -324,7 +338,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
           </Banner>
         ) : null}
 
-        <Card style={{ marginBottom: 14 }}>
+        <Card padded style={{ marginBottom: spacing.lg }}>
           <Field label="Title">
             <Input
               value={title}
@@ -414,7 +428,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
           </Field>
         </Card>
 
-        <Card style={{ marginBottom: 14 }}>
+        <Card padded style={{ marginBottom: spacing.lg }}>
           <SectionTitle>Location</SectionTitle>
           {coords ? (
             <Text style={styles.coords}>
@@ -432,13 +446,19 @@ export function NewRecordScreen({ navigation, route }: Props) {
           />
         </Card>
 
-        <Card style={{ marginBottom: 14 }}>
+        <Card padded style={{ marginBottom: spacing.lg }}>
           <SectionTitle>Photos</SectionTitle>
           <View style={styles.photoRow}>
             {photos.map((uri) => (
               <View key={uri} style={styles.photoWrap}>
                 <Image source={{ uri }} style={styles.photo} />
-                <Pressable style={styles.photoRemove} onPress={() => setPhotos((p) => p.filter((x) => x !== uri))}>
+                <Pressable
+                  style={styles.photoRemove}
+                  onPress={() => removePhoto(uri)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Remove photo"
+                  hitSlop={6}
+                >
                   <Text style={styles.photoRemoveText}>x</Text>
                 </Pressable>
               </View>
@@ -471,12 +491,15 @@ export function NewRecordScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.page },
   screen: { flex: 1, backgroundColor: colors.page },
-  content: { padding: 16, paddingBottom: 48 },
+  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  header: { paddingTop: spacing.sm, paddingBottom: spacing.lg },
+  title: { ...type.title },
+  subhead: { ...type.subhead, marginTop: 2, maxWidth: 320 },
   helper: { fontSize: 12, color: colors.muted, marginTop: 6 },
-  coords: { fontSize: 15, fontWeight: "600", color: colors.ink },
+  coords: { fontSize: 15, fontWeight: "500", color: colors.ink },
   photoRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   photoWrap: { position: "relative" },
-  photo: { width: 84, height: 84, borderRadius: radius.md, backgroundColor: colors.line },
+  photo: { width: 84, height: 84, borderRadius: radius.sm, backgroundColor: colors.line },
   photoRemove: {
     position: "absolute",
     top: -6,
@@ -488,8 +511,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  photoRemoveText: { color: "#FFFFFF", fontWeight: "700", fontSize: 13, lineHeight: 16 },
-  photoButtons: { flexDirection: "row", marginTop: 12 },
+  photoRemoveText: { color: colors.onTint, fontWeight: "600", fontSize: 12, lineHeight: 15 },
+  photoButtons: { flexDirection: "row", marginTop: spacing.md, gap: spacing.sm },
   flexBtn: { flex: 1 },
-  footerHint: { fontSize: 12, color: colors.muted, marginTop: 12, lineHeight: 18 },
+  footerHint: { fontSize: 12, color: colors.muted, marginTop: spacing.md, lineHeight: 18 },
 });

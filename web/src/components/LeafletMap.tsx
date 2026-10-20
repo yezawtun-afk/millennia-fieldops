@@ -31,7 +31,7 @@ export function LeafletMap({
 }: {
   markers: MapMarker[];
   zones: MapZone[];
-  height: number;
+  height: number | string;
 }) {
   const points: [number, number][] = [
     ...markers.map((m) => [m.lat, m.lng] as [number, number]),

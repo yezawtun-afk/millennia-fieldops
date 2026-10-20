@@ -50,8 +50,14 @@ export async function signPhotoUrls(paths: string[]): Promise<string[]> {
 // record is still 'pending' (policy records_delete_own_pending), so a record
 // that a supervisor already reviewed is safe from the field app.
 export async function deleteRecord(id: string, photos: string[] = []): Promise<void> {
-  // Photos first, best effort - an orphaned file is better than a record that
-  // would not delete because storage was unhappy.
+  // Row first: if the delete is refused (the record was reviewed), nothing has
+  // been removed. Clearing the files first would leave a record pointing at
+  // photos that no longer exist.
+  const { error } = await supabase.from("records").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+
+  // Photos second, best effort: an orphaned file is harmless, a broken
+  // reference is not.
   if (photos.length > 0) {
     try {
       await supabase.storage.from(PHOTO_BUCKET).remove(photos);
@@ -59,7 +65,4 @@ export async function deleteRecord(id: string, photos: string[] = []): Promise<v
       // ignore
     }
   }
-
-  const { error } = await supabase.from("records").delete().eq("id", id);
-  if (error) throw new Error(error.message);
 }
