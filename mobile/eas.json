@@ -13,7 +13,8 @@
       },
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://bjlyskwoxpkvepbwaxfc.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_FZo6C-YL-j81DlMsz1B5yw_Ds30hpVl"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_FZo6C-YL-j81DlMsz1B5yw_Ds30hpVl",
+        "EXPO_PUBLIC_WEB_URL": "https://millennia-fieldops-rewrite.vercel.app"
       }
     },
     "production": {
@@ -24,7 +25,8 @@
       },
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://bjlyskwoxpkvepbwaxfc.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_FZo6C-YL-j81DlMsz1B5yw_Ds30hpVl"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_FZo6C-YL-j81DlMsz1B5yw_Ds30hpVl",
+        "EXPO_PUBLIC_WEB_URL": "https://millennia-fieldops-rewrite.vercel.app"
       }
     }
   },

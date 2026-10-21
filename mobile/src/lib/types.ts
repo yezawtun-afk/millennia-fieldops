@@ -4,6 +4,7 @@ export type UserRole = "field_worker" | "supervisor" | "admin";
 export type RecordType = "flora" | "soil_water" | "hazard";
 export type RecordStatus = "pending" | "approved" | "rejected";
 export type HazardSeverity = "low" | "medium" | "critical";
+export type AccountStatus = "pending" | "approved" | "declined";
 
 export interface Profile {
   id: string;
@@ -12,6 +13,10 @@ export interface Profile {
   role: UserRole;
   is_active: boolean;
   created_at: string;
+  // Optional: a database that has not re-run 01_schema.sql does not return
+  // them, and a missing status means the account is approved (as before).
+  phone?: string | null;
+  status?: AccountStatus | null;
 }
 
 export interface Zone {

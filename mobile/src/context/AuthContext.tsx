@@ -2,6 +2,8 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
+import { signInWithPhone } from "../lib/api";
+import { looksLikePhone, normalizePhone } from "../lib/phone";
 import type { Profile } from "../lib/types";
 
 // The profile row (name, role) is cached on the phone. Starting the app with no
@@ -10,17 +12,33 @@ import type { Profile } from "../lib/types";
 // who is signed in offline, and the server still re-checks everything on upload.
 const PROFILE_CACHE_PREFIX = "millennia-fieldops.profile.";
 
+// Why a correct password still cannot get in. A missing status means the
+// database has not been upgraded yet, so the account is treated as approved.
+function refusalMessage(profile: Profile): string | null {
+  if (profile.status === "pending") {
+    return "Your account request is waiting for an administrator to approve it.";
+  }
+  if (profile.status === "declined") {
+    return "Your account request was declined. Contact an administrator.";
+  }
+  if (profile.is_active === false) {
+    return "This account has been deactivated. Ask an administrator to reactivate it.";
+  }
+  return null;
+}
+
 interface AuthContextValue {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
   initError: string | null;
-  signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signIn: (identifier: string, password: string) => Promise<{ error?: string }>;
   signUp: (
     email: string,
     password: string,
-    fullName: string
-  ) => Promise<{ error?: string; needsConfirmation?: boolean }>;
+    fullName: string,
+    phone?: string
+  ) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -43,12 +61,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!error && data) {
       const row = data as Profile;
 
-      // Deactivated accounts are refused at the database level too, but signing
-      // out here stops the app from pretending it is still connected.
-      if (row.is_active === false) {
+      // Pending, declined and deactivated accounts are refused at the database
+      // level too, but signing out here stops the app from pretending it is
+      // still connected.
+      const refusal = refusalMessage(row);
+      if (refusal) {
         await supabase.auth.signOut();
         setProfile(null);
-        setInitError("This account has been deactivated. Ask an administrator to reactivate it.");
+        setInitError(refusal);
         return;
       }
 
@@ -111,21 +131,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [loadProfile]);
 
-  const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    return error ? { error: error.message } : {};
-  }, []);
+  const signIn = useCallback(async (identifier: string, password: string) => {
+    const value = identifier.trim();
 
-  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
+    if (looksLikePhone(value)) {
+      // Phone numbers are not Supabase identities. The web dashboard resolves
+      // the number to an account and returns a normal session.
+      const result = await signInWithPhone(value, password);
+      if (!result.access_token || !result.refresh_token) {
+        return { error: result.error ?? "Incorrect phone number or password." };
+      }
+      const { error } = await supabase.auth.setSession({
+        access_token: result.access_token,
+        refresh_token: result.refresh_token,
+      });
+      return error ? { error: error.message } : {};
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: value,
       password,
-      options: { data: { full_name: fullName.trim() } },
     });
     if (error) return { error: error.message };
-    // If email confirmation is on, there is no session yet.
-    return { needsConfirmation: !data.session };
+
+    // A pending, declined or deactivated account can still authenticate; the
+    // profile row decides. Check before the navigator switches screens.
+    if (data.user) {
+      const { data: row } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", data.user.id)
+        .single();
+      const refusal = row ? refusalMessage(row as Profile) : null;
+      if (refusal) {
+        await supabase.auth.signOut();
+        return { error: refusal };
+      }
+    }
+
+    return {};
   }, []);
+
+  const signUp = useCallback(
+    async (email: string, password: string, fullName: string, phone?: string) => {
+      const trimmedPhone = phone?.trim() ? phone.trim() : "";
+      const normalizedPhone = trimmedPhone ? normalizePhone(trimmedPhone) : null;
+      if (trimmedPhone && !normalizedPhone) {
+        return { error: "Enter a valid phone number, for example 012-345 6789." };
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+            ...(normalizedPhone ? { phone: normalizedPhone } : {}),
+          },
+        },
+      });
+      if (error) return { error: error.message };
+
+      // New accounts wait for an administrator. If Supabase returned a session,
+      // drop it: a pending person must not sit inside the app with no data.
+      if (data.session) await supabase.auth.signOut();
+      return {};
+    },
+    []
+  );
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();

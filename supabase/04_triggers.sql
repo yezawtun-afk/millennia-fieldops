@@ -14,12 +14,23 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, full_name, email, role)
+  insert into public.profiles (id, full_name, email, phone, role, status)
   values (
     new.id,
     coalesce(new.raw_user_meta_data ->> 'full_name', split_part(new.email, '@', 1)),
     new.email,
-    'field_worker'
+    -- Only accept a number that already looks like E.164; anything else is
+    -- stored as null instead of breaking the sign-up.
+    case
+      when new.raw_user_meta_data ->> 'phone' ~ '^\+[1-9][0-9]{7,14}$'
+        then new.raw_user_meta_data ->> 'phone'
+      else null
+    end,
+    'field_worker',
+    -- Everyone who signs up themselves waits for an administrator. Accounts
+    -- created from the web dashboard are approved right after creation by the
+    -- createUser action, which runs with the service role.
+    'pending'
   )
   on conflict (id) do nothing;
   return new;
@@ -57,6 +68,15 @@ begin
     if not public.is_admin() then
       new.role := old.role;
       new.is_active := old.is_active;
+      -- Approval and login identities are decided by an administrator, never
+      -- by the account holder.
+      new.status := old.status;
+      new.phone := old.phone;
+      new.email := old.email;
+      new.requested_at := old.requested_at;
+      new.decided_by := old.decided_by;
+      new.decided_at := old.decided_at;
+      new.decision_note := old.decision_note;
     end if;
     return new;
   end if;

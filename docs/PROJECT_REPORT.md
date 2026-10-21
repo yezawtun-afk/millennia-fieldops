@@ -93,7 +93,14 @@ connection exists. This is what makes the app genuinely usable on the ridge with
 
 ### 4.1 Mobile app (field workers)
 
-- Email/password sign-in and self-registration (Supabase Auth, session persisted on device).
+- **Email or phone number + password** sign-in (Supabase Auth, session persisted on
+  device). Phone numbers need no SMS provider: the number is resolved to an account by the
+  web dashboard's `/api/auth/login` route, which verifies the password before returning a
+  session.
+- **Account requests instead of instant sign-up**: the form collects name, email, an
+  optional phone number and a password. Every request is created as `pending`, which the
+  database treats as "may read nothing"; an administrator approves or declines it from the
+  web dashboard.
 - Field dashboard home screen: greeting and role, a strip of approved / in review /
   rejected / draft counts (taken from every record, not just the visible list), one-tap
   capture by record type, the upload queue with **Sync now**, the five most recent
@@ -127,8 +134,10 @@ connection exists. This is what makes the app genuinely usable on the ridge with
 
 ### 4.2 Web dashboard (supervisors & admins)
 
-- Secure login with role-based access control on routes and data. Deactivated accounts are
-  refused by the database as well as by the app.
+- Secure login with role-based access control on routes and data. Deactivated, pending and
+  declined accounts are refused by the database as well as by the app. The login field
+  accepts an **email address or a phone number** with the same password; neither uses a
+  one-time code.
 - Dashboard overview: exact totals for records, records waiting review, approved, rejected
   and active hazards; submissions per week across the last eight weeks; a by-zone table
   split by record type; a review queue (oldest first); hazard counts by severity; and the
@@ -142,7 +151,10 @@ connection exists. This is what makes the app genuinely usable on the ridge with
   record page, with a two-click confirmation; its photos and notifications are removed
   with it.
 - Hazard report export to PDF (`/api/export` route using pdfkit).
-- User management: create accounts, assign roles, deactivate / reactivate.
+- User management: a **Requests waiting for review** panel (approve / decline), account
+  creation, role assignment, **deactivate / reactivate**, and permanent **delete** (never
+  for yourself or the last administrator, and refused when the account already owns field
+  records - deactivate those instead).
 - Zone management: create and edit the monitoring zones shown on the map.
 
 ### 4.3 Backend (Supabase)
@@ -150,7 +162,9 @@ connection exists. This is what makes the app genuinely usable on the ridge with
 - PostgreSQL schema with 4 domain tables and 1 storage bucket (`03_storage.sql`)
   for record photos.
 - Row Level Security on every table; roles enforced in the database, not the UI.
-- `handle_new_user()` trigger: every new sign-up gets a `profiles` row automatically.
+- `handle_new_user()` trigger: every new sign-up gets a `profiles` row automatically,
+  as `field_worker` with `status = 'pending'` and the phone number from the sign-up
+  metadata. Accounts created by an administrator are approved straight away.
 - Review notification trigger: approving/rejecting a record inserts a notification for
   the submitter.
 - Deployed SQL lives in 9 numbered files (`01_schema` through
@@ -164,7 +178,7 @@ connection exists. This is what makes the app genuinely usable on the ridge with
 
 | Table | Purpose | Notes |
 | --- | --- | --- |
-| `profiles` | one row per auth user: full name, email, role, `is_active` | auto-created by trigger; roles: `field_worker`, `supervisor`, `admin` |
+| `profiles` | one row per auth user: full name, email, optional `phone`, role, `is_active`, approval `status` (`pending`/`approved`/`declined`) + decision fields | auto-created by trigger as pending; roles: `field_worker`, `supervisor`, `admin` |
 | `zones` | the 5 monitoring zones of Millennia Village | name, description, colour, centre lat/lng, radius in metres |
 | `records` | the field observations | type, severity, status (`pending`/`approved`/`rejected`), GPS, photos, reviewer + comment |
 | `notifications` | per-user messages for review decisions | scoped per user by RLS |
@@ -174,13 +188,19 @@ connection exists. This is what makes the app genuinely usable on the ridge with
 
 ## 6. Security model
 
-- **Authentication:** Supabase Auth (email/password). Sessions are persisted on the mobile
-  device and in SSR cookies on the web.
+- **Authentication:** Supabase Auth (email + password). A phone number is a profile
+  attribute, not a Supabase identity: `/api/auth/login` (web, server-side service role)
+  normalises the number, verifies the password, then returns a normal session to the app.
+  The email behind the number is never returned, and unknown numbers and wrong passwords
+  get the same answer. Sessions are persisted on the mobile device and in SSR cookies on
+  the web.
 - **Authorisation:** Row Level Security policies (02_policies.sql) are the enforcement
-  point — every signed-in active user may read the site's records and zones, while a
+  point — every **approved and active** user may read the site's records and zones, while a
   field worker can only delete their own record and only while it is pending, and only
   sees their own notifications. Supervisors/admins review everything; deactivated users
-  (`is_active = false`) are refused by every policy.
+  (`is_active = false`), pending requests and declined requests are refused by every policy
+  (a pending person can still read their own profile row, which is how the app explains the
+  wait).
 - **Key hygiene:** the mobile and web apps only carry the *publishable/anon* key, which is
   public by design — RLS is what protects data. The **service role key** is required only
   for server-side admin actions (web "create user" flows) and belongs in server-side env

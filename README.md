@@ -36,8 +36,13 @@ Demo accounts and a full end-of-project snapshot live in
 ## The three parts
 
 ### 1. Mobile app (`mobile/`) - for field workers
-- Email/password sign-in (Supabase Auth), session kept on the phone. The profile is cached
-  too, so the app still knows who you are when it starts with no connection.
+- **Email or phone number + password** sign-in (Supabase Auth), session kept on the phone.
+  The profile is cached too, so the app still knows who you are when it starts with no
+  connection. Phone sign-in needs no SMS: the number is resolved by the web dashboard's
+  `/api/auth/login` route (see the note in `docs/DEPLOY.md`).
+- **Request an account** instead of instant sign-up: the form asks for name, email, an
+  optional phone number and a password. An administrator approves or declines the request
+  in the web dashboard; until then the account cannot read any data.
 - Capture **flora & biodiversity**, **soil & water** and **environmental hazard** records.
 - Automatic **GPS** (expo-location) and **photos** (expo-camera / expo-image-picker).
 - **Offline-first**: records and photos are saved in **SQLite** (expo-sqlite). Offline, the
@@ -60,13 +65,17 @@ Demo accounts and a full end-of-project snapshot live in
   before publishing, or the update ships without a backend URL; see `docs/DEPLOY.md`.
 
 ### 2. Web dashboard (`web/`) - for supervisors and admins
-- Secure login with role-based access (supervisor vs admin).
+- Secure login with **email or phone number** and a password, role-based access
+  (supervisor vs admin). Deactivated, pending and declined accounts are refused by the
+  database as well as by the app.
 - Dashboard statistics: counts by type, status, **zone** and date, plus hazards by severity.
 - Records management: search, filter, view full details and photos.
 - Interactive **Leaflet map** of the site, opening on Millennia Village (2.752616,
   101.906463) with records plotted over the monitoring zones.
 - Review and verification: approve/reject with a comment (sent back to the worker).
-- **User management**: create accounts, assign roles, and **deactivate/reactivate** accounts.
+- **User management**: review account requests (approve / decline), create accounts, assign
+  roles, **deactivate/reactivate**, and **delete** an account permanently (refused for
+  anyone who already submitted field records - deactivate those instead).
 - **Delete records**: administrators can remove a record permanently (bin icon in the
   records list or on the record page); its photos and notifications go with it.
 - Monitoring **zones** management.

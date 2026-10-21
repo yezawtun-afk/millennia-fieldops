@@ -30,7 +30,9 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isPublic = path === "/login" || path.startsWith("/auth");
+  // `/api/auth/login` must stay reachable before sign-in: the phone app posts
+  // the number and password there to obtain a session.
+  const isPublic = path === "/login" || path.startsWith("/auth") || path.startsWith("/api/auth");
 
   // Not signed in and asking for a private page -> go to login.
   if (!user && !isPublic) {

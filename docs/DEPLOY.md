@@ -96,6 +96,17 @@ eas update --channel preview --message "what changed"
 
   They are now stored on EAS for the `preview` and `production` environments, so future
   updates and builds both pick them up.
+- **Phone sign-in**: the phone app posts the number to the web dashboard's
+  `/api/auth/login` route. The bundle reads `EXPO_PUBLIC_WEB_URL`; when it is not set, the
+  app falls back to the deployed dashboard URL in `mobile/src/lib/api.ts`
+  (`https://millennia-fieldops-rewrite.vercel.app`). Set it explicitly if you deploy the
+  dashboard somewhere else:
+
+  ```powershell
+  eas env:set --name EXPO_PUBLIC_WEB_URL --value "https://your-dashboard.vercel.app" --environment preview --environment production --visibility plaintext --non-interactive
+  ```
+
+  That route needs `SUPABASE_SERVICE_ROLE_KEY` on Vercel (section 2).
 - **Check the published bundle before trusting it.** The quickest reliable way is to
   fetch the manifest the app itself would fetch and look inside the bundle it points to:
 
@@ -198,7 +209,12 @@ GitHub handles that automatically.
    | --- | --- | --- |
    | `NEXT_PUBLIC_SUPABASE_URL` | `https://<your-project>.supabase.co` | Supabase -> Project Settings -> API |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | your publishable/anon key | same page |
-   | `SUPABASE_SERVICE_ROLE_KEY` | your real `service_role` secret | optional; only the admin "create user" button needs it. Mark it **Sensitive**. |
+   | `SUPABASE_SERVICE_ROLE_KEY` | your real `service_role` secret | **required** for the admin account actions and for **phone sign-in** (`/api/auth/login` resolves the number to an account). Mark it **Sensitive**. |
+
+   > Phone sign-in has no SMS step: the phone app posts the number and password to
+   > `https://<your-dashboard>/api/auth/login`, which uses the service role on the server
+   > to find the account. If this variable is missing, email sign-in still works but phone
+   > sign-in answers "not configured".
 
 5. Click **Deploy**. The first build takes 2-4 minutes, then you get a URL such as
    `https://millennia-fieldops-rewrite.vercel.app`.
@@ -251,15 +267,19 @@ few seconds and should say "Success. No rows returned".
 > files change. Prefer doing it by hand? Run `01_schema.sql`, `02_policies.sql`,
 > `03_storage.sql`, `04_triggers.sql`, `05_seed.sql`, `09_delete_own_pending.sql` in
 > that order, then the optional `06_severity_levels.sql`. See [SETUP.md](SETUP.md)
-> step 2 for details. On a live database, re-run only `02_policies.sql` and
-> `09_delete_own_pending.sql`.
+> step 2 for details. **On a live database, re-run `01_schema.sql`,
+> `02_policies.sql`, `04_triggers.sql` and `09_delete_own_pending.sql`** - all four are
+> idempotent and add the phone / approval columns and rules without touching data.
 
 Then create your first admin account:
 
-1. Sign up once from the mobile app (or the deployed web app).
+1. Sign up once from the mobile app (or the deployed web app). The request waits for
+   approval.
 2. In the SQL Editor run:
    ```sql
-   update public.profiles set role = 'admin' where email = 'you@example.com';
+   update public.profiles
+   set role = 'admin', status = 'approved'
+   where email = 'you@example.com';
    ```
 3. Sign out and back in.
 

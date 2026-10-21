@@ -66,3 +66,46 @@ export async function deleteRecord(id: string, photos: string[] = []): Promise<v
     }
   }
 }
+
+// ---- Phone sign-in --------------------------------------------------------
+// Supabase Auth only knows email addresses (its phone provider needs a paid SMS
+// provider and a one-time code). The web dashboard exposes
+// POST /api/auth/login, which turns "phone + password" into a normal session;
+// the app then stores the tokens with supabase.auth.setSession.
+//
+// EXPO_PUBLIC_WEB_URL is baked into the JavaScript bundle, so changing it means
+// rebuilding or publishing an update.
+const DEFAULT_WEB_URL = "https://millennia-fieldops-rewrite.vercel.app";
+
+export const WEB_URL = (process.env.EXPO_PUBLIC_WEB_URL ?? DEFAULT_WEB_URL).replace(/\/+$/, "");
+
+export interface PhoneSignInResult {
+  access_token?: string;
+  refresh_token?: string;
+  error?: string;
+  code?: "pending" | "declined" | "inactive";
+}
+
+export async function signInWithPhone(
+  identifier: string,
+  password: string
+): Promise<PhoneSignInResult> {
+  let response: Response;
+  try {
+    response = await fetch(`${WEB_URL}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier, password }),
+    });
+  } catch {
+    return {
+      error: "Could not reach the server. Check your internet connection and try again.",
+    };
+  }
+
+  try {
+    return (await response.json()) as PhoneSignInResult;
+  } catch {
+    return { error: "The server sent an unexpected answer. Try again in a moment." };
+  }
+}

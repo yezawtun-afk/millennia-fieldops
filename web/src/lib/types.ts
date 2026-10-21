@@ -5,6 +5,11 @@ export type RecordType = "flora" | "soil_water" | "hazard";
 export type RecordStatus = "pending" | "approved" | "rejected";
 export type HazardSeverity = "low" | "medium" | "critical";
 
+// pending  = asked for an account, waiting for an administrator
+// approved = may use the system
+// declined = the request was refused
+export type AccountStatus = "pending" | "approved" | "declined";
+
 export interface Profile {
   id: string;
   full_name: string;
@@ -12,6 +17,14 @@ export interface Profile {
   role: UserRole;
   is_active: boolean;
   created_at: string;
+  // Optional because a database that has not re-run 01_schema.sql yet does not
+  // return them; the UI treats a missing status as approved.
+  phone?: string | null;
+  status?: AccountStatus | null;
+  requested_at?: string | null;
+  decided_by?: string | null;
+  decided_at?: string | null;
+  decision_note?: string | null;
 }
 
 export interface Zone {

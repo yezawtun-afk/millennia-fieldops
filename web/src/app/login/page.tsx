@@ -15,7 +15,7 @@ export default async function LoginPage({
     <AuthShell>
       <AuthCard
         title="Sign in"
-        subtitle="Use the account your administrator created for you."
+        subtitle="Use your email address or phone number, with the password from your administrator."
         footer="Lost your password? Ask an administrator to reset it."
       >
         {params.inactive ? (

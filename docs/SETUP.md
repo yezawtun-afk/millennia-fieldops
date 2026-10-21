@@ -43,24 +43,30 @@ In the Supabase dashboard, open **SQL Editor -> New query**. Run these files fro
 The generated `setup_all.sql` bundles 01-06 and 09 in one paste; the two optional
 files are kept separate because they change data.
 
-> **Already have a live database?** Re-run `02_policies.sql` and
-> `09_delete_own_pending.sql` to pick up the current rules (deactivated accounts are
-> now blocked at the database, not only in the app). Both files are safe to run again.
+> **Already have a live database?** Re-run `01_schema.sql`, `02_policies.sql`,
+> `04_triggers.sql` and `09_delete_own_pending.sql`. All four are safe to run again.
+> `01` adds the new `profiles` columns (`phone`, `status`, the approval fields) to an
+> existing table; `02` makes every policy require an **approved and active** account;
+> `04` makes new sign-ups start as **pending** and stores the phone number. Existing
+> accounts stay approved, so nobody is locked out.
 
 ### Create your first admin
 
 Supabase Auth owns the account list, so signing up is done from the app. To make the
 first admin:
 
-1. Run the **mobile** or **web** app and **sign up** with your email
-   (this creates the `profiles` row as a `field_worker`).
+1. Run the **mobile** or **web** app and **request an account** with your email
+   (this creates the `profiles` row as a `field_worker`, waiting for approval).
 2. Back in the SQL Editor run:
 
    ```sql
-   update public.profiles set role = 'admin' where email = 'you@example.com';
+   update public.profiles
+   set role = 'admin', status = 'approved'
+   where email = 'you@example.com';
    ```
 
-3. Sign out and back in. You are now an admin and can invite others from the dashboard.
+3. Sign out and back in. You are now an admin: the **Accounts** page shows requests
+   waiting for review, and you can create the other accounts from there.
 
 ---
 

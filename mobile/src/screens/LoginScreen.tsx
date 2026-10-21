@@ -11,7 +11,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 
 export function LoginScreen({ navigation }: Props) {
   const { signIn } = useAuth();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -19,7 +19,7 @@ export function LoginScreen({ navigation }: Props) {
   async function onSubmit() {
     setBusy(true);
     setError(null);
-    const result = await signIn(email, password);
+    const result = await signIn(identifier, password);
     if (result.error) setError(result.error);
     setBusy(false);
   }
@@ -38,14 +38,14 @@ export function LoginScreen({ navigation }: Props) {
         <Card style={styles.card}>
           {error ? <Banner kind="error">{error}</Banner> : null}
 
-          <Field label="Email">
+          <Field label="Email or phone number">
             <Input
-              value={email}
-              onChangeText={setEmail}
+              value={identifier}
+              onChangeText={setIdentifier}
               autoCapitalize="none"
-              autoComplete="email"
-              keyboardType="email-address"
-              placeholder="you@millennia.my"
+              autoComplete="username"
+              keyboardType="default"
+              placeholder="you@millennia.my or 012-345 6789"
             />
           </Field>
           <Field label="Password">
@@ -62,15 +62,15 @@ export function LoginScreen({ navigation }: Props) {
 
           <View style={{ height: spacing.md }} />
           <Button
-            title="Create an account"
+            title="Request an account"
             variant="secondary"
             onPress={() => navigation.navigate("Register")}
           />
         </Card>
 
         <Text style={styles.hint}>
-          New accounts start as field workers. A supervisor or administrator widens the role from
-          the web dashboard.
+          New accounts are reviewed by an administrator before they can sign in. You join as a
+          field worker; a supervisor or administrator widens the role from the web dashboard.
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

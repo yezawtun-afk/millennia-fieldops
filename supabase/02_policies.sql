@@ -14,7 +14,8 @@ stable
 security definer
 set search_path = public
 as $$
-  select role from public.profiles where id = auth.uid() and is_active;
+  select role from public.profiles
+  where id = auth.uid() and is_active and status = 'approved';
 $$;
 
 create or replace function public.is_reviewer()
@@ -25,7 +26,8 @@ security definer
 set search_path = public
 as $$
   select coalesce(
-    (select role in ('supervisor', 'admin') and is_active from public.profiles where id = auth.uid()),
+    (select role in ('supervisor', 'admin') and is_active and status = 'approved'
+     from public.profiles where id = auth.uid()),
     false
   );
 $$;
@@ -38,12 +40,15 @@ security definer
 set search_path = public
 as $$
   select coalesce(
-    (select role = 'admin' and is_active from public.profiles where id = auth.uid()),
+    (select role = 'admin' and is_active and status = 'approved'
+     from public.profiles where id = auth.uid()),
     false
   );
 $$;
 
--- A deactivated account keeps its history but loses every read and write.
+-- A deactivated or not-yet-approved account keeps its history but loses every
+-- read and write. Pending and declined requests can therefore sign in at most
+-- to their own profile row (see profiles_select), never to site data.
 create or replace function public.is_active_user()
 returns boolean
 language sql
@@ -51,7 +56,10 @@ stable
 security definer
 set search_path = public
 as $$
-  select coalesce((select is_active from public.profiles where id = auth.uid()), false);
+  select coalesce(
+    (select is_active and status = 'approved' from public.profiles where id = auth.uid()),
+    false
+  );
 $$;
 
 -- ---------------------------------------------------------------------------

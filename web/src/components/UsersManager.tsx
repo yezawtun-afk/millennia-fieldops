@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus } from "lucide-react";
+import { Check, Trash2, UserPlus, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, btnPrimary, inputClass, selectClass, tdClass, thClass } from "@/components/ui";
-import { createUser } from "@/app/(app)/users/actions";
-import type { Profile, UserRole } from "@/lib/types";
+import { createUser, deleteUser } from "@/app/(app)/users/actions";
+import type { AccountStatus, Profile, UserRole } from "@/lib/types";
 
 const ROLES: UserRole[] = ["field_worker", "supervisor", "admin"];
 
@@ -15,6 +15,12 @@ const ROLE_LABELS: Record<UserRole, string> = {
   supervisor: "Supervisor",
   admin: "Administrator",
 };
+
+// A missing status means the database has not been upgraded yet; those
+// accounts behave exactly as before (approved).
+function accountStatus(user: Profile): AccountStatus {
+  return user.status ?? "approved";
+}
 
 export function UsersManager({
   initialUsers,
@@ -28,10 +34,13 @@ export function UsersManager({
   const [form, setForm] = useState({
     full_name: "",
     email: "",
+    phone: "",
     password: "",
     role: "field_worker" as UserRole,
   });
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+
+  const requests = initialUsers.filter((user) => accountStatus(user) === "pending");
 
   async function changeRole(user: Profile, role: UserRole) {
     const supabase = createClient();
@@ -50,6 +59,54 @@ export function UsersManager({
     startTransition(() => router.refresh());
   }
 
+  // Approve or decline a request. The row stays either way, so there is a
+  // record of who asked and who decided.
+  async function decide(user: Profile, status: "approved" | "declined") {
+    setMessage(null);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        status,
+        decided_by: currentUserId,
+        decided_at: new Date().toISOString(),
+        decision_note:
+          status === "declined" ? "Declined from the accounts page." : null,
+        is_active: status === "approved" ? true : user.is_active,
+      })
+      .eq("id", user.id);
+
+    if (error) return setMessage({ kind: "error", text: error.message });
+    setMessage({
+      kind: "ok",
+      text:
+        status === "approved"
+          ? `${user.full_name} can now sign in.`
+          : `${user.full_name} was declined and cannot sign in.`,
+    });
+    startTransition(() => router.refresh());
+  }
+
+  function remove(user: Profile) {
+    const confirmed = window.confirm(
+      `Delete ${user.full_name} (${user.email}) permanently?\n\n` +
+        "Their account is removed and they cannot sign in again. " +
+        "Accounts that already submitted field records can only be deactivated."
+    );
+    if (!confirmed) return;
+
+    setMessage(null);
+    startTransition(async () => {
+      const result = await deleteUser(user.id);
+      if (result.ok) {
+        setMessage({ kind: "ok", text: `${user.full_name}'s account was deleted.` });
+        router.refresh();
+      } else {
+        setMessage({ kind: "error", text: result.error });
+      }
+    });
+  }
+
   function invite(event: React.FormEvent) {
     event.preventDefault();
     setMessage(null);
@@ -57,7 +114,7 @@ export function UsersManager({
       const result = await createUser(form);
       if (result.ok) {
         setMessage({ kind: "ok", text: `Account created for ${form.email}.` });
-        setForm({ full_name: "", email: "", password: "", role: "field_worker" });
+        setForm({ full_name: "", email: "", phone: "", password: "", role: "field_worker" });
         router.refresh();
       } else {
         setMessage({ kind: "error", text: result.error });
@@ -67,24 +124,81 @@ export function UsersManager({
 
   return (
     <div className="space-y-4">
+      {message ? (
+        <p
+          className={`rounded-control px-3 py-2 text-[12px] ${
+            message.kind === "ok"
+              ? "bg-positive-soft text-positive-ink"
+              : "bg-negative-soft text-negative-ink"
+          }`}
+        >
+          {message.text}
+        </p>
+      ) : null}
+
+      {requests.length > 0 ? (
+        <Card className="overflow-hidden border-warning/30">
+          <div className="flex items-center justify-between border-b border-rule px-4 py-3">
+            <div>
+              <h2 className="text-[14px] font-semibold text-ink">Requests waiting for review</h2>
+              <p className="mt-0.5 text-[12px] text-muted">
+                These people signed up in the app. They cannot sign in until you approve them.
+              </p>
+            </div>
+            <span className="inline-flex items-center rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-medium text-warning-ink">
+              {requests.length} waiting
+            </span>
+          </div>
+
+          <ul>
+            {requests.map((user) => (
+              <li
+                key={user.id}
+                className="flex flex-wrap items-center justify-between gap-3 border-b border-rule px-4 py-3 last:border-b-0"
+              >
+                <div className="min-w-0">
+                  <p className="text-[13px] font-medium text-ink">{user.full_name}</p>
+                  <p className="text-[12px] text-muted">
+                    {user.email}
+                    {user.phone ? ` · ${user.phone}` : ""}
+                  </p>
+                  <p className="text-[11px] text-faint">
+                    Asked {new Date(user.requested_at ?? user.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => decide(user, "approved")}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-control bg-primary px-2.5 text-[12px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+                  >
+                    <Check className="h-3.5 w-3.5" strokeWidth={2} />
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => decide(user, "declined")}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-control border border-control px-2.5 text-[12px] font-medium text-ink transition-colors hover:border-negative hover:text-negative disabled:opacity-50"
+                  >
+                    <X className="h-3.5 w-3.5" strokeWidth={2} />
+                    Decline
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[380px_minmax(0,1fr)]">
         <Card className="h-fit p-4">
         <h2 className="text-[14px] font-semibold text-ink">Create an account</h2>
         <p className="mt-0.5 text-[12px] text-muted">
-          Share the temporary password with the person, and ask them to change it.
+          Accounts you create here are approved straight away. Share the temporary password with
+          the person, and ask them to change it.
         </p>
-
-        {message ? (
-          <p
-            className={`mt-3 rounded-control px-3 py-2 text-[12px] ${
-              message.kind === "ok"
-                ? "bg-positive-soft text-positive-ink"
-                : "bg-negative-soft text-negative-ink"
-            }`}
-          >
-            {message.text}
-          </p>
-        ) : null}
 
         <form onSubmit={invite} className="mt-3 space-y-3">
           <Field label="Full name">
@@ -100,6 +214,15 @@ export function UsersManager({
               required
               value={form.email}
               onChange={(event) => setForm({ ...form, email: event.target.value })}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Phone number (optional)">
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={(event) => setForm({ ...form, phone: event.target.value })}
+              placeholder="012-345 6789"
               className={inputClass}
             />
           </Field>
@@ -147,12 +270,13 @@ export function UsersManager({
                 <th className={thClass}>Name</th>
                 <th className={thClass}>Role</th>
                 <th className={thClass}>Status</th>
-                <th className={`${thClass} text-right`}> </th>
+                <th className={`${thClass} text-right`}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {initialUsers.map((user) => {
                 const isSelf = user.id === currentUserId;
+                const status = accountStatus(user);
                 return (
                   <tr
                     key={user.id}
@@ -165,6 +289,7 @@ export function UsersManager({
                       ) : null}
                       <span className="mt-0.5 block text-[12px] font-normal text-muted">
                         {user.email}
+                        {user.phone ? ` · ${user.phone}` : ""}
                       </span>
                     </td>
                     <td className={tdClass}>
@@ -183,25 +308,70 @@ export function UsersManager({
                       </select>
                     </td>
                     <td className={tdClass}>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                          user.is_active
-                            ? "bg-positive-soft text-positive-ink"
-                            : "bg-negative-soft text-negative-ink"
-                        }`}
-                      >
-                        {user.is_active ? "Active" : "Deactivated"}
-                      </span>
+                      {status === "pending" ? (
+                        <span className="inline-flex items-center rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-medium text-warning-ink">
+                          Waiting approval
+                        </span>
+                      ) : status === "declined" ? (
+                        <span className="inline-flex items-center rounded-full bg-negative-soft px-2 py-0.5 text-[11px] font-medium text-negative-ink">
+                          Declined
+                        </span>
+                      ) : (
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                            user.is_active
+                              ? "bg-positive-soft text-positive-ink"
+                              : "bg-negative-soft text-negative-ink"
+                          }`}
+                        >
+                          {user.is_active ? "Active" : "Deactivated"}
+                        </span>
+                      )}
                     </td>
                     <td className={`${tdClass} text-right`}>
-                      <button
-                        type="button"
-                        disabled={isSelf}
-                        onClick={() => toggleActive(user)}
-                        className="h-8 rounded-control border border-control px-2.5 text-[12px] font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {user.is_active ? "Deactivate" : "Reactivate"}
-                      </button>
+                      <div className="inline-flex items-center gap-1.5">
+                        {status === "pending" ? (
+                          <>
+                            <button
+                              type="button"
+                              disabled={pending}
+                              onClick={() => decide(user, "approved")}
+                              className="h-8 rounded-control border border-control px-2.5 text-[12px] font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              disabled={pending}
+                              onClick={() => decide(user, "declined")}
+                              className="h-8 rounded-control border border-control px-2.5 text-[12px] font-medium text-ink transition-colors hover:border-negative hover:text-negative disabled:opacity-50"
+                            >
+                              Decline
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={isSelf}
+                            onClick={() => toggleActive(user)}
+                            className="h-8 rounded-control border border-control px-2.5 text-[12px] font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {user.is_active ? "Deactivate" : "Reactivate"}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          disabled={isSelf || pending}
+                          onClick={() => remove(user)}
+                          title={
+                            isSelf ? "You cannot delete your own account" : "Delete this account"
+                          }
+                          aria-label={`Delete ${user.full_name}`}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-control border border-control text-muted transition-colors hover:border-negative hover:text-negative disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.8} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -211,7 +381,8 @@ export function UsersManager({
         </div>
 
         <p className="border-t border-rule px-4 py-2.5 text-[12px] text-muted">
-          Deactivated accounts keep their records but cannot sign in, read or write data.
+          Deactivated accounts keep their records but cannot sign in, read or write data. Deleting
+          is permanent and is refused for anyone who already submitted field records.
         </p>
       </Card>
       </div>

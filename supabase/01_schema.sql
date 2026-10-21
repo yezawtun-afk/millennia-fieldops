@@ -25,6 +25,13 @@ do $$ begin
   create type public.hazard_severity as enum ('low', 'medium', 'critical');
 exception when duplicate_object then null; end $$;
 
+-- pending  = the person asked for an account, an admin has not decided yet
+-- approved = may sign in and work
+-- declined = the request was refused; the row is kept for the audit trail
+do $$ begin
+  create type public.account_status as enum ('pending', 'approved', 'declined');
+exception when duplicate_object then null; end $$;
+
 -- ---------------------------------------------------------------------------
 -- profiles - one row per account, linked 1:1 to Supabase Auth users
 -- ---------------------------------------------------------------------------
@@ -32,10 +39,42 @@ create table if not exists public.profiles (
   id          uuid primary key references auth.users (id) on delete cascade,
   full_name   text        not null,
   email       text        not null unique,
+  phone       text,
   role        public.user_role not null default 'field_worker',
   is_active   boolean     not null default true,
+  status      public.account_status not null default 'approved',
+  requested_at  timestamptz not null default now(),
+  decided_by    uuid references public.profiles (id) on delete set null,
+  decided_at    timestamptz,
+  decision_note text,
   created_at  timestamptz not null default now()
 );
+
+-- ---------------------------------------------------------------------------
+-- Upgrades for databases created before accounts needed approval or a phone
+-- number. The `create table if not exists` above does nothing on an existing
+-- database, so the new columns are added here. Safe to run more than once:
+-- existing people are treated as approved, and only new sign-ups start pending.
+-- ---------------------------------------------------------------------------
+alter table public.profiles add column if not exists phone         text;
+alter table public.profiles add column if not exists status        public.account_status not null default 'approved';
+alter table public.profiles add column if not exists requested_at  timestamptz not null default now();
+alter table public.profiles add column if not exists decided_by    uuid references public.profiles (id) on delete set null;
+alter table public.profiles add column if not exists decided_at    timestamptz;
+alter table public.profiles add column if not exists decision_note text;
+
+-- One account per phone number. Numbers are stored in E.164 form (+60123456789),
+-- so "+60 12-345 6789" and "012-345 6789" must be normalised by the app before
+-- they reach the database.
+create unique index if not exists profiles_phone_key
+  on public.profiles (phone)
+  where phone is not null;
+
+do $$ begin
+  alter table public.profiles
+    add constraint profiles_phone_format
+    check (phone is null or phone ~ '^\+[1-9][0-9]{7,14}$');
+exception when duplicate_object then null; end $$;
 
 -- ---------------------------------------------------------------------------
 -- zones - monitoring areas, drawn as circles on the map

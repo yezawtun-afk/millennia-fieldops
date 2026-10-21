@@ -12,6 +12,7 @@ export function RegisterScreen({ navigation }: Props) {
   const { signUp } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -26,25 +27,29 @@ export function RegisterScreen({ navigation }: Props) {
     setError(null);
     setMessage(null);
 
-    const result = await signUp(email, password, fullName);
+    const result = await signUp(email, password, fullName, phone);
     setBusy(false);
 
     if (result.error) {
       setError(result.error);
       return;
     }
-    if (result.needsConfirmation) {
-      setMessage("Check your email to confirm the account, then sign in.");
-      return;
-    }
-    // Signed up and signed in: the navigator switches automatically.
+
+    setMessage(
+      "Request sent. An administrator will review it, and you can sign in once it is approved. " +
+        "If a confirmation email arrives, open it as well."
+    );
+    setPassword("");
   }
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Create an account</Text>
-        <Text style={styles.subtitle}>Join as a field worker. Your supervisor can change the role.</Text>
+        <Text style={styles.title}>Request an account</Text>
+        <Text style={styles.subtitle}>
+          An administrator reviews every request. You join as a field worker; your supervisor can
+          change the role later.
+        </Text>
 
         <Card style={styles.card}>
           {error ? <Banner kind="error">{error}</Banner> : null}
@@ -63,6 +68,15 @@ export function RegisterScreen({ navigation }: Props) {
               placeholder="you@millennia.my"
             />
           </Field>
+          <Field label="Phone number (optional)">
+            <Input
+              value={phone}
+              onChangeText={setPhone}
+              autoComplete="tel"
+              keyboardType="phone-pad"
+              placeholder="012-345 6789"
+            />
+          </Field>
           <Field label="Password">
             <Input
               value={password}
@@ -73,7 +87,7 @@ export function RegisterScreen({ navigation }: Props) {
             />
           </Field>
 
-          <Button title="Sign up" onPress={onSubmit} loading={busy} />
+          <Button title="Send request" onPress={onSubmit} loading={busy} />
           <View style={{ height: spacing.md }} />
           <Button title="Back to sign in" variant="secondary" onPress={() => navigation.goBack()} />
         </Card>
