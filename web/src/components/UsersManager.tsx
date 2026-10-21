@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Trash2, UserPlus, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { visibleEmail } from "@/lib/phone";
 import { Card, btnPrimary, inputClass, selectClass, tdClass, thClass } from "@/components/ui";
 import { createUser, deleteUser } from "@/app/(app)/users/actions";
 import type { AccountStatus, Profile, UserRole } from "@/lib/types";
@@ -41,6 +42,11 @@ export function UsersManager({
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
   const requests = initialUsers.filter((user) => accountStatus(user) === "pending");
+  // If no row carries a status, the column does not exist yet: the requests
+  // panel would silently do nothing, so say what to run instead.
+  const approvalReady = initialUsers.some(
+    (user) => user.status !== undefined && user.status !== null
+  );
 
   async function changeRole(user: Profile, role: UserRole) {
     const supabase = createClient();
@@ -113,7 +119,7 @@ export function UsersManager({
     startTransition(async () => {
       const result = await createUser(form);
       if (result.ok) {
-        setMessage({ kind: "ok", text: `Account created for ${form.email}.` });
+        setMessage({ kind: "ok", text: `Account created for ${form.phone}.` });
         setForm({ full_name: "", email: "", phone: "", password: "", role: "field_worker" });
         router.refresh();
       } else {
@@ -136,68 +142,96 @@ export function UsersManager({
         </p>
       ) : null}
 
-      {requests.length > 0 ? (
+      {!approvalReady ? (
+        <Card className="border-warning/40 bg-warning-soft p-4">
+          <h2 className="text-[14px] font-semibold text-warning-ink">
+            Account approval is not switched on yet
+          </h2>
+          <p className="mt-1 text-[12px] leading-relaxed text-warning-ink">
+            The database is missing the <code>phone</code> and <code>status</code> columns, so
+            requests cannot be reviewed and phone sign-in does not work. In Supabase, open
+            <strong> SQL Editor</strong> and run these files from <code>supabase/</code> one at a
+            time: <code>01_schema.sql</code>, <code>02_policies.sql</code>,{" "}
+            <code>04_triggers.sql</code>, <code>09_delete_own_pending.sql</code>. Then reload this
+            page.
+          </p>
+        </Card>
+      ) : (
         <Card className="overflow-hidden border-warning/30">
           <div className="flex items-center justify-between border-b border-rule px-4 py-3">
             <div>
               <h2 className="text-[14px] font-semibold text-ink">Requests waiting for review</h2>
               <p className="mt-0.5 text-[12px] text-muted">
-                These people signed up in the app. They cannot sign in until you approve them.
+                People who asked for an account in the app. They cannot sign in until you approve
+                them.
               </p>
             </div>
-            <span className="inline-flex items-center rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-medium text-warning-ink">
-              {requests.length} waiting
+            <span
+              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                requests.length > 0
+                  ? "bg-warning-soft text-warning-ink"
+                  : "bg-panel text-muted"
+              }`}
+            >
+              {requests.length > 0 ? `${requests.length} waiting` : "None waiting"}
             </span>
           </div>
 
-          <ul>
-            {requests.map((user) => (
-              <li
-                key={user.id}
-                className="flex flex-wrap items-center justify-between gap-3 border-b border-rule px-4 py-3 last:border-b-0"
-              >
-                <div className="min-w-0">
-                  <p className="text-[13px] font-medium text-ink">{user.full_name}</p>
-                  <p className="text-[12px] text-muted">
-                    {user.email}
-                    {user.phone ? ` · ${user.phone}` : ""}
-                  </p>
-                  <p className="text-[11px] text-faint">
-                    Asked {new Date(user.requested_at ?? user.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => decide(user, "approved")}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-control bg-primary px-2.5 text-[12px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
-                  >
-                    <Check className="h-3.5 w-3.5" strokeWidth={2} />
-                    Approve
-                  </button>
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => decide(user, "declined")}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-control border border-control px-2.5 text-[12px] font-medium text-ink transition-colors hover:border-negative hover:text-negative disabled:opacity-50"
-                  >
-                    <X className="h-3.5 w-3.5" strokeWidth={2} />
-                    Decline
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {requests.length === 0 ? (
+            <p className="px-4 py-4 text-[12px] text-muted">
+              No requests right now. When someone taps <strong>Request an account</strong> in the
+              app, they appear here for you to approve or decline.
+            </p>
+          ) : (
+            <ul>
+              {requests.map((user) => (
+                <li
+                  key={user.id}
+                  className="flex flex-wrap items-center justify-between gap-3 border-b border-rule px-4 py-3 last:border-b-0"
+                >
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium text-ink">{user.full_name}</p>
+                    <p className="text-[12px] text-muted">
+                      {user.phone ?? "No phone number"}
+                      {visibleEmail(user.email) ? ` · ${visibleEmail(user.email)}` : ""}
+                    </p>
+                    <p className="text-[11px] text-faint">
+                      Asked {new Date(user.requested_at ?? user.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => decide(user, "approved")}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-control bg-primary px-2.5 text-[12px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+                    >
+                      <Check className="h-3.5 w-3.5" strokeWidth={2} />
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => decide(user, "declined")}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-control border border-control px-2.5 text-[12px] font-medium text-ink transition-colors hover:border-negative hover:text-negative disabled:opacity-50"
+                    >
+                      <X className="h-3.5 w-3.5" strokeWidth={2} />
+                      Decline
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
-      ) : null}
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[380px_minmax(0,1fr)]">
         <Card className="h-fit p-4">
         <h2 className="text-[14px] font-semibold text-ink">Create an account</h2>
         <p className="mt-0.5 text-[12px] text-muted">
-          Accounts you create here are approved straight away. Share the temporary password with
-          the person, and ask them to change it.
+          Accounts you create here are approved straight away. The phone number is how they sign
+          in; an email address is optional. Share the temporary password with the person.
         </p>
 
         <form onSubmit={invite} className="mt-3 space-y-3">
@@ -208,21 +242,21 @@ export function UsersManager({
               className={inputClass}
             />
           </Field>
-          <Field label="Email">
-            <input
-              type="email"
-              required
-              value={form.email}
-              onChange={(event) => setForm({ ...form, email: event.target.value })}
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Phone number (optional)">
+          <Field label="Phone number">
             <input
               type="tel"
+              required
               value={form.phone}
               onChange={(event) => setForm({ ...form, phone: event.target.value })}
               placeholder="012-345 6789"
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Email (optional)">
+            <input
+              type="email"
+              value={form.email}
+              onChange={(event) => setForm({ ...form, email: event.target.value })}
               className={inputClass}
             />
           </Field>
@@ -288,8 +322,8 @@ export function UsersManager({
                         <span className="ml-2 text-[12px] font-normal text-muted">you</span>
                       ) : null}
                       <span className="mt-0.5 block text-[12px] font-normal text-muted">
-                        {user.email}
-                        {user.phone ? ` · ${user.phone}` : ""}
+                        {user.phone ?? "No phone"}
+                        {visibleEmail(user.email) ? ` · ${visibleEmail(user.email)}` : ""}
                       </span>
                     </td>
                     <td className={tdClass}>
@@ -349,6 +383,15 @@ export function UsersManager({
                               Decline
                             </button>
                           </>
+                        ) : status === "declined" ? (
+                          <button
+                            type="button"
+                            disabled={pending}
+                            onClick={() => decide(user, "approved")}
+                            className="h-8 rounded-control border border-control px-2.5 text-[12px] font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+                          >
+                            Approve
+                          </button>
                         ) : (
                           <button
                             type="button"

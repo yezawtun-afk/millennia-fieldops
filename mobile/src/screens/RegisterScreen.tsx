@@ -19,6 +19,10 @@ export function RegisterScreen({ navigation }: Props) {
   const [busy, setBusy] = useState(false);
 
   async function onSubmit() {
+    if (!phone.trim()) {
+      setError("Enter your phone number. It is how you will sign in.");
+      return;
+    }
     if (password.length < 6) {
       setError("Choose a password of at least 6 characters.");
       return;
@@ -36,8 +40,8 @@ export function RegisterScreen({ navigation }: Props) {
     }
 
     setMessage(
-      "Request sent. An administrator will review it, and you can sign in once it is approved. " +
-        "If a confirmation email arrives, open it as well."
+      "Request sent. An administrator will review it, and you can sign in with your phone number " +
+        "once it is approved."
     );
     setPassword("");
   }
@@ -47,8 +51,8 @@ export function RegisterScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Request an account</Text>
         <Text style={styles.subtitle}>
-          An administrator reviews every request. You join as a field worker; your supervisor can
-          change the role later.
+          Your phone number is how you sign in. An administrator reviews every request before it
+          can be used.
         </Text>
 
         <Card style={styles.card}>
@@ -58,7 +62,16 @@ export function RegisterScreen({ navigation }: Props) {
           <Field label="Full name">
             <Input value={fullName} onChangeText={setFullName} placeholder="Your name" />
           </Field>
-          <Field label="Email">
+          <Field label="Phone number">
+            <Input
+              value={phone}
+              onChangeText={setPhone}
+              autoComplete="tel"
+              keyboardType="phone-pad"
+              placeholder="012-345 6789"
+            />
+          </Field>
+          <Field label="Email (optional)">
             <Input
               value={email}
               onChangeText={setEmail}
@@ -66,15 +79,6 @@ export function RegisterScreen({ navigation }: Props) {
               autoComplete="email"
               keyboardType="email-address"
               placeholder="you@millennia.my"
-            />
-          </Field>
-          <Field label="Phone number (optional)">
-            <Input
-              value={phone}
-              onChangeText={setPhone}
-              autoComplete="tel"
-              keyboardType="phone-pad"
-              placeholder="012-345 6789"
             />
           </Field>
           <Field label="Password">

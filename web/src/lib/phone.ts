@@ -36,3 +36,23 @@ export function looksLikePhone(input: string): boolean {
   const trimmed = input.trim();
   return trimmed.length > 0 && !trimmed.includes("@") && /\d/.test(trimmed);
 }
+
+// Supabase Auth needs an email or a phone identity, and its phone identity
+// requires a paid SMS provider. Phone-first accounts therefore get a private
+// placeholder address built from the number; nobody ever sends mail to it and
+// the dashboards hide it. The real identifier is profiles.phone.
+const PHONE_EMAIL_DOMAIN = "phone.millennia.local";
+
+export function phoneEmail(phone: string): string {
+  return `${phone.replace(/\D/g, "")}@${PHONE_EMAIL_DOMAIN}`;
+}
+
+export function isPlaceholderEmail(email: string | null | undefined): boolean {
+  return Boolean(email && email.endsWith(`@${PHONE_EMAIL_DOMAIN}`));
+}
+
+// What to show in a table: the real address, or nothing for phone-only people.
+export function visibleEmail(email: string | null | undefined): string | null {
+  if (!email || isPlaceholderEmail(email)) return null;
+  return email;
+}

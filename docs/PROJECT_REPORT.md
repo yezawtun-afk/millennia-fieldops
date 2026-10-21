@@ -97,10 +97,11 @@ connection exists. This is what makes the app genuinely usable on the ridge with
   device). Phone numbers need no SMS provider: the number is resolved to an account by the
   web dashboard's `/api/auth/login` route, which verifies the password before returning a
   session.
-- **Account requests instead of instant sign-up**: the form collects name, email, an
-  optional phone number and a password. Every request is created as `pending`, which the
-  database treats as "may read nothing"; an administrator approves or declines it from the
-  web dashboard.
+- **Account requests instead of instant sign-up**: the form collects name, a required
+  **phone number** (the sign-in identifier), an optional email address and a password.
+  Every request is created as `pending`, which the database treats as "may read nothing";
+  an administrator approves or declines it from the web dashboard. The request is created
+  server-side, so no email confirmation is needed and phone-first people get in.
 - Field dashboard home screen: greeting and role, a strip of approved / in review /
   rejected / draft counts (taken from every record, not just the visible list), one-tap
   capture by record type, the upload queue with **Sync now**, the five most recent
@@ -337,6 +338,9 @@ worker receives notification → admin exports hazard PDF.
   about 20 seconds *while it is running*, and anything that happened while the app was
   closed appears on the next launch. Real background delivery needs a Firebase project,
   an Expo push token and a server-side sender (see future work).
+- **Phone-first accounts have no self-service password reset** (reset mail needs a real
+  address). An administrator can set a new password from the Supabase dashboard; adding a
+  reset action to the Accounts page is listed under future work.
 - Demo data must be cleared/re-run per demo (`07_demo_data.sql` deletes all records).
 
 ---
@@ -354,6 +358,8 @@ worker receives notification → admin exports hazard PDF.
    permission strings are configured in `app.json`; the only requirement is the paid
    Apple Developer Program (US$99/yr). The full runbook is in `docs/DEPLOY.md` ("iOS
    (optional)").
+8. Admin-initiated password reset for phone-only accounts (the Accounts page already has
+   the service-role plumbing).
 
 ---
 

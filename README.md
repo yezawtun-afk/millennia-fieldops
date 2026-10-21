@@ -40,9 +40,11 @@ Demo accounts and a full end-of-project snapshot live in
   The profile is cached too, so the app still knows who you are when it starts with no
   connection. Phone sign-in needs no SMS: the number is resolved by the web dashboard's
   `/api/auth/login` route (see the note in `docs/DEPLOY.md`).
-- **Request an account** instead of instant sign-up: the form asks for name, email, an
-  optional phone number and a password. An administrator approves or declines the request
-  in the web dashboard; until then the account cannot read any data.
+- **Request an account** instead of instant sign-up: the form asks for name, **phone number**
+  (required - it is how you sign in), an optional email address and a password. An
+  administrator approves or declines the request in the web dashboard; until then the
+  account cannot read any data. Phone-first accounts get a private placeholder address
+  internally, because Supabase Auth needs one; the dashboards never show it.
 - Capture **flora & biodiversity**, **soil & water** and **environmental hazard** records.
 - Automatic **GPS** (expo-location) and **photos** (expo-camera / expo-image-picker).
 - **Offline-first**: records and photos are saved in **SQLite** (expo-sqlite). Offline, the

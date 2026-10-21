@@ -109,3 +109,43 @@ export async function signInWithPhone(
     return { error: "The server sent an unexpected answer. Try again in a moment." };
   }
 }
+
+// ---- Account requests -----------------------------------------------------
+// The request is created by the web dashboard, not by the app, so it needs no
+// email confirmation and always starts as pending. Phone is required; email is
+// optional and a placeholder is generated on the server when it is empty.
+export interface AccountRequestInput {
+  full_name: string;
+  phone: string;
+  email?: string;
+  password: string;
+}
+
+export async function requestAccount(
+  input: AccountRequestInput
+): Promise<{ ok?: boolean; error?: string }> {
+  let response: Response;
+  try {
+    response = await fetch(`${WEB_URL}/api/auth/request-account`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+  } catch {
+    return {
+      error: "Could not reach the server. Check your internet connection and try again.",
+    };
+  }
+
+  let payload: { ok?: boolean; error?: string } = {};
+  try {
+    payload = (await response.json()) as typeof payload;
+  } catch {
+    // fall through to the generic message
+  }
+
+  if (!response.ok || !payload.ok) {
+    return { error: payload.error ?? "Could not send the request. Try again in a moment." };
+  }
+  return { ok: true };
+}

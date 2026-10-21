@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
-import { signInWithPhone } from "../lib/api";
+import { requestAccount, signInWithPhone } from "../lib/api";
 import { looksLikePhone, normalizePhone } from "../lib/phone";
 import type { Profile } from "../lib/types";
 
@@ -174,28 +174,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = useCallback(
     async (email: string, password: string, fullName: string, phone?: string) => {
-      const trimmedPhone = phone?.trim() ? phone.trim() : "";
-      const normalizedPhone = trimmedPhone ? normalizePhone(trimmedPhone) : null;
-      if (trimmedPhone && !normalizedPhone) {
+      const trimmedPhone = phone?.trim() ?? "";
+      if (!trimmedPhone) {
+        return { error: "Enter your phone number. It is how you will sign in." };
+      }
+      const normalizedPhone = normalizePhone(trimmedPhone);
+      if (!normalizedPhone) {
         return { error: "Enter a valid phone number, for example 012-345 6789." };
       }
 
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
+      // The account is created (as pending) by the web dashboard, so the app
+      // needs no email confirmation and an email address is optional.
+      const result = await requestAccount({
+        full_name: fullName.trim(),
+        phone: normalizedPhone,
+        email: email.trim() || undefined,
         password,
-        options: {
-          data: {
-            full_name: fullName.trim(),
-            ...(normalizedPhone ? { phone: normalizedPhone } : {}),
-          },
-        },
       });
-      if (error) return { error: error.message };
 
-      // New accounts wait for an administrator. If Supabase returned a session,
-      // drop it: a pending person must not sit inside the app with no data.
-      if (data.session) await supabase.auth.signOut();
-      return {};
+      return result.ok ? {} : { error: result.error };
     },
     []
   );

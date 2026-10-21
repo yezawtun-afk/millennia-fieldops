@@ -283,6 +283,14 @@ Then create your first admin account:
    ```
 3. Sign out and back in.
 
+If you requested the account with only a phone number, match on the number instead:
+
+```sql
+update public.profiles
+set role = 'admin', status = 'approved'
+where phone = '+60123456789';
+```
+
 `07_demo_data.sql` is separate on purpose: it deletes every existing record, and it
 needs at least one field worker account to already exist. Run it only when you want a
 fresh randomised demo set. Records are placed from each zone's centre and radius, so

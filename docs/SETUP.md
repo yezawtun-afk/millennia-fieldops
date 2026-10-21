@@ -65,8 +65,16 @@ first admin:
    where email = 'you@example.com';
    ```
 
-3. Sign out and back in. You are now an admin: the **Accounts** page shows requests
-   waiting for review, and you can create the other accounts from there.
+3. Sign out and back in. You are now an admin: the **Accounts** page shows a
+   **Requests waiting for review** panel, and you can create the other accounts from there.
+
+If you requested the account with only a phone number, match on the number instead:
+
+```sql
+update public.profiles
+set role = 'admin', status = 'approved'
+where phone = '+60123456789';
+```
 
 ---
 

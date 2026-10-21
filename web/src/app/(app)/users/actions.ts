@@ -2,15 +2,15 @@
 
 import { getProfile } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { normalizePhone } from "@/lib/phone";
+import { normalizePhone, phoneEmail } from "@/lib/phone";
 import type { UserRole } from "@/lib/types";
 
 export interface CreateUserInput {
   full_name: string;
-  email: string;
+  phone: string;
+  email?: string;
   password: string;
   role: UserRole;
-  phone?: string;
 }
 
 export type CreateUserResult = { ok: true } | { ok: false; error: string };
@@ -25,14 +25,22 @@ export async function createUser(input: CreateUserInput): Promise<CreateUserResu
     return { ok: false, error: "Only administrators can create accounts." };
   }
 
-  if (!input.email.trim() || input.password.length < 6) {
-    return { ok: false, error: "Enter an email and a password of at least 6 characters." };
+  if (!input.email?.trim() && !input.phone?.trim()) {
+    return { ok: false, error: "Enter a phone number (email is optional)." };
+  }
+  if (input.password.length < 6) {
+    return { ok: false, error: "Choose a password of at least 6 characters." };
   }
 
-  const phone = input.phone?.trim() ? normalizePhone(input.phone) : null;
-  if (input.phone?.trim() && !phone) {
+  const phone = normalizePhone(input.phone ?? "");
+  if (!phone) {
     return { ok: false, error: "Enter a valid phone number, for example 012-345 6789." };
   }
+
+  const typedEmail = input.email?.trim().toLowerCase() ?? "";
+  // Phone-first accounts still need an Auth identity; the placeholder is never
+  // shown and never receives mail.
+  const email = typedEmail || phoneEmail(phone);
 
   const admin = createAdminClient();
   if (!admin) {
@@ -42,25 +50,32 @@ export async function createUser(input: CreateUserInput): Promise<CreateUserResu
     };
   }
 
-  if (phone) {
-    const { data: clash } = await admin
-      .from("profiles")
-      .select("id")
-      .eq("phone", phone)
-      .maybeSingle();
-    if (clash) {
-      return { ok: false, error: "Another account already uses that phone number." };
-    }
+  const { data: phoneClash, error: lookupError } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("phone", phone)
+    .maybeSingle();
+
+  if (lookupError) {
+    return {
+      ok: false,
+      error: "Run 01_schema.sql, 02_policies.sql and 04_triggers.sql first: the phone column is missing.",
+    };
   }
+  if (phoneClash) return { ok: false, error: "Another account already uses that phone number." };
+
+  const { data: emailClash } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("email", email)
+    .maybeSingle();
+  if (emailClash) return { ok: false, error: "Another account already uses that email address." };
 
   const { data, error } = await admin.auth.admin.createUser({
-    email: input.email.trim(),
+    email,
     password: input.password,
     email_confirm: true,
-    user_metadata: {
-      full_name: input.full_name.trim() || input.email.split("@")[0],
-      ...(phone ? { phone } : {}),
-    },
+    user_metadata: { full_name: input.full_name.trim() || fullNameFromPhone(phone), phone },
   });
 
   if (error) return { ok: false, error: error.message };
@@ -69,16 +84,20 @@ export async function createUser(input: CreateUserInput): Promise<CreateUserResu
   // (that is what self sign-ups must get). An account created here by an
   // administrator is approved immediately, with the chosen role.
   if (data.user) {
-    const { error: profileError } = await admin
-      .from("profiles")
-      .update({
+    const { error: profileError } = await admin.from("profiles").upsert(
+      {
+        id: data.user.id,
+        full_name: input.full_name.trim() || fullNameFromPhone(phone),
+        email,
+        phone,
         role: input.role,
         status: "approved",
-        phone,
+        is_active: true,
         decided_by: profile.id,
         decided_at: new Date().toISOString(),
-      })
-      .eq("id", data.user.id);
+      },
+      { onConflict: "id" }
+    );
 
     if (profileError) {
       return {
@@ -89,6 +108,10 @@ export async function createUser(input: CreateUserInput): Promise<CreateUserResu
   }
 
   return { ok: true };
+}
+
+function fullNameFromPhone(phone: string): string {
+  return `Field worker ${phone.slice(-4)}`;
 }
 
 // Permanently removes an account. Deactivate is the safer everyday action, so
