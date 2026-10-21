@@ -22,20 +22,30 @@ const GENERIC_ERROR = "Incorrect phone number or password.";
 
 // Best-effort rate limit. Serverless instances do not share memory, so this
 // slows a single attacker down rather than stopping a botnet; Supabase Auth has
-// its own limits behind it.
+// its own limits behind it. Only failed attempts count, so a busy shared
+// connection (a campus Wi-Fi, a demo) does not lock people out.
 const WINDOW_MS = 10 * 60 * 1000;
-const MAX_ATTEMPTS = 10;
-const attempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_FAILURES = 20;
+const failures = new Map<string, { count: number; resetAt: number }>();
 
 function isRateLimited(key: string): boolean {
-  const now = Date.now();
-  const entry = attempts.get(key);
-  if (!entry || entry.resetAt < now) {
-    attempts.set(key, { count: 1, resetAt: now + WINDOW_MS });
+  const entry = failures.get(key);
+  if (!entry) return false;
+  if (entry.resetAt < Date.now()) {
+    failures.delete(key);
     return false;
   }
+  return entry.count >= MAX_FAILURES;
+}
+
+function recordFailure(key: string): void {
+  const now = Date.now();
+  const entry = failures.get(key);
+  if (!entry || entry.resetAt < now) {
+    failures.set(key, { count: 1, resetAt: now + WINDOW_MS });
+    return;
+  }
   entry.count += 1;
-  return entry.count > MAX_ATTEMPTS;
 }
 
 function clientKey(request: Request): string {
@@ -44,7 +54,8 @@ function clientKey(request: Request): string {
 }
 
 export async function POST(request: Request) {
-  if (isRateLimited(clientKey(request))) {
+  const key = clientKey(request);
+  if (isRateLimited(key)) {
     return NextResponse.json(
       { error: "Too many attempts. Wait a few minutes and try again." },
       { status: 429 }
@@ -103,6 +114,7 @@ export async function POST(request: Request) {
   // Same answer whether the number is unknown or the password is wrong, so the
   // endpoint cannot be used to test which numbers have accounts.
   if (!profile?.email) {
+    recordFailure(key);
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 });
   }
 
@@ -116,6 +128,7 @@ export async function POST(request: Request) {
   });
 
   if (signInError || !signIn.session) {
+    recordFailure(key);
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 });
   }
 
