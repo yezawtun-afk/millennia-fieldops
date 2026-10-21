@@ -214,8 +214,9 @@ visible to the worker account. Every record sits inside its zone's radius.
 
 **Build/Expo details:** project linked as `@yezawtun_afk/millennia-fieldops`
 (projectId `51abb8a6-6521-42ba-b27e-a421b6f72b92`), Android keystore generated and
-managed in the cloud (build credentials versionCode 1), real app icons and splash
-image generated locally via `tools/make-app-icons.ps1` (forest background, mint "M" monogram).
+managed in the cloud (build credentials versionCode 1), app icons and splash image
+generated locally via `tools/make-app-icons.ps1` (the "Millennia / Village" wordmark in
+cream on forest green, `#1D2F24`).
 
 ---
 

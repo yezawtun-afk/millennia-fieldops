@@ -30,7 +30,7 @@
       "package": "my.millennia.fieldops",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0F2E22"
+        "backgroundColor": "#1D2F24"
       },
       "permissions": [
         "android.permission.CAMERA",
@@ -57,9 +57,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0F2E22",
+          "backgroundColor": "#1D2F24",
           "image": "./assets/splash-icon.png",
-          "imageWidth": 200,
+          "imageWidth": 280,
           "resizeMode": "contain"
         }
       ]
