@@ -27,6 +27,18 @@ export async function fetchRecord(id: string): Promise<FieldRecord | null> {
   return data as unknown as FieldRecord;
 }
 
+// Every record for the site map. The database lets any active account read all
+// records and zones (policies records_select / zones_select), so a field worker
+// sees the same picture as a supervisor - only the actions differ.
+export async function fetchAllRecords(): Promise<FieldRecord[]> {
+  const { data, error } = await supabase
+    .from("records")
+    .select(RECORD_SELECT)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data as unknown as FieldRecord[]) ?? [];
+}
+
 // ---- Supervisor review ----------------------------------------------------
 // Supervisors and administrators may read every record and update the review
 // fields (policies records_select / records_update_reviewer). The database

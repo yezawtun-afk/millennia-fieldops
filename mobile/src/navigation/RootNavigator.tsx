@@ -11,6 +11,7 @@ import { RegisterScreen } from "../screens/RegisterScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { NewRecordScreen } from "../screens/NewRecordScreen";
 import { MyRecordsScreen } from "../screens/MyRecordsScreen";
+import { MapScreen } from "../screens/MapScreen";
 import { RecordDetailsScreen } from "../screens/RecordDetailsScreen";
 import { NotificationsScreen } from "../screens/NotificationsScreen";
 import { ReviewScreen } from "../screens/ReviewScreen";
@@ -108,7 +109,7 @@ function MainTabs() {
           backgroundColor: colors.card,
           borderTopColor: colors.line,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: "500" },
+        tabBarLabelStyle: { fontSize: isReviewer ? 10 : 11, fontWeight: "500" },
         tabBarIcon: ({ color, size }) => {
           const name =
             route.name === "Home"
@@ -117,9 +118,11 @@ function MainTabs() {
                 ? "add-circle-outline"
                 : route.name === "Records"
                   ? "list-outline"
-                  : route.name === "Review"
-                    ? "checkmark-done-outline"
-                    : "notifications-outline";
+                  : route.name === "Map"
+                    ? "map-outline"
+                    : route.name === "Review"
+                      ? "checkmark-done-outline"
+                      : "notifications-outline";
           return <Ionicons name={name} size={size} color={color} />;
         },
       })}
@@ -127,6 +130,7 @@ function MainTabs() {
       <Tabs.Screen name="Home" component={HomeScreen} options={{ title: t("Home") }} />
       <Tabs.Screen name="New" component={NewRecordScreen} options={{ title: t("New record") }} />
       <Tabs.Screen name="Records" component={MyRecordsScreen} options={{ title: t("My records") }} />
+      <Tabs.Screen name="Map" component={MapScreen} options={{ title: t("Map") }} />
       {isReviewer ? (
         <Tabs.Screen name="Review" component={ReviewScreen} options={{ title: t("Review") }} />
       ) : null}

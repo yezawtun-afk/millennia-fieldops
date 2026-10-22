@@ -35,7 +35,8 @@
     "react-native-gesture-handler": "~2.32.0",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
-    "react-native-url-polyfill": "^2.0.0"
+    "react-native-url-polyfill": "^2.0.0",
+    "react-native-webview": "13.16.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

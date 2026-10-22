@@ -160,6 +160,10 @@ Step-by-step instructions are in **[DEPLOY.md](DEPLOY.md)**. In short:
 - **Mobile app** -> `eas build --platform android --profile preview` produces an
   installable APK (Expo builds it in the cloud, no Android Studio needed). Expo Go
   still works for quick testing.
+  The current APK is version **2.1.0**, the first one with the Map tab: the map needs
+  `react-native-webview`, which is native code and so cannot arrive as an over-the-air
+  update. Phones still on 2.0.0 keep working but show no Map tab until the new APK is
+  installed.
 
 ---
 

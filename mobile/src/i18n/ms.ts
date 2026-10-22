@@ -6,6 +6,8 @@ export const ms: Record<string, string> = {
   "{count} records could not upload yet. They will retry.":
     "{count} rekod belum dapat dimuat naik. Ia akan dicuba semula.",
   "{count} records need retry": "{count} rekod perlu dicuba semula",
+  "{count} records plotted across {zones} monitoring zones.":
+    "{count} rekod dipetakan merentas {zones} zon pemantauan.",
   "{count} records queued for upload": "{count} rekod dalam baris gilir untuk dimuat naik",
   "{count} records remaining": "{count} rekod lagi",
   "{count} records still waiting. Check the connection.":
@@ -68,9 +70,12 @@ export const ms: Record<string, string> = {
     "Pilih jenis bacaan - atau simpan sebagai draf.",
   "Choose a severity - or save it as a draft.":
     "Pilih tahap keterukan - atau simpan sebagai draf.",
+  "Circles show the monitoring zones.": "Bulatan menunjukkan zon pemantauan.",
   "Comment: {comment}": "Komen: {comment}",
   Coordinates: "Koordinat",
   "Could not delete": "Tidak dapat memadam",
+  "Could not load the map. Check your connection and try again.":
+    "Tidak dapat memuatkan peta. Periksa sambungan dan cuba lagi.",
   "Could not load the review queue. Check your connection and pull down to retry.":
     "Tidak dapat memuatkan baris gilir semakan. Periksa sambungan dan tarik ke bawah untuk mencuba lagi.",
   "Could not restore your session.": "Tidak dapat memulihkan sesi anda.",
@@ -134,13 +139,17 @@ export const ms: Record<string, string> = {
   Language: "Bahasa",
   "Last upload {when}": "Muat naik terakhir {when}",
   Later: "Kemudian",
+  "Loading map...": "Memuatkan peta...",
   Location: "Lokasi",
   "Location unavailable": "Lokasi tidak tersedia",
   "Log out": "Log keluar",
+  Map: "Peta",
+  "Map needs a connection.": "Peta memerlukan sambungan.",
   "Mark all read": "Tanda semua dibaca",
   "Mark read": "Tanda dibaca",
   "Marking...": "Menanda...",
   "Millennia Village · field data capture": "Millennia Village · rakaman data lapangan",
+  Mine: "Milik saya",
   "Monitoring zone": "Zon pemantauan",
   "My records": "Rekod saya",
   "Needs retry": "Perlu cuba semula",
@@ -192,6 +201,7 @@ export const ms: Record<string, string> = {
     "Rekod yang menunggu keputusan penyelia akan muncul di sini.",
   "Records you capture appear here once they upload.":
     "Rekod yang anda rakam akan muncul di sini selepas dimuat naik.",
+  Refresh: "Muat semula",
   Reject: "Tolak",
   "Reject this record?": "Tolak rekod ini?",
   Rejected: "Ditolak",
@@ -222,6 +232,7 @@ export const ms: Record<string, string> = {
   "Sign in": "Log masuk",
   "Sign out of Millennia FieldOps on this phone?":
     "Log keluar dari Millennia FieldOps pada telefon ini?",
+  "Site map": "Peta tapak",
   Species: "Spesies",
   "Species name": "Nama spesies",
   Submitted: "Dihantar",
@@ -236,6 +247,8 @@ export const ms: Record<string, string> = {
     "Petugas lapangan akan dimaklumkan bahawa ia diluluskan.",
   "The field worker will be told it was rejected, with your comment.":
     "Petugas lapangan akan dimaklumkan bahawa ia ditolak, bersama komen anda.",
+  "The map could not be loaded. Check your connection and try again.":
+    "Peta tidak dapat dimuatkan. Periksa sambungan dan cuba lagi.",
   "The passwords do not match.": "Kata laluan tidak sepadan.",
   "The record is stored on this phone and will upload automatically when you have a connection.":
     "Rekod disimpan pada telefon ini dan akan dimuat naik secara automatik apabila anda mempunyai sambungan.",
@@ -248,6 +261,7 @@ export const ms: Record<string, string> = {
     "Rekod ini disimpan sebagai draf pada telefon ini. Buka Rekod saya untuk menyiapkannya dan hantar apabila ada isyarat.",
   Title: "Tajuk",
   Today: "Hari ini",
+  "Try again": "Cuba lagi",
   Unit: "Unit",
   "Unknown submitter": "Penghantar tidak diketahui",
   Unread: "Belum dibaca",

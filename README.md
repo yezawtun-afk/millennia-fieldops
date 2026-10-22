@@ -64,6 +64,10 @@ Demo accounts and a full end-of-project snapshot live in
 - **My Records** shows each record's review status and the supervisor's comment -
   and lets the worker **delete their own record while it is still pending**
   (also useful: cancel anything still sitting in the upload queue).
+- **Site map for every role**: the Map tab plots every record that has GPS, coloured by
+  type, over the monitoring zones - the same Leaflet/OpenStreetMap picture as the
+  website, inside a WebView. Tap a pin to open the record, filter by type, or switch to
+  your own records only.
 - **Notifications** tell the worker when a record is approved or rejected - announced on the
   phone within ~20 seconds while the app is open, with an unread badge on the tab.
 - **Updates from inside the app**: the Home screen has an "App" card
@@ -71,7 +75,7 @@ Demo accounts and a full end-of-project snapshot live in
   reinstalling the APK. It shows whether the app is running the bundle from the APK or a
   downloaded update, and the app offers a restart when a new one is waiting. (The build
   that introduced this had to be installed once - after that, updates are over the air.)
-  A published update never changes the version number: `2.0.0` identifies the native
+  A published update never changes the version number: `2.1.0` identifies the native
   build, not the JavaScript running inside it.
   The Supabase values must exist as EAS environment variables for `preview`/`production`
   before publishing, or the update ships without a backend URL; see `docs/DEPLOY.md`.

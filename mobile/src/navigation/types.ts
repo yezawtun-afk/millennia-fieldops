@@ -12,6 +12,7 @@ export type MainTabParamList = {
   Home: undefined;
   New: { type?: RecordType; draftId?: string } | undefined;
   Records: undefined;
+  Map: undefined;
   Review: undefined;
   Alerts: undefined;
 };

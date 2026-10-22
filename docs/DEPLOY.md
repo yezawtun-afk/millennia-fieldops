@@ -73,7 +73,7 @@ eas update --channel preview --message "what changed"
 
 - The phone picks the update up on its next launch. Users can also pull it in manually:
   **Home -> App -> Check for update**, and the app offers a restart when it finds one.
-- A published update does **not** change the version number. `2.0.0` is the *runtime*
+- A published update does **not** change the version number. `2.1.0` is the *runtime*
   version (the native build); the update only replaces the JavaScript bundle. If the card
   says "You are on the latest version", no newer bundle has been published for that
   channel and runtime yet — publish one with `eas update` above.
@@ -124,7 +124,9 @@ eas update --channel preview --message "what changed"
   installed apps keep the bundle from their APK.
 - Bump `expo.version` in `mobile/app.json` when you do ship a new APK: `runtimeVersion`
   uses the `appVersion` policy, so a new version is treated as a new runtime and old
-  builds stop receiving the new bundles.
+  builds stop receiving the new bundles. The map tab was the last such bump: it added
+  `react-native-webview`, so `2.1.0` is the first build with a map, and phones on `2.0.0`
+  keep their old bundle until the new APK is installed.
 
 ### What the profiles mean (`mobile/eas.json`)
 
@@ -320,5 +322,5 @@ and supervisor).
 | Deployed site loads but every page errors | Missing environment variables on Vercel. Add them and **Redeploy**. |
 | "Create user" in the web Users page fails with 401 | `SUPABASE_SERVICE_ROLE_KEY` on Vercel is wrong or missing. Users can also self-register from the mobile app. |
 | App says "Check for update" is unavailable / the Home card says the build cannot update itself | That APK was built before `expo-updates` was added, so it cannot receive over-the-air bundles. Install the newest APK once; every APK built from then on can update itself. |
-| "Check for update" says you are on the latest version, but the design is still the old one | Nothing newer was published. `eas update` publishes the *current working tree*, so commit your changes first, then publish on the build's channel (`eas update --channel preview --environment preview`). The version row stays `2.0.0` on purpose — it is the native build, not the JavaScript bundle. |
+| "Check for update" says you are on the latest version, but the design is still the old one | Nothing newer was published. `eas update` publishes the *current working tree*, so commit your changes first, then publish on the build's channel (`eas update --channel preview --environment preview`). The version row stays `2.1.0` on purpose — it is the native build, not the JavaScript bundle. |
 | `eas update` fails with "channel not found" or "no compatible runtime" | The build profile has no `channel` (it does now: `preview` / `production`) or `expo.version` in `app.json` was bumped after the APK was built. Bump the version only together with a new APK, then update on the matching channel. |
