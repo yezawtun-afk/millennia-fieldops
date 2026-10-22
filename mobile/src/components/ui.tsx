@@ -131,9 +131,15 @@ export function StatCell({
 
 // ---- Text input -----------------------------------------------------------
 
-export function Input(props: TextInputProps) {
+export function Input({
+  trailing,
+  ...props
+}: TextInputProps & {
+  /** A control drawn inside the right edge of the field, such as an eye. */
+  trailing?: React.ReactNode;
+}) {
   const [focused, setFocused] = useState(false);
-  return (
+  const field = (
     <TextInput
       placeholderTextColor={colors.faint}
       {...props}
@@ -148,10 +154,21 @@ export function Input(props: TextInputProps) {
       style={[
         styles.input,
         props.multiline ? styles.inputMultiline : null,
+        trailing ? styles.inputWithTrailing : null,
         focused ? styles.inputFocused : null,
         props.style,
       ]}
     />
+  );
+
+  // A field with no accessory keeps its plain single-node shape.
+  if (!trailing) return field;
+
+  return (
+    <View style={styles.inputShell}>
+      {field}
+      <View style={styles.inputTrailing}>{trailing}</View>
+    </View>
   );
 }
 
@@ -351,6 +368,17 @@ const styles = StyleSheet.create({
   },
   inputFocused: { borderColor: colors.primary },
   inputMultiline: { minHeight: 88, textAlignVertical: "top" },
+  inputShell: { justifyContent: "center" },
+  inputWithTrailing: { paddingRight: 44 },
+  inputTrailing: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   button: {
     borderWidth: 1,
     borderRadius: radius.md,

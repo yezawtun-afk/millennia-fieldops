@@ -6,6 +6,7 @@ import { Check, Trash2, UserPlus, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { visibleEmail } from "@/lib/phone";
 import { Card, btnPrimary, inputClass, selectClass, tdClass, thClass } from "@/components/ui";
+import { PasswordEye } from "@/components/PasswordEye";
 import { createUser, deleteUser } from "@/app/(app)/users/actions";
 import { useI18n } from "@/i18n";
 import type { AccountStatus, Profile, UserRole } from "@/lib/types";
@@ -42,6 +43,7 @@ export function UsersManager({
     role: "field_worker" as UserRole,
   });
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const requests = initialUsers.filter((user) => accountStatus(user) === "pending");
   // If no row carries a status, the column does not exist yet: the requests
@@ -277,14 +279,23 @@ export function UsersManager({
               />
             </Field>
             <Field label={t("Temporary password")}>
-              <input
-                type="password"
-                required
-                minLength={8}
-                value={form.password}
-                onChange={(event) => setForm({ ...form, password: event.target.value })}
-                className={inputClass}
-              />
+              <span className="relative block">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  minLength={8}
+                  value={form.password}
+                  onChange={(event) => setForm({ ...form, password: event.target.value })}
+                  className={inputClass}
+                  style={{ paddingRight: 40 }}
+                />
+                <span className="absolute right-0.5 top-1/2 -translate-y-1/2">
+                  <PasswordEye
+                    visible={showPassword}
+                    onToggle={() => setShowPassword((on) => !on)}
+                  />
+                </span>
+              </span>
             </Field>
             <Field label={t("Role")}>
               <select

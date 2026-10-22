@@ -107,6 +107,7 @@ export const zh: Record<string, string> = {
   "Growth stage": "生长阶段",
   "Hazard type": "隐患类型",
   "Health condition": "健康状况",
+  "Hide password": "隐藏密码",
   Home: "首页",
   "Improvements can arrive without reinstalling the app.": "无需重新安装应用即可获得改进。",
   "In review": "审核中",
@@ -182,6 +183,7 @@ export const zh: Record<string, string> = {
   "Request an account": "申请账号",
   "Request sent. An administrator will review it, and you can sign in with your phone number once it is approved.":
     "申请已发送。管理员将进行审核，批准后即可使用手机号码登录。",
+  "Retype password": "重新输入密码",
   Review: "审核",
   "Review queue": "审核队列",
   "Review record": "审核记录",
@@ -196,6 +198,7 @@ export const zh: Record<string, string> = {
   "See all": "查看全部",
   "Send request": "发送申请",
   Severity: "严重程度",
+  "Show password": "显示密码",
   "Sign in": "登录",
   "Sign out of Millennia FieldOps on this phone?": "要在此手机上退出 Millennia FieldOps 吗？",
   Species: "物种",
@@ -211,6 +214,7 @@ export const zh: Record<string, string> = {
   "The field worker will be told it was approved.": "外勤人员将收到已批准的通知。",
   "The field worker will be told it was rejected, with your comment.":
     "外勤人员将收到已拒绝的通知及你的备注。",
+  "The passwords do not match.": "两次输入的密码不一致。",
   "The record is stored on this phone and will upload automatically when you have a connection.":
     "记录已保存在此手机上，联网后会自动上传。",
   "The record was uploaded for review.": "记录已上传，等待审核。",

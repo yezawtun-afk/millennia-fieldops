@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../i18n";
 import { LanguageButton } from "../components/LanguageButton";
 import { Banner, Button, Card, Field, Input } from "../components/ui";
+import { PasswordInput } from "../components/PasswordInput";
 import { colors, radius, spacing, type } from "../theme";
 import type { AuthStackParamList } from "../navigation/types";
 
@@ -56,10 +57,9 @@ export function LoginScreen({ navigation }: Props) {
             />
           </Field>
           <Field label={t("Password")}>
-            <Input
+            <PasswordInput
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
               autoComplete="password"
               placeholder={t("Your password")}
             />

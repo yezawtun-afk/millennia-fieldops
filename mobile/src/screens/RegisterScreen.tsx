@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../i18n";
 import { LanguageButton } from "../components/LanguageButton";
 import { Banner, Button, Card, Field, Input } from "../components/ui";
+import { PasswordInput } from "../components/PasswordInput";
 import { colors, spacing, type } from "../theme";
 import type { AuthStackParamList } from "../navigation/types";
 
@@ -17,6 +18,7 @@ export function RegisterScreen({ navigation }: Props) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -28,6 +30,12 @@ export function RegisterScreen({ navigation }: Props) {
     }
     if (password.length < 6) {
       setError(t("Choose a password of at least 6 characters."));
+      return;
+    }
+    // Retyping catches a typo before the request is sent: the account is
+    // created with whatever was typed first.
+    if (password !== confirmPassword) {
+      setError(t("The passwords do not match."));
       return;
     }
     setBusy(true);
@@ -48,6 +56,7 @@ export function RegisterScreen({ navigation }: Props) {
       )
     );
     setPassword("");
+    setConfirmPassword("");
   }
 
   return (
@@ -91,12 +100,19 @@ export function RegisterScreen({ navigation }: Props) {
             />
           </Field>
           <Field label={t("Password")}>
-            <Input
+            <PasswordInput
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
               autoComplete="new-password"
               placeholder={t("At least 6 characters")}
+            />
+          </Field>
+          <Field label={t("Retype password")}>
+            <PasswordInput
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              autoComplete="new-password"
+              placeholder={t("Retype password")}
             />
           </Field>
 

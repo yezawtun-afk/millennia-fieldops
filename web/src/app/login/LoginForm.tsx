@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Lock, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { IconField, PrimaryButton } from "@/components/IconField";
+import { PasswordEye } from "@/components/PasswordEye";
 import { looksLikePhone } from "@/lib/phone";
 import { useI18n } from "@/i18n";
 
@@ -32,6 +33,7 @@ export function LoginForm() {
   const { t } = useI18n();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -131,12 +133,15 @@ export function LoginForm() {
       <IconField
         icon={Lock}
         label={t("Password")}
-        type="password"
+        type={showPassword ? "text" : "password"}
         name="password"
         autoComplete="current-password"
         placeholder={t("Your password")}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
+        trailing={
+          <PasswordEye visible={showPassword} onToggle={() => setShowPassword((on) => !on)} />
+        }
         required
       />
 

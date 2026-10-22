@@ -122,6 +122,7 @@ export const ms: Record<string, string> = {
   "Growth stage": "Peringkat pertumbuhan",
   "Hazard type": "Jenis bahaya",
   "Health condition": "Keadaan kesihatan",
+  "Hide password": "Sembunyikan kata laluan",
   Home: "Utama",
   "Improvements can arrive without reinstalling the app.":
     "Penambahbaikan boleh diterima tanpa memasang semula aplikasi.",
@@ -203,6 +204,7 @@ export const ms: Record<string, string> = {
   "Request an account": "Mohon akaun",
   "Request sent. An administrator will review it, and you can sign in with your phone number once it is approved.":
     "Permohonan dihantar. Pentadbir akan menyemaknya, dan anda boleh log masuk dengan nombor telefon anda setelah diluluskan.",
+  "Retype password": "Taip semula kata laluan",
   Review: "Semakan",
   "Review queue": "Baris gilir semakan",
   "Review record": "Semak rekod",
@@ -217,6 +219,7 @@ export const ms: Record<string, string> = {
   "See all": "Lihat semua",
   "Send request": "Hantar permohonan",
   Severity: "Keterukan",
+  "Show password": "Tunjukkan kata laluan",
   "Sign in": "Log masuk",
   "Sign out of Millennia FieldOps on this phone?":
     "Log keluar dari Millennia FieldOps pada telefon ini?",
@@ -234,6 +237,7 @@ export const ms: Record<string, string> = {
     "Petugas lapangan akan dimaklumkan bahawa ia diluluskan.",
   "The field worker will be told it was rejected, with your comment.":
     "Petugas lapangan akan dimaklumkan bahawa ia ditolak, bersama komen anda.",
+  "The passwords do not match.": "Kata laluan tidak sepadan.",
   "The record is stored on this phone and will upload automatically when you have a connection.":
     "Rekod disimpan pada telefon ini dan akan dimuat naik secara automatik apabila anda mempunyai sambungan.",
   "The record was uploaded for review.": "Rekod telah dimuat naik untuk semakan.",

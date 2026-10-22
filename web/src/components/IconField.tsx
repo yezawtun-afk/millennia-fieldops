@@ -9,12 +9,15 @@ export function IconField({
   label,
   hint,
   right,
+  trailing,
   ...inputProps
 }: {
   icon?: ComponentType<{ className?: string }>;
   label: string;
   hint?: string;
   right?: ReactNode;
+  /** A control drawn inside the right edge of the input, such as an eye. */
+  trailing?: ReactNode;
 } & InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className="block">
@@ -32,8 +35,11 @@ export function IconField({
           {...inputProps}
           className={`h-10 w-full rounded-control border border-control bg-sheet ${
             Icon ? "pl-9" : "pl-3"
-          } pr-3 text-[14px] text-ink placeholder:text-faint focus:border-accent focus:outline-none`}
+          } ${trailing ? "pr-11" : "pr-3"} text-[14px] text-ink placeholder:text-faint focus:border-accent focus:outline-none`}
         />
+        {trailing ? (
+          <span className="absolute right-1 top-1/2 -translate-y-1/2">{trailing}</span>
+        ) : null}
       </span>
       {hint ? <span className="mt-1 block text-[12px] text-muted">{hint}</span> : null}
     </label>
