@@ -6,6 +6,7 @@
 // the HTML is built once per language rather than re-running t() inside the
 // page.
 import { colors } from "../theme";
+import { LEAFLET_CSS, LEAFLET_JS } from "./leafletBundle";
 
 export interface MapPoint {
   id: string;
@@ -32,12 +33,9 @@ export interface MapLabels {
 // The village itself, used when there is nothing to plot yet.
 const SITE_CENTER = { lat: 2.752615639977973, lng: 101.90646329852517, zoom: 15 };
 
-// Leaflet, pinned. The integrity hashes come from leafletjs.com's download page.
-const LEAFLET_VERSION = "1.9.4";
-const LEAFLET_CSS = `https://unpkg.com/leaflet@${LEAFLET_VERSION}/dist/leaflet.css`;
-const LEAFLET_JS = `https://unpkg.com/leaflet@${LEAFLET_VERSION}/dist/leaflet.js`;
-const LEAFLET_CSS_INTEGRITY = "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
-const LEAFLET_JS_INTEGRITY = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=";
+// Leaflet ships inside the app (lib/leafletBundle.ts) rather than from a CDN:
+// a phone on a network that blocks or slows unpkg would otherwise show an
+// empty box. Only the map tiles need the internet.
 
 // JSON is safe inside <script> once the characters that could close the tag
 // (or break a line in an old parser) are escaped.
@@ -63,8 +61,7 @@ export function buildMapHtml(points: MapPoint[], zones: MapZone[], labels: MapLa
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<link rel="stylesheet" href="${LEAFLET_CSS}" integrity="${LEAFLET_CSS_INTEGRITY}" crossorigin="" />
-<script src="${LEAFLET_JS}" integrity="${LEAFLET_JS_INTEGRITY}" crossorigin=""></script>
+<style>${LEAFLET_CSS}</style>
 <style>
   html, body { margin: 0; padding: 0; height: 100%; background: ${colors.page}; }
   #map { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: ${colors.line}; }
@@ -79,6 +76,7 @@ export function buildMapHtml(points: MapPoint[], zones: MapZone[], labels: MapLa
 </head>
 <body>
 <div id="map"></div>
+<script>${LEAFLET_JS.replace(/<\/script/gi, "<\\/script")}</script>
 <script>
   var DATA = ${toScriptJson(data)};
 
@@ -92,10 +90,11 @@ export function buildMapHtml(points: MapPoint[], zones: MapZone[], labels: MapLa
     post({ type: "open", id: id });
   }
 
-  // A blocked CDN or a broken tile host would otherwise leave the app on a
-  // spinner forever; the wrapper shows its "try again" state instead.
-  window.onerror = function () {
-    post({ type: "error", message: "map failed to start" });
+  // Something threw before the map started. Report the real reason so the app
+  // can show it instead of a generic message.
+  window.onerror = function (message, source, line, column, error) {
+    var detail = (error && error.message) || message || "unknown error";
+    post({ type: "error", message: String(detail) });
     return true;
   };
 
@@ -157,6 +156,10 @@ export function buildMapHtml(points: MapPoint[], zones: MapZone[], labels: MapLa
   } else {
     map.setView([DATA.center.lat, DATA.center.lng], DATA.center.zoom);
   }
+
+  // Tells the app the page is alive so the loading cover can be lifted. Tiles
+  // keep arriving afterwards; the cover does not wait for them.
+  post({ type: "ready" });
 </script>
 </body>
 </html>`;

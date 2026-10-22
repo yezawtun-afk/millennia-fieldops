@@ -30,6 +30,7 @@ export function RecordMap({
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [detail, setDetail] = useState<string | null>(null);
 
   // A stable HTML string keeps the WebView from reloading on unrelated
   // re-renders (a sync tick, for example). It changes with the data, the
@@ -39,11 +40,14 @@ export function RecordMap({
     [points, zones, openRecordLabel]
   );
 
-  // If the page never says it started (CDN blocked, for example), stop showing
-  // a spinner and offer a retry instead.
+  // If the page never says it started, stop showing a spinner and offer a
+  // retry instead.
   useEffect(() => {
     if (ready || failed) return;
-    const timer = setTimeout(() => setFailed(true), 15000);
+    const timer = setTimeout(() => {
+      setDetail("The map page did not finish loading.");
+      setFailed(true);
+    }, 20000);
     return () => clearTimeout(timer);
   }, [ready, failed, attempt]);
 
@@ -52,12 +56,14 @@ export function RecordMap({
       <View style={styles.centered}>
         <Ionicons name="map-outline" size={22} color={colors.muted} />
         <Text style={styles.errorText}>{errorLabel}</Text>
+        {detail ? <Text style={styles.detailText}>{detail}</Text> : null}
         <Button
           title={retryLabel}
           variant="secondary"
           onPress={() => {
             setFailed(false);
             setReady(false);
+            setDetail(null);
             setAttempt((current) => current + 1);
           }}
         />
@@ -80,10 +86,14 @@ export function RecordMap({
             const message = JSON.parse(event.nativeEvent.data) as {
               type?: string;
               id?: string;
+              message?: string;
             };
             if (message.type === "open" && message.id) onOpenRecord(message.id);
             if (message.type === "ready") setReady(true);
-            if (message.type === "error") setFailed(true);
+            if (message.type === "error") {
+              setDetail(message.message ?? null);
+              setFailed(true);
+            }
           } catch {
             // A message we did not write; ignore it.
           }
@@ -96,7 +106,10 @@ export function RecordMap({
           }
           return true;
         }}
-        onError={() => setFailed(true)}
+        onError={(event) => {
+          setDetail(event.nativeEvent.description || "The map view failed to load.");
+          setFailed(true);
+        }}
       />
       {!ready ? (
         <View style={styles.overlay} pointerEvents="none">
@@ -123,6 +136,12 @@ const styles = StyleSheet.create({
     color: colors.muted,
     textAlign: "center",
     lineHeight: 20,
+  },
+  detailText: {
+    fontSize: 12,
+    color: colors.faint,
+    textAlign: "center",
+    lineHeight: 17,
   },
   overlay: {
     position: "absolute",
