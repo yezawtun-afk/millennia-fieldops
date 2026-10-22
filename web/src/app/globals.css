@@ -109,6 +109,17 @@ table,
   z-index: 0;
 }
 
+/* Placing a zone: crosshair everywhere, and clicks reach the map instead of
+   opening a record popup. */
+.zone-draw,
+.zone-draw .leaflet-interactive {
+  cursor: crosshair;
+}
+
+.zone-draw .leaflet-interactive {
+  pointer-events: none;
+}
+
 /* The phone drawer is the only thing that moves on its own. */
 @keyframes fieldops-drawer-in {
   from {

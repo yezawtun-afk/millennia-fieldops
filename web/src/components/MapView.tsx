@@ -32,12 +32,14 @@ export function MapView({
   markers,
   zones = [],
   height = MAP_HEIGHT,
+  canAddZone = false,
 }: {
   markers: MapMarker[];
   zones?: MapZone[];
   height?: number | string;
+  canAddZone?: boolean;
 }) {
-  return <LeafletMap markers={markers} zones={zones} height={height} />;
+  return <LeafletMap markers={markers} zones={zones} height={height} canAddZone={canAddZone} />;
 }
 
 export type { MapMarker, MapZone };

@@ -1,4 +1,5 @@
 import { getZones, queryRecords } from "@/lib/data";
+import { getProfile } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui";
 import { MapView } from "@/components/MapView";
 import { STATUS_LABELS, TYPE_CHART_COLORS } from "@/lib/format";
@@ -7,7 +8,7 @@ import type { MapMarker } from "@/components/MapView";
 
 export default async function MapPage() {
   const t = await getT();
-  const [records, zones] = await Promise.all([queryRecords(), getZones()]);
+  const [records, zones, profile] = await Promise.all([queryRecords(), getZones(), getProfile()]);
 
   const markers: MapMarker[] = records
     .filter((r) => r.latitude != null && r.longitude != null)
@@ -41,7 +42,11 @@ export default async function MapPage() {
       />
 
       <div className="overflow-hidden rounded-card border border-line bg-sheet">
-        <MapView markers={markers} zones={zoneShapes} />
+        <MapView
+          markers={markers}
+          zones={zoneShapes}
+          canAddZone={profile?.role === "admin"}
+        />
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2 text-[12px]">

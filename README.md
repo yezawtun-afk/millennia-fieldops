@@ -88,6 +88,10 @@ Demo accounts and a full end-of-project snapshot live in
 - Records management: search, filter, view full details and photos.
 - Interactive **Leaflet map** of the site, opening on Millennia Village (2.752616,
   101.906463) with records plotted over the monitoring zones.
+- **Add a monitoring zone straight from the map** (administrators): press *Add zone*,
+  click the centre, drag the radius slider with a live preview, type a name, pick a colour
+  and save - the circle appears without leaving the map. /zones still handles renaming,
+  resizing and deleting.
 - Review and verification: approve/reject with a comment (sent back to the worker).
 - **Live pages**: every screen re-fetches its data in place every ten seconds (the green
   "Live" label in the header), so a record sent from the phone appears without pressing

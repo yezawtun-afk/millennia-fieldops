@@ -568,4 +568,11 @@ export const zh: Record<string, string> = {
   "{count} unread": "{count} 条未读",
   "Everything here has been read": "这里的内容都已读",
   "Nothing is waiting for review": "没有等待审核的内容",
+  "Click the map to place the centre.": "点击地图放置中心点。",
+  "Centre {lat}, {lng}": "中心 {lat}, {lng}",
+  "Radius": "半径",
+  "Zone name": "区域名称",
+  "Save zone": "保存区域",
+  "Could not save the zone.": "无法保存区域。",
+  "Use {colour}": "使用 {colour}",
 };

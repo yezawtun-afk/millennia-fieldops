@@ -602,4 +602,11 @@ export const ms: Record<string, string> = {
   "{count} unread": "{count} belum dibaca",
   "Everything here has been read": "Semua di sini telah dibaca",
   "Nothing is waiting for review": "Tiada apa menunggu semakan",
+  "Click the map to place the centre.": "Klik peta untuk meletakkan pusat.",
+  "Centre {lat}, {lng}": "Pusat {lat}, {lng}",
+  "Radius": "Jejari",
+  "Zone name": "Nama zon",
+  "Save zone": "Simpan zon",
+  "Could not save the zone.": "Tidak dapat menyimpan zon.",
+  "Use {colour}": "Guna {colour}",
 };

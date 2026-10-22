@@ -1,7 +1,9 @@
 "use client";
 
-import { MapContainer, TileLayer, CircleMarker, Circle, Popup } from "react-leaflet";
+import { useEffect, useState } from "react";
+import { Circle, CircleMarker, MapContainer, Popup, TileLayer, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { ZoneDrawTool } from "./ZoneDrawTool";
 
 export interface MapMarker {
   id: string;
@@ -31,13 +33,27 @@ export function LeafletMap({
   markers,
   zones,
   height,
+  canAddZone = false,
 }: {
   markers: MapMarker[];
   zones: MapZone[];
   height: number | string;
+  canAddZone?: boolean;
 }) {
+  // The zone tool's own little state. It lives here because the preview circle
+  // is drawn on the map, next to the real zones.
+  const [drawing, setDrawing] = useState(false);
+  const [centre, setCentre] = useState<{ lat: number; lng: number } | null>(null);
+  const [radius, setRadius] = useState(150);
+  const [colour, setColour] = useState("#1f6b4a");
+
+  function endDrawing() {
+    setDrawing(false);
+    setCentre(null);
+  }
+
   return (
-    <div className="overflow-hidden" style={{ height }}>
+    <div className="relative overflow-hidden" style={{ height }}>
       <MapContainer
         center={SITE_CENTER}
         zoom={SITE_ZOOM}
@@ -80,7 +96,70 @@ export function LeafletMap({
             </Popup>
           </CircleMarker>
         ))}
+
+        {drawing ? <PlacementClicks onPlace={setCentre} /> : null}
+
+        {drawing && centre ? (
+          <>
+            <Circle
+              center={[centre.lat, centre.lng]}
+              radius={radius}
+              pathOptions={{
+                color: colour,
+                weight: 2,
+                dashArray: "6 6",
+                fillColor: colour,
+                fillOpacity: 0.12,
+              }}
+            />
+            <CircleMarker
+              center={[centre.lat, centre.lng]}
+              radius={5}
+              pathOptions={{ color: "#ffffff", weight: 2, fillColor: colour, fillOpacity: 1 }}
+            />
+          </>
+        ) : null}
       </MapContainer>
+
+      {canAddZone ? (
+        <ZoneDrawTool
+          drawing={drawing}
+          centre={centre}
+          radius={radius}
+          colour={colour}
+          onStart={() => {
+            setDrawing(true);
+            setCentre(null);
+          }}
+          onCancel={endDrawing}
+          onRadiusChange={setRadius}
+          onColourChange={setColour}
+          onSaved={endDrawing}
+        />
+      ) : null}
     </div>
   );
+}
+
+// While the tool is open, a click anywhere on the map places the centre. The
+// class on the container turns the cursor into a crosshair and lets clicks pass
+// through the record markers, which would otherwise open a popup instead.
+function PlacementClicks({
+  onPlace,
+}: {
+  onPlace: (point: { lat: number; lng: number }) => void;
+}) {
+  const map = useMapEvents({
+    click(event) {
+      onPlace({ lat: event.latlng.lat, lng: event.latlng.lng });
+    },
+  });
+
+  useEffect(() => {
+    const container = map.getContainer();
+    container.classList.add("zone-draw");
+    return () => container.classList.remove("zone-draw");
+  }, [map]);
+
+  return null;
 }
