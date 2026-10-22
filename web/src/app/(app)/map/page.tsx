@@ -1,10 +1,12 @@
 import { getZones, queryRecords } from "@/lib/data";
 import { PageHeader } from "@/components/ui";
 import { MapView } from "@/components/MapView";
-import { TYPE_CHART_COLORS } from "@/lib/format";
+import { STATUS_LABELS, TYPE_CHART_COLORS } from "@/lib/format";
+import { getT } from "@/i18n/server";
 import type { MapMarker } from "@/components/MapView";
 
 export default async function MapPage() {
+  const t = await getT();
   const [records, zones] = await Promise.all([queryRecords(), getZones()]);
 
   const markers: MapMarker[] = records
@@ -15,7 +17,7 @@ export default async function MapPage() {
       lng: r.longitude as number,
       color: TYPE_CHART_COLORS[r.type],
       label: r.title,
-      sub: `${r.zone?.name ?? "No zone"} - ${r.status}`,
+      sub: `${r.zone?.name ?? t("No zone")} - ${t(STATUS_LABELS[r.status])}`,
       href: `/records/${r.id}`,
     }));
 
@@ -31,8 +33,11 @@ export default async function MapPage() {
   return (
     <div>
       <PageHeader
-        title="Site map"
-        subtitle={`${markers.length} records plotted across ${zones.length} monitoring zones.`}
+        title={t("Site map")}
+        subtitle={t("{count} records plotted across {zones} monitoring zones.", {
+          count: markers.length,
+          zones: zones.length,
+        })}
       />
 
       <div className="overflow-hidden rounded-card border border-line bg-sheet">
@@ -40,11 +45,11 @@ export default async function MapPage() {
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2 text-[12px]">
-        <span className="text-muted">Zones and record types:</span>
-        <LegendChip color={TYPE_CHART_COLORS.flora} label="Flora" />
-        <LegendChip color={TYPE_CHART_COLORS.soil_water} label="Soil & water" />
-        <LegendChip color={TYPE_CHART_COLORS.hazard} label="Hazard" />
-        <span className="text-muted">Circles show the monitoring zones.</span>
+        <span className="text-muted">{t("Zones and record types:")}</span>
+        <LegendChip color={TYPE_CHART_COLORS.flora} label={t("Flora")} />
+        <LegendChip color={TYPE_CHART_COLORS.soil_water} label={t("Soil & water")} />
+        <LegendChip color={TYPE_CHART_COLORS.hazard} label={t("Hazard")} />
+        <span className="text-muted">{t("Circles show the monitoring zones.")}</span>
       </div>
     </div>
   );

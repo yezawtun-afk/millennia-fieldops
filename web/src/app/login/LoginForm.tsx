@@ -6,24 +6,30 @@ import { Lock, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { IconField, PrimaryButton } from "@/components/IconField";
 import { looksLikePhone } from "@/lib/phone";
+import { useI18n } from "@/i18n";
 
 // Explains why a correctly typed password still cannot get in. Kept here so
 // the web dashboard and the phone app say the same thing.
-function refusalMessage(status: string | undefined, isActive: boolean | undefined): string | null {
+function refusalMessage(
+  t: (text: string) => string,
+  status: string | undefined,
+  isActive: boolean | undefined
+): string | null {
   if (status === "pending") {
-    return "Your account request is waiting for an administrator to approve it.";
+    return t("Your account request is waiting for an administrator to approve it.");
   }
   if (status === "declined") {
-    return "Your account request was declined. Contact an administrator.";
+    return t("Your account request was declined. Contact an administrator.");
   }
   if (isActive === false) {
-    return "That account has been deactivated. Ask an administrator to reactivate it.";
+    return t("That account has been deactivated. Ask an administrator to reactivate it.");
   }
   return null;
 }
 
 export function LoginForm() {
   const router = useRouter();
+  const { t } = useI18n();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -49,12 +55,12 @@ export function LoginForm() {
         });
         payload = (await response.json()) as typeof payload;
         if (!response.ok || !payload.access_token || !payload.refresh_token) {
-          setError(payload.error ?? "Could not sign in. Check your number and password.");
+          setError(payload.error ?? t("Could not sign in. Check your number and password."));
           setBusy(false);
           return;
         }
       } catch {
-        setError("Could not reach the server. Check your connection and try again.");
+        setError(t("Could not reach the server. Check your connection and try again."));
         setBusy(false);
         return;
       }
@@ -95,7 +101,7 @@ export function LoginForm() {
         .eq("id", user.id)
         .single();
 
-      const refusal = refusalMessage(profile?.status, profile?.is_active);
+      const refusal = refusalMessage(t, profile?.status, profile?.is_active);
       if (refusal) {
         await supabase.auth.signOut();
         setError(refusal);
@@ -112,11 +118,11 @@ export function LoginForm() {
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <IconField
         icon={Mail}
-        label="Email or phone number"
+        label={t("Email or phone number")}
         type="text"
         name="identifier"
         autoComplete="username"
-        placeholder="you@millennia.my or 012-345 6789"
+        placeholder={t("you@millennia.my or 012-345 6789")}
         value={identifier}
         onChange={(e) => setIdentifier(e.target.value)}
         required
@@ -124,11 +130,11 @@ export function LoginForm() {
 
       <IconField
         icon={Lock}
-        label="Password"
+        label={t("Password")}
         type="password"
         name="password"
         autoComplete="current-password"
-        placeholder="Your password"
+        placeholder={t("Your password")}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
@@ -141,7 +147,7 @@ export function LoginForm() {
       ) : null}
 
       <PrimaryButton type="submit" busy={busy}>
-        Log in
+        {t("Log in")}
       </PrimaryButton>
     </form>
   );

@@ -1,7 +1,7 @@
 // Read helpers used by the dashboard pages.
 import "server-only";
 import { createClient } from "./supabase/server";
-import type { FieldRecord, Profile, Zone } from "./types";
+import type { AuditLog, FieldRecord, Profile, Zone } from "./types";
 
 const RECORD_SELECT = `
   *,
@@ -99,4 +99,34 @@ export async function getUsers(): Promise<Profile[]> {
   const { data, error } = await supabase.from("profiles").select("*").order("created_at");
   if (error) throw new Error(error.message);
   return (data as Profile[]) ?? [];
+}
+
+export interface AuditQuery {
+  action?: string;
+  limit?: number;
+}
+
+// Newest first. Returns a setup flag instead of throwing when the audit table
+// has not been created yet, so the page can explain what to run.
+export async function getAuditLogs(
+  options: AuditQuery = {}
+): Promise<{ rows: AuditLog[]; missingTable: boolean }> {
+  const supabase = await createClient();
+  let query = supabase
+    .from("audit_logs")
+    .select("id, actor_id, actor_name, action, entity, entity_id, summary, details, created_at")
+    .order("created_at", { ascending: false })
+    .limit(options.limit ?? 200);
+
+  if (options.action) query = query.eq("action", options.action);
+
+  const { data, error } = await query;
+  if (error) {
+    // PostgREST reports an unknown table with PGRST205 or 42P01.
+    if (error.code === "PGRST205" || error.code === "42P01") {
+      return { rows: [], missingTable: true };
+    }
+    throw new Error(error.message);
+  }
+  return { rows: (data as unknown as AuditLog[]) ?? [], missingTable: false };
 }

@@ -11,6 +11,7 @@ import {
   Map as MapIcon,
   MapPin,
   Users as UsersIcon,
+  History,
   LogOut,
   Menu,
   Search,
@@ -19,7 +20,9 @@ import {
   WifiOff,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { ROLE_LABELS } from "@/components/ui";
+import { useI18n } from "@/i18n";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ROLE_LABELS } from "@/lib/format";
 import type { Profile } from "@/lib/types";
 
 type NavItem = {
@@ -44,6 +47,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/zones", label: "Zones", icon: MapPin, roles: ["admin"] },
       { href: "/users", label: "Accounts", icon: UsersIcon, roles: ["admin"] },
+      { href: "/audit", label: "Activity log", icon: History, roles: ["admin"] },
     ],
   },
 ];
@@ -95,6 +99,7 @@ function SidebarContent({ profile, onNavigate }: { profile: Profile; onNavigate?
   const online = useOnlineStatus();
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useI18n();
 
   async function handleLogout() {
     const supabase = createClient();
@@ -118,7 +123,7 @@ function SidebarContent({ profile, onNavigate }: { profile: Profile; onNavigate?
 
           return (
             <div key={group.label} className="mb-5">
-              <p className="px-3 pb-1.5 text-[12px] font-medium text-muted">{group.label}</p>
+              <p className="px-3 pb-1.5 text-[12px] font-medium text-muted">{t(group.label)}</p>
               <ul>
                 {items.map((item) => {
                   const Icon = item.icon;
@@ -136,7 +141,7 @@ function SidebarContent({ profile, onNavigate }: { profile: Profile; onNavigate?
                         }`}
                       >
                         <Icon className="h-4 w-4 shrink-0" strokeWidth={1.7} />
-                        {item.label}
+                        {t(item.label)}
                       </Link>
                     </li>
                   );
@@ -154,14 +159,14 @@ function SidebarContent({ profile, onNavigate }: { profile: Profile; onNavigate?
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[14px] font-medium leading-tight text-ink">{profile.full_name}</p>
-            <p className="truncate text-[12px] leading-tight text-muted">{ROLE_LABELS[profile.role]}</p>
+            <p className="truncate text-[12px] leading-tight text-muted">{t(ROLE_LABELS[profile.role])}</p>
           </div>
           <span
             className={`flex items-center gap-1 text-[12px] ${online ? "text-accent" : "text-warning-ink"}`}
-            title={online ? "Connected" : "No connection"}
+            title={online ? t("Connected") : t("No connection")}
           >
             {online ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
-            <span className="sr-only">{online ? "Connected" : "No connection"}</span>
+            <span className="sr-only">{online ? t("Connected") : t("No connection")}</span>
           </span>
         </div>
         <button
@@ -170,7 +175,7 @@ function SidebarContent({ profile, onNavigate }: { profile: Profile; onNavigate?
           className="mt-2 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] text-muted transition-colors hover:bg-frame-soft hover:text-ink"
         >
           <LogOut className="h-4 w-4" strokeWidth={1.7} />
-          Log out
+          {t("Log out")}
         </button>
       </div>
     </div>
@@ -183,17 +188,19 @@ const TITLES: Record<string, string> = {
   "/map": "Site map",
   "/zones": "Zones",
   "/users": "Accounts",
+  "/audit": "Activity log",
 };
 
-function pageTitle(pathname: string): string {
-  if (TITLES[pathname]) return TITLES[pathname];
-  if (pathname.startsWith("/records/")) return "Record";
+function pageTitle(t: (text: string) => string, pathname: string): string {
+  if (TITLES[pathname]) return t(TITLES[pathname]);
+  if (pathname.startsWith("/records/")) return t("Record");
   return "Millennia FieldOps";
 }
 
 // The one search on the screen: it searches the records list.
 function TopSearch() {
   const router = useRouter();
+  const { t } = useI18n();
   const [q, setQ] = useState("");
 
   return (
@@ -210,8 +217,8 @@ function TopSearch() {
       <input
         value={q}
         onChange={(event) => setQ(event.target.value)}
-        placeholder="Search records"
-        aria-label="Search records"
+        placeholder={t("Search records")}
+        aria-label={t("Search records")}
         className="h-8 w-full rounded-md border border-control bg-sheet pl-8 pr-3 text-[13px] text-ink placeholder:text-faint focus:border-accent focus:outline-none"
       />
     </form>
@@ -221,6 +228,7 @@ function TopSearch() {
 export function AppShell({ profile, children }: { profile: Profile; children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
+  const { t } = useI18n();
 
   useEffect(() => {
     setDrawerOpen(false);
@@ -238,24 +246,25 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
-            aria-label="Open menu"
+            aria-label={t("Open menu")}
             className="-ml-2 rounded-md p-2 text-muted hover:bg-frame-soft hover:text-ink lg:hidden"
           >
             <Menu className="h-5 w-5" strokeWidth={1.7} />
           </button>
 
-          <span className="text-[13px] font-medium text-muted lg:hidden">{pageTitle(pathname)}</span>
+          <span className="text-[13px] font-medium text-muted lg:hidden">{pageTitle(t, pathname)}</span>
           <span className="hidden text-[13px] text-muted lg:block">
-            Field data review · Millennia Village
+            {t("Field data review · Millennia Village")}
           </span>
 
           <div className="ml-auto flex items-center gap-3">
             <TopSearch />
+            <LanguageSwitcher compact />
             <Link
               href="/records?status=pending"
               className="hidden whitespace-nowrap rounded-md px-2 py-1 text-[13px] font-medium text-accent hover:bg-frame-soft sm:block"
             >
-              Pending review
+              {t("Pending review")}
             </Link>
           </div>
         </header>
@@ -273,7 +282,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
         <div className="fixed inset-0 z-40 lg:hidden">
           <button
             type="button"
-            aria-label="Close menu"
+            aria-label={t("Close menu")}
             className="absolute inset-0 bg-ink/40"
             onClick={() => setDrawerOpen(false)}
           />
@@ -281,7 +290,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
             <button
               type="button"
               onClick={() => setDrawerOpen(false)}
-              aria-label="Close menu"
+              aria-label={t("Close menu")}
               className="absolute right-2 top-3 z-10 rounded-md p-2 text-muted hover:bg-frame-soft hover:text-ink"
             >
               <X className="h-5 w-5" strokeWidth={1.7} />

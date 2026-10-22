@@ -105,6 +105,19 @@ export async function createUser(input: CreateUserInput): Promise<CreateUserResu
         error: `Account created, but its profile could not be updated: ${profileError.message}`,
       };
     }
+
+    // The service role has no signed-in user inside the database, so the audit
+    // row is written here, with the administrator as the actor.
+    await recordAudit(admin, {
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "account.created",
+      entityId: data.user.id,
+      summary: `${profile.full_name} created an account for ${
+        input.full_name.trim() || fullNameFromPhone(phone)
+      }${typedEmail ? ` (${typedEmail})` : ` (${phone})`}`,
+      details: { role: input.role, phone, email: typedEmail || null },
+    });
   }
 
   return { ok: true };
@@ -112,6 +125,32 @@ export async function createUser(input: CreateUserInput): Promise<CreateUserResu
 
 function fullNameFromPhone(phone: string): string {
   return `Field worker ${phone.slice(-4)}`;
+}
+
+// Best effort: a failed audit write must not undo a real action, but it should
+// be visible in the server log.
+async function recordAudit(
+  admin: ReturnType<typeof createAdminClient>,
+  entry: {
+    actorId: string;
+    actorName: string;
+    action: string;
+    entityId: string;
+    summary: string;
+    details?: Record<string, unknown>;
+  }
+): Promise<void> {
+  if (!admin) return;
+  const { error } = await admin.from("audit_logs").insert({
+    actor_id: entry.actorId,
+    actor_name: entry.actorName,
+    action: entry.action,
+    entity: "account",
+    entity_id: entry.entityId,
+    summary: entry.summary,
+    details: entry.details ?? {},
+  });
+  if (error) console.error("audit write failed:", error.message);
 }
 
 // Permanently removes an account. Deactivate is the safer everyday action, so
@@ -137,7 +176,7 @@ export async function deleteUser(userId: string): Promise<ActionResult> {
 
   const { data: target, error: targetError } = await admin
     .from("profiles")
-    .select("id, full_name, role")
+    .select("id, full_name, role, email, phone")
     .eq("id", userId)
     .maybeSingle();
 
@@ -171,6 +210,15 @@ export async function deleteUser(userId: string): Promise<ActionResult> {
       }. Deactivate the account instead, or ask an administrator to reassign those records first.`,
     };
   }
+
+  await recordAudit(admin, {
+    actorId: profile.id,
+    actorName: profile.full_name,
+    action: "account.deleted",
+    entityId: userId,
+    summary: `${profile.full_name} deleted ${target.full_name}`,
+    details: { role: target.role, email: target.email, phone: target.phone },
+  });
 
   const { error } = await admin.auth.admin.deleteUser(userId);
   if (error) return { ok: false, error: error.message };

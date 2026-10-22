@@ -4,6 +4,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { deleteRecord, fetchRecord, signPhotoUrls } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import { useI18n } from "../i18n";
 import { openInOpenStreetMap } from "../lib/location";
 import { Button, Card, Pill, SectionTitle } from "../components/ui";
 import { colors, radius, spacing, type } from "../theme";
@@ -16,6 +17,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "RecordDetails">;
 export function RecordDetailsScreen({ route, navigation }: Props) {
   const { id } = route.params;
   const { profile, session } = useAuth();
+  const { t } = useI18n();
   const userId = session?.user.id ?? profile?.id ?? null;
   const [record, setRecord] = useState<FieldRecord | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
@@ -52,7 +54,9 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
   if (!record) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.muted}>This record could not be loaded. You may be offline.</Text>
+        <Text style={styles.muted}>
+          {t("This record could not be loaded. You may be offline.")}
+        </Text>
       </View>
     );
   }
@@ -64,12 +68,14 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
   function confirmDelete() {
     if (!record) return;
     Alert.alert(
-      "Delete record",
-      `Delete "${record.title}"? This cannot be undone - the record and its photos are removed for everyone.`,
+      t("Delete record"),
+      t('Delete "{title}"? This cannot be undone - the record and its photos are removed for everyone.', {
+        title: record.title,
+      }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("Cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("Delete"),
           style: "destructive",
           onPress: async () => {
             setDeleting(true);
@@ -78,8 +84,10 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
               navigation.goBack();
             } catch {
               Alert.alert(
-                "Could not delete",
-                "You need a connection to delete an uploaded record, and only records that are still pending can be removed."
+                t("Could not delete"),
+                t(
+                  "You need a connection to delete an uploaded record, and only records that are still pending can be removed."
+                )
               );
             } finally {
               setDeleting(false);
@@ -93,20 +101,29 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
   const facts: { label: string; value: string | null }[] =
     record.type === "flora"
       ? [
-          { label: "Species", value: record.species_name },
-          { label: "Growth stage", value: record.growth_stage },
-          { label: "Health condition", value: record.health_condition },
-          { label: "Estimated count", value: record.estimated_count != null ? String(record.estimated_count) : null },
+          { label: t("Species"), value: record.species_name },
+          {
+            label: t("Growth stage"),
+            value: record.growth_stage ? t(record.growth_stage) : null,
+          },
+          {
+            label: t("Health condition"),
+            value: record.health_condition ? t(record.health_condition) : null,
+          },
+          {
+            label: t("Estimated count"),
+            value: record.estimated_count != null ? String(record.estimated_count) : null,
+          },
         ]
       : record.type === "hazard"
         ? [
-            { label: "Hazard type", value: record.hazard_type },
-            { label: "Severity", value: record.severity },
+            { label: t("Hazard type"), value: record.hazard_type ? t(record.hazard_type) : null },
+            { label: t("Severity"), value: record.severity ? t(record.severity) : null },
           ]
         : [
-            { label: "Reading type", value: record.reading_type },
+            { label: t("Reading type"), value: record.reading_type ? t(record.reading_type) : null },
             {
-              label: "Value",
+              label: t("Value"),
               value:
                 record.reading_value != null
                   ? `${record.reading_value}${record.reading_unit ? ` ${record.reading_unit}` : ""}`
@@ -118,18 +135,18 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <View style={styles.rowLeft}>
         <Pill
-          label={TYPE_LABELS[record.type]}
+          label={t(TYPE_LABELS[record.type])}
           color={TYPE_COLORS[record.type].fg}
           background={TYPE_COLORS[record.type].bg}
         />
         <Pill
-          label={STATUS_LABELS[record.status]}
+          label={t(STATUS_LABELS[record.status])}
           color={STATUS_COLORS[record.status].fg}
           background={STATUS_COLORS[record.status].bg}
         />
         {record.type === "hazard" && record.severity ? (
           <Pill
-            label={record.severity}
+            label={t(record.severity)}
             color={SEVERITY_COLORS[record.severity].fg}
             background={SEVERITY_COLORS[record.severity].bg}
           />
@@ -138,18 +155,19 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
 
       <Text style={styles.title}>{record.title}</Text>
       <Text style={styles.meta}>
-        {record.zone?.name ?? "No zone"} · observed {formatDate(record.observed_date)}
+        {record.zone?.name ?? t("No zone")} ·{" "}
+        {t("observed {date}", { date: formatDate(record.observed_date) })}
       </Text>
 
       {record.notes ? (
         <Card padded style={styles.cardSpacing}>
-          <SectionTitle>Notes</SectionTitle>
+          <SectionTitle>{t("Notes")}</SectionTitle>
           <Text style={styles.body}>{record.notes}</Text>
         </Card>
       ) : null}
 
       <Card padded style={styles.cardSpacing}>
-        <SectionTitle>Observation</SectionTitle>
+        <SectionTitle>{t("Observation")}</SectionTitle>
         {facts
           .filter((f) => f.value)
           .map((f) => (
@@ -160,7 +178,7 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
           ))}
         {record.latitude != null && record.longitude != null ? (
           <View style={[styles.factRow, styles.factRowLast]}>
-            <Text style={styles.factLabel}>Coordinates</Text>
+            <Text style={styles.factLabel}>{t("Coordinates")}</Text>
             <Text style={[styles.factValue, styles.mono]}>
               {record.latitude.toFixed(5)}, {record.longitude.toFixed(5)}
             </Text>
@@ -170,7 +188,7 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
 
       {photos.length > 0 ? (
         <Card padded style={styles.cardSpacing}>
-          <SectionTitle>Photos</SectionTitle>
+          <SectionTitle>{t("Photos")}</SectionTitle>
           <View style={styles.photoRow}>
             {photos.map((uri) => (
               <Image key={uri} source={{ uri }} style={styles.photo} />
@@ -182,7 +200,7 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
       {record.latitude != null && record.longitude != null ? (
         <View style={{ marginTop: spacing.lg }}>
           <Button
-            title="Open location in OpenStreetMap"
+            title={t("Open location in OpenStreetMap")}
             variant="secondary"
             onPress={() =>
               Linking.openURL(openInOpenStreetMap(record.latitude as number, record.longitude as number))
@@ -192,24 +210,28 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
       ) : null}
 
       <Card padded style={styles.cardSpacing}>
-        <SectionTitle>Review</SectionTitle>
+        <SectionTitle>{t("Review")}</SectionTitle>
         {record.status === "pending" ? (
           <View style={styles.reviewText}>
-            <Text style={styles.muted}>Awaiting review by a supervisor.</Text>
+            <Text style={styles.muted}>{t("Awaiting review by a supervisor.")}</Text>
             {canDelete ? (
               <Text style={styles.muted}>
-                You can still delete this record yourself until it is reviewed.
+                {t("You can still delete this record yourself until it is reviewed.")}
               </Text>
             ) : null}
           </View>
         ) : (
           <>
             <Text style={styles.body}>
-              {record.status === "approved" ? "Approved" : "Rejected"}
-              {record.reviewed_at ? ` on ${formatDateTime(record.reviewed_at)}` : ""}.
+              {record.status === "approved" ? t("Approved") : t("Rejected")}
+              {record.reviewed_at
+                ? t(" on {date}.", { date: formatDateTime(record.reviewed_at) })
+                : "."}
             </Text>
             {record.supervisor_feedback ? (
-              <Text style={styles.feedback}>Comment: {record.supervisor_feedback}</Text>
+              <Text style={styles.feedback}>
+                {t("Comment: {comment}", { comment: record.supervisor_feedback })}
+              </Text>
             ) : null}
           </>
         )}
@@ -218,7 +240,7 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
       {canDelete ? (
         <View style={{ marginTop: spacing.lg }}>
           <Button
-            title={deleting ? "Deleting..." : "Delete this record"}
+            title={deleting ? t("Deleting...") : t("Delete this record")}
             variant="danger"
             onPress={confirmDelete}
             loading={deleting}

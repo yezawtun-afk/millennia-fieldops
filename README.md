@@ -46,11 +46,21 @@ Demo accounts and a full end-of-project snapshot live in
   account cannot read any data. Phone-first accounts get a private placeholder address
   internally, because Supabase Auth needs one; the dashboards never show it.
 - Capture **flora & biodiversity**, **soil & water** and **environmental hazard** records.
+- **Three languages**: English (default), Bahasa Melayu and 简体中文. The globe button in the
+  header switches instantly and the choice is remembered on the phone.
 - Automatic **GPS** (expo-location) and **photos** (expo-camera / expo-image-picker).
+  Photos are **compressed on the phone before upload** (long edge 1600 px, quality 0.6,
+  a second pass for very large files), so uploads use less data and storage.
 - **Offline-first**: records and photos are saved in **SQLite** (expo-sqlite). Offline, the
   app says so and asks you to use **Save as draft** (the "Save record" button needs a
   connection); a draft is opened from My Records and submitted later. Records already
   queued upload automatically when a connection returns ("Sync now" also available).
+- A **sync badge** on Home shows the truth at a glance: 🟢 Synced, 🟡 Syncing… (with the
+  number left), 🔴 Offline (number queued), plus an amber **Needs retry** state and a
+  relative "last upload" time.
+- **Supervisors and admins can review records on the phone**: the Review tab lists pending
+  records oldest first and opens a full record with Approve / Reject (a comment is required
+  to reject). Field workers never see the tab.
 - **My Records** shows each record's review status and the supervisor's comment -
   and lets the worker **delete their own record while it is still pending**
   (also useful: cancel anything still sitting in the upload queue).
@@ -82,6 +92,10 @@ Demo accounts and a full end-of-project snapshot live in
   records list or on the record page); its photos and notifications go with it.
 - Monitoring **zones** management.
 - **Reports and export**: CSV of filtered records and a **PDF hazard summary**.
+- **Three languages** (English, Bahasa Melayu, 简体中文) with a language picker in the
+  header; the choice is stored in a cookie.
+- **Activity log** (administrators only): an append-only audit trail of record and account
+  changes, e.g. "Supervisor Sarah approved Record #104" or "Admin Alex deleted User #12".
 
 ### 3. Backend (`supabase/`)
 - PostgreSQL schema with enums, indexes, Row Level Security and triggers.
@@ -96,11 +110,11 @@ Full step-by-step instructions are in [`docs/SETUP.md`](docs/SETUP.md). In short
 
 1. Create a free project at https://supabase.com.
 2. In the Supabase **SQL Editor**, run `supabase/setup_all.sql` — a generated
-   one-paste bundle of every numbered file (`01_schema` through
-   `09_delete_own_pending`; regenerate it with `tools/bundle-db-sql.ps1`, or
+   one-paste bundle of every numbered file (`01_schema` through `10_audit_logs`;
+   regenerate it with `tools/bundle-db-sql.ps1`, or
    paste the numbered files in order). 07/08 are optional extras documented in
-   `docs/DEPLOY.md`. Upgrading a live database instead? Run `02_policies.sql`
-   and `09_delete_own_pending.sql` again — both are safe to re-run.
+   `docs/DEPLOY.md`. Upgrading a live database instead? Run `02_policies.sql`,
+   `09_delete_own_pending.sql` and `10_audit_logs.sql` again — all are safe to re-run.
 3. Copy your project URL and publishable/anon key into `web/.env.local` and
    `mobile/.env`. For cloud builds **and over-the-air updates**, also store them on
    EAS (the `env` block in `mobile/eas.json` covers builds; `eas env:set` covers

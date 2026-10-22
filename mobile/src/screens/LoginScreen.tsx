@@ -3,6 +3,8 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } fr
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
+import { useI18n } from "../i18n";
+import { LanguageButton } from "../components/LanguageButton";
 import { Banner, Button, Card, Field, Input } from "../components/ui";
 import { colors, radius, spacing, type } from "../theme";
 import type { AuthStackParamList } from "../navigation/types";
@@ -11,6 +13,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 
 export function LoginScreen({ navigation }: Props) {
   const { signIn } = useAuth();
+  const { t } = useI18n();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -27,50 +30,55 @@ export function LoginScreen({ navigation }: Props) {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.languageRow}>
+          <LanguageButton />
+        </View>
+
         <View style={styles.header}>
           <View style={styles.mark}>
             <Ionicons name="leaf-outline" size={22} color={colors.primary} />
           </View>
           <Text style={styles.title}>Millennia FieldOps</Text>
-          <Text style={styles.subtitle}>Millennia Village · field data capture</Text>
+          <Text style={styles.subtitle}>{t("Millennia Village · field data capture")}</Text>
         </View>
 
         <Card style={styles.card}>
           {error ? <Banner kind="error">{error}</Banner> : null}
 
-          <Field label="Email or phone number">
+          <Field label={t("Email or phone number")}>
             <Input
               value={identifier}
               onChangeText={setIdentifier}
               autoCapitalize="none"
               autoComplete="username"
               keyboardType="default"
-              placeholder="you@millennia.my or 012-345 6789"
+              placeholder={t("you@millennia.my or 012-345 6789")}
             />
           </Field>
-          <Field label="Password">
+          <Field label={t("Password")}>
             <Input
               value={password}
               onChangeText={setPassword}
               secureTextEntry
               autoComplete="password"
-              placeholder="Your password"
+              placeholder={t("Your password")}
             />
           </Field>
 
-          <Button title="Sign in" onPress={onSubmit} loading={busy} />
+          <Button title={t("Sign in")} onPress={onSubmit} loading={busy} />
 
           <View style={{ height: spacing.md }} />
           <Button
-            title="Request an account"
+            title={t("Request an account")}
             variant="secondary"
             onPress={() => navigation.navigate("Register")}
           />
         </Card>
 
         <Text style={styles.hint}>
-          New accounts are reviewed by an administrator before they can sign in. You join as a
-          field worker; a supervisor or administrator widens the role from the web dashboard.
+          {t(
+            "New accounts are reviewed by an administrator before they can sign in. You join as a field worker; a supervisor or administrator widens the role from the web dashboard."
+          )}
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -86,6 +94,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
   },
+  languageRow: { position: "absolute", top: spacing.xxl, right: spacing.lg, zIndex: 2 },
   header: { alignItems: "center", marginBottom: spacing.xl },
   mark: {
     width: 44,
@@ -98,7 +107,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   title: { ...type.title, fontSize: 22 },
-  subtitle: { ...type.subhead, marginTop: 3 },
+  subtitle: { ...type.subhead, marginTop: 3, textAlign: "center" },
   card: { padding: spacing.lg },
   hint: {
     ...type.caption,

@@ -12,14 +12,20 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
+import { useSync } from "../context/SyncContext";
+import { useI18n } from "../i18n";
 import { Banner, Button, Card, ChipGroup, Field, Input, SectionTitle } from "../components/ui";
 import { colors, radius, spacing, type } from "../theme";
 import { enqueueRecord, getOutbox, markPending, saveDraft } from "../lib/sqlite";
-import { syncOutbox } from "../lib/sync";
 import { fetchZones } from "../lib/api";
 import { useOnlineStatus } from "../lib/network";
 import { getCurrentCoordinates } from "../lib/location";
-import { captureFromCamera, deletePhoto, pickFromLibrary } from "../lib/photos";
+import {
+  captureFromCamera,
+  deletePhoto,
+  pickFromLibrary,
+  type CapturedPhoto,
+} from "../lib/photos";
 import { GROWTH_STAGES, HAZARD_TYPES, HEALTH_CONDITIONS, READING_TYPES } from "../lib/format";
 import type { HazardSeverity, OutboxRecord, RecordType, Zone } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
@@ -38,8 +44,18 @@ const SEVERITIES: { label: string; value: HazardSeverity }[] = [
   { label: "Critical", value: "critical" },
 ];
 
+const NO_ZONE = "No zone";
+
+function formatBytes(bytes: number): string {
+  if (!bytes || bytes <= 0) return "0 KB";
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function NewRecordScreen({ navigation, route }: Props) {
   const { profile, session } = useAuth();
+  const { t } = useI18n();
+  const { syncNow } = useSync();
   const online = useOnlineStatus();
   // The session survives restarts on the phone, so it is available offline even
   // when the profile row could not be fetched (the cached profile covers that).
@@ -50,6 +66,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
+  const [photoNote, setPhotoNote] = useState<string | null>(null);
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [gpsBusy, setGpsBusy] = useState(false);
 
@@ -115,7 +132,10 @@ export function NewRecordScreen({ navigation, route }: Props) {
       setZoneId(p.zone_id);
       setObservedDate(p.observed_date);
       setDraftId(row.localId);
-      setMessage({ kind: "info", text: "Draft loaded - finish the details, then tap Save record." });
+      setMessage({
+        kind: "info",
+        text: t("Draft loaded - finish the details, then tap Save record."),
+      });
       // Clear the parameter so re-opening the tab starts a blank record.
       navigation.setParams({ draftId: undefined });
     })();
@@ -123,7 +143,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
     return () => {
       active = false;
     };
-  }, [draftParam, navigation]);
+  }, [draftParam, navigation, t]);
 
   // Load zones when the screen gains focus (works from cache-free start too).
   useFocusEffect(
@@ -138,6 +158,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
     setTitle("");
     setNotes("");
     setPhotos([]);
+    setPhotoNote(null);
     setCoords(null);
     setSpecies("");
     setGrowthStage(null);
@@ -154,8 +175,19 @@ export function NewRecordScreen({ navigation, route }: Props) {
   }
 
   async function addPhoto(source: "camera" | "library") {
-    const uri = source === "camera" ? await captureFromCamera() : await pickFromLibrary();
-    if (uri) setPhotos((prev) => [...prev, uri]);
+    const captured: CapturedPhoto | null =
+      source === "camera" ? await captureFromCamera() : await pickFromLibrary();
+    if (!captured) return;
+
+    setPhotos((prev) => [...prev, captured.uri]);
+    setPhotoNote(
+      captured.originalBytes > 0
+        ? t("Photo compressed: {from} → {to}", {
+            from: formatBytes(captured.originalBytes),
+            to: formatBytes(captured.bytes),
+          })
+        : t("Photo compressed for upload ({size})", { size: formatBytes(captured.bytes) })
+    );
   }
 
   // Removing a photo from the form should also remove the copy on the phone;
@@ -170,7 +202,10 @@ export function NewRecordScreen({ navigation, route }: Props) {
     const result = await getCurrentCoordinates();
     setGpsBusy(false);
     if (!result) {
-      Alert.alert("Location unavailable", "Allow location access to record GPS coordinates.");
+      Alert.alert(
+        t("Location unavailable"),
+        t("Allow location access to record GPS coordinates.")
+      );
       return;
     }
     setCoords({ latitude: result.latitude, longitude: result.longitude });
@@ -180,7 +215,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
   function buildPayload(): Omit<OutboxRecord, "localId"> {
     return {
       type,
-      title: title.trim() || "Untitled draft",
+      title: title.trim() || t("Untitled draft"),
       zone_id: zoneId,
       observed_date: observedDate,
       latitude: coords?.latitude ?? null,
@@ -203,13 +238,17 @@ export function NewRecordScreen({ navigation, route }: Props) {
 
   // What still has to be filled in before a record counts as complete.
   function missingDetail(): string | null {
-    if (!title.trim()) return "Give the record a short title - or save it as a draft.";
-    if (type === "flora" && !species.trim()) return "Add the species name - or save it as a draft.";
-    if (type === "hazard" && !hazardType) return "Choose a hazard type - or save it as a draft.";
-    if (type === "hazard" && !severity) return "Choose a severity - or save it as a draft.";
-    if (type === "soil_water" && !readingType) return "Choose a reading type - or save it as a draft.";
+    if (!title.trim()) return t("Give the record a short title - or save it as a draft.");
+    if (type === "flora" && !species.trim())
+      return t("Add the species name - or save it as a draft.");
+    if (type === "hazard" && !hazardType)
+      return t("Choose a hazard type - or save it as a draft.");
+    if (type === "hazard" && !severity)
+      return t("Choose a severity - or save it as a draft.");
+    if (type === "soil_water" && !readingType)
+      return t("Choose a reading type - or save it as a draft.");
     if (type === "soil_water" && !readingValue.trim())
-      return "Add the reading value - or save it as a draft.";
+      return t("Add the reading value - or save it as a draft.");
     return null;
   }
 
@@ -224,15 +263,17 @@ export function NewRecordScreen({ navigation, route }: Props) {
       reset();
       setBusy(false);
       Alert.alert(
-        "Draft saved",
-        "This record is kept as a draft on this phone. Open My records to finish it and submit it when you have signal."
+        t("Draft saved"),
+        t(
+          "This record is kept as a draft on this phone. Open My records to finish it and submit it when you have signal."
+        )
       );
       navigation.navigate("Records");
     } catch (error) {
       setBusy(false);
       setMessage({
         kind: "error",
-        text: error instanceof Error ? error.message : "Could not save the draft.",
+        text: error instanceof Error ? error.message : t("Could not save the draft."),
       });
     }
   }
@@ -249,13 +290,18 @@ export function NewRecordScreen({ navigation, route }: Props) {
     if (!online) {
       setMessage({
         kind: "warning",
-        text: "You are offline. Tap Save as draft instead - open it from My records and submit it once you have signal.",
+        text: t(
+          "You are offline. Tap Save as draft instead - open it from My records and submit it once you have signal."
+        ),
       });
       return;
     }
 
     if (!userId) {
-      setMessage({ kind: "error", text: "Your account could not be read. Log out and sign in again." });
+      setMessage({
+        kind: "error",
+        text: t("Your account could not be read. Log out and sign in again."),
+      });
       return;
     }
 
@@ -274,15 +320,17 @@ export function NewRecordScreen({ navigation, route }: Props) {
       reset();
 
       // Try to upload right away; if the connection drops it stays queued.
-      const result = await syncOutbox(userId);
+      const result = await syncNow();
       setBusy(false);
 
-      if (result.uploaded > 0) {
-        Alert.alert("Saved", "The record was uploaded for review.");
+      if (result && result.uploaded > 0) {
+        Alert.alert(t("Saved"), t("The record was uploaded for review."));
       } else {
         Alert.alert(
-          "Saved on the phone",
-          "The record is stored on this phone and will upload automatically when you have a connection."
+          t("Saved on the phone"),
+          t(
+            "The record is stored on this phone and will upload automatically when you have a connection."
+          )
         );
       }
       navigation.navigate("Records");
@@ -290,22 +338,26 @@ export function NewRecordScreen({ navigation, route }: Props) {
       setBusy(false);
       setMessage({
         kind: "error",
-        text: error instanceof Error ? error.message : "Could not save the record.",
+        text: error instanceof Error ? error.message : t("Could not save the record."),
       });
     }
   }
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.header}>
-          <Text style={styles.title}>{draftId ? "Finish the draft" : "New record"}</Text>
+          <Text style={styles.title}>{draftId ? t("Finish the draft") : t("New record")}</Text>
           <Text style={styles.subhead}>
-            Saved on the phone first. It uploads by itself when there is signal.
+            {t("Saved on the phone first. It uploads by itself when there is signal.")}
           </Text>
         </View>
 
-        <SectionTitle>Record type</SectionTitle>
+        <SectionTitle>{t("Record type")}</SectionTitle>
         <ChipGroup
           options={TYPE_OPTIONS.map((o) => o.label)}
           value={TYPE_OPTIONS.find((o) => o.value === type)?.label ?? null}
@@ -313,13 +365,15 @@ export function NewRecordScreen({ navigation, route }: Props) {
             const found = TYPE_OPTIONS.find((o) => o.label === label);
             if (found) setType(found.value);
           }}
+          labelFor={t}
         />
 
         <View style={{ height: 16 }} />
         {!online ? (
           <Banner kind="warning">
-            You are offline. Save this as a draft now - open it from My records and tap Save record once
-            you have signal again.
+            {t(
+              "You are offline. Save this as a draft now - open it from My records and tap Save record once you have signal again."
+            )}
           </Banner>
         ) : null}
         {message ? (
@@ -339,46 +393,63 @@ export function NewRecordScreen({ navigation, route }: Props) {
         ) : null}
 
         <Card padded style={{ marginBottom: spacing.lg }}>
-          <Field label="Title">
+          <Field label={t("Title")}>
             <Input
               value={title}
               onChangeText={setTitle}
               placeholder={
                 type === "flora"
-                  ? "e.g. Resprouting ferns - southern slope"
+                  ? t("e.g. Resprouting ferns - southern slope")
                   : type === "hazard"
-                    ? "e.g. Blocked culvert near access road"
-                    : "e.g. Wetland water reading"
+                    ? t("e.g. Blocked culvert near access road")
+                    : t("e.g. Wetland water reading")
               }
             />
           </Field>
 
-          <Field label="Monitoring zone">
+          <Field label={t("Monitoring zone")}>
             <ChipGroup
-              options={["No zone", ...zones.map((z) => z.name)]}
-              value={zoneId ? zones.find((z) => z.id === zoneId)?.name ?? "No zone" : "No zone"}
+              options={[NO_ZONE, ...zones.map((z) => z.name)]}
+              value={zoneId ? zones.find((z) => z.id === zoneId)?.name ?? NO_ZONE : NO_ZONE}
               onChange={(name) => {
-                if (name === "No zone") setZoneId(null);
+                if (name === NO_ZONE) setZoneId(null);
                 else setZoneId(zones.find((z) => z.name === name)?.id ?? null);
               }}
+              labelFor={(option) => (option === NO_ZONE ? t(NO_ZONE) : option)}
             />
             {zones.length === 0 ? (
-              <Text style={styles.helper}>Zones load when you are online. You can still save offline.</Text>
+              <Text style={styles.helper}>
+                {t("Zones load when you are online. You can still save offline.")}
+              </Text>
             ) : null}
           </Field>
 
           {type === "flora" ? (
             <>
-              <Field label="Species name">
-                <Input value={species} onChangeText={setSpecies} placeholder="e.g. Dicranopteris linearis" />
+              <Field label={t("Species name")}>
+                <Input
+                  value={species}
+                  onChangeText={setSpecies}
+                  placeholder="e.g. Dicranopteris linearis"
+                />
               </Field>
-              <Field label="Growth stage">
-                <ChipGroup options={GROWTH_STAGES} value={growthStage} onChange={setGrowthStage} />
+              <Field label={t("Growth stage")}>
+                <ChipGroup
+                  options={GROWTH_STAGES}
+                  value={growthStage}
+                  onChange={setGrowthStage}
+                  labelFor={t}
+                />
               </Field>
-              <Field label="Health condition">
-                <ChipGroup options={HEALTH_CONDITIONS} value={healthCondition} onChange={setHealthCondition} />
+              <Field label={t("Health condition")}>
+                <ChipGroup
+                  options={HEALTH_CONDITIONS}
+                  value={healthCondition}
+                  onChange={setHealthCondition}
+                  labelFor={t}
+                />
               </Field>
-              <Field label="Estimated count">
+              <Field label={t("Estimated count")}>
                 <Input
                   value={estimatedCount}
                   onChangeText={setEstimatedCount}
@@ -391,14 +462,22 @@ export function NewRecordScreen({ navigation, route }: Props) {
 
           {type === "hazard" ? (
             <>
-              <Field label="Hazard type">
-                <ChipGroup options={HAZARD_TYPES} value={hazardType} onChange={setHazardType} />
+              <Field label={t("Hazard type")}>
+                <ChipGroup
+                  options={HAZARD_TYPES}
+                  value={hazardType}
+                  onChange={setHazardType}
+                  labelFor={t}
+                />
               </Field>
-              <Field label="Severity">
+              <Field label={t("Severity")}>
                 <ChipGroup
                   options={SEVERITIES.map((s) => s.label)}
                   value={SEVERITIES.find((s) => s.value === severity)?.label ?? null}
-                  onChange={(label) => setSeverity(SEVERITIES.find((s) => s.label === label)?.value ?? null)}
+                  onChange={(label) =>
+                    setSeverity(SEVERITIES.find((s) => s.label === label)?.value ?? null)
+                  }
+                  labelFor={t}
                 />
               </Field>
             </>
@@ -406,40 +485,54 @@ export function NewRecordScreen({ navigation, route }: Props) {
 
           {type === "soil_water" ? (
             <>
-              <Field label="Reading type">
-                <ChipGroup options={READING_TYPES} value={readingType} onChange={setReadingType} />
+              <Field label={t("Reading type")}>
+                <ChipGroup
+                  options={READING_TYPES}
+                  value={readingType}
+                  onChange={setReadingType}
+                  labelFor={t}
+                />
               </Field>
-              <Field label="Value">
-                <Input value={readingValue} onChangeText={setReadingValue} keyboardType="decimal-pad" placeholder="e.g. 6.8" />
+              <Field label={t("Value")}>
+                <Input
+                  value={readingValue}
+                  onChangeText={setReadingValue}
+                  keyboardType="decimal-pad"
+                  placeholder="e.g. 6.8"
+                />
               </Field>
-              <Field label="Unit">
-                <Input value={readingUnit} onChangeText={setReadingUnit} placeholder="e.g. pH / NTU / m" />
+              <Field label={t("Unit")}>
+                <Input
+                  value={readingUnit}
+                  onChangeText={setReadingUnit}
+                  placeholder={t("e.g. pH / NTU / m")}
+                />
               </Field>
             </>
           ) : null}
 
-          <Field label="Notes">
+          <Field label={t("Notes")}>
             <Input
               value={notes}
               onChangeText={setNotes}
               multiline
-              placeholder="Anything worth remembering about this observation..."
+              placeholder={t("Anything worth remembering about this observation...")}
             />
           </Field>
         </Card>
 
         <Card padded style={{ marginBottom: spacing.lg }}>
-          <SectionTitle>Location</SectionTitle>
+          <SectionTitle>{t("Location")}</SectionTitle>
           {coords ? (
             <Text style={styles.coords}>
               {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
             </Text>
           ) : (
-            <Text style={styles.helper}>No GPS captured yet.</Text>
+            <Text style={styles.helper}>{t("No GPS captured yet.")}</Text>
           )}
           <View style={{ height: 10 }} />
           <Button
-            title={coords ? "Update GPS location" : "Capture GPS location"}
+            title={coords ? t("Update GPS location") : t("Capture GPS location")}
             variant="secondary"
             onPress={captureGps}
             loading={gpsBusy}
@@ -447,7 +540,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
         </Card>
 
         <Card padded style={{ marginBottom: spacing.lg }}>
-          <SectionTitle>Photos</SectionTitle>
+          <SectionTitle>{t("Photos")}</SectionTitle>
           <View style={styles.photoRow}>
             {photos.map((uri) => (
               <View key={uri} style={styles.photoWrap}>
@@ -456,7 +549,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
                   style={styles.photoRemove}
                   onPress={() => removePhoto(uri)}
                   accessibilityRole="button"
-                  accessibilityLabel="Remove photo"
+                  accessibilityLabel={t("Remove photo")}
                   hitSlop={6}
                 >
                   <Text style={styles.photoRemoveText}>x</Text>
@@ -464,24 +557,44 @@ export function NewRecordScreen({ navigation, route }: Props) {
               </View>
             ))}
           </View>
+          {photoNote ? (
+            <Text style={styles.photoNote}>
+              {photoNote} · {t("Photos are shrunk on the phone before upload.")}
+            </Text>
+          ) : (
+            <Text style={styles.helper}>{t("Photos are shrunk on the phone before upload.")}</Text>
+          )}
           <View style={styles.photoButtons}>
-            <Button title="Take photo" variant="secondary" onPress={() => addPhoto("camera")} style={styles.flexBtn} />
+            <Button
+              title={t("Take photo")}
+              variant="secondary"
+              onPress={() => addPhoto("camera")}
+              style={styles.flexBtn}
+            />
             <View style={{ width: 10 }} />
-            <Button title="From library" variant="secondary" onPress={() => addPhoto("library")} style={styles.flexBtn} />
+            <Button
+              title={t("From library")}
+              variant="secondary"
+              onPress={() => addPhoto("library")}
+              style={styles.flexBtn}
+            />
           </View>
         </Card>
 
         <Button
-          title={busy ? "Saving..." : online ? "Save record" : "Save record (needs connection)"}
+          title={
+            busy ? t("Saving...") : online ? t("Save record") : t("Save record (needs connection)")
+          }
           onPress={save}
           loading={busy}
           disabled={!online}
         />
         <View style={{ height: 10 }} />
-        <Button title="Save as draft" variant="secondary" onPress={saveAsDraft} disabled={busy} />
+        <Button title={t("Save as draft")} variant="secondary" onPress={saveAsDraft} disabled={busy} />
         <Text style={styles.footerHint}>
-          Records save on the phone first, then upload automatically - so you can keep working with no
-          signal. Offline? Use "Save as draft", then submit it from My records when you are back online.
+          {t(
+            'Records save on the phone first, then upload automatically - so you can keep working with no signal. Offline? Use "Save as draft", then submit it from My records when you are back online.'
+          )}
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -496,6 +609,7 @@ const styles = StyleSheet.create({
   title: { ...type.title },
   subhead: { ...type.subhead, marginTop: 2, maxWidth: 320 },
   helper: { fontSize: 12, color: colors.muted, marginTop: 6 },
+  photoNote: { fontSize: 12, color: colors.primaryDark, marginTop: 6, lineHeight: 17 },
   coords: { fontSize: 15, fontWeight: "500", color: colors.ink },
   photoRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   photoWrap: { position: "relative" },

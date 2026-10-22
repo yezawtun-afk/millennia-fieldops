@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Save, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, btnPrimary, btnSecondary, inputClass as fieldClass } from "@/components/ui";
+import { useI18n } from "@/i18n";
 import type { Zone } from "@/lib/types";
 
 const EMPTY = {
@@ -18,6 +19,7 @@ const EMPTY = {
 
 export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [form, setForm] = useState(EMPTY);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -92,12 +94,26 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
 
     if ((count ?? 0) > 0) {
       setNotice(
-        `"${zone.name}" still has ${count} record${count === 1 ? "" : "s"}. Reassign or delete those records before deleting the zone.`
+        (count ?? 0) === 1
+          ? t(
+              '"{name}" still has {count} record. Reassign or delete those records before deleting the zone.',
+              { name: zone.name, count: count ?? 0 }
+            )
+          : t(
+              '"{name}" still has {count} records. Reassign or delete those records before deleting the zone.',
+              { name: zone.name, count: count ?? 0 }
+            )
       );
       return;
     }
 
-    if (!confirm(`Delete zone "${zone.name}"? It has no records, so nothing else is affected.`)) {
+    if (
+      !confirm(
+        t('Delete zone "{name}"? It has no records, so nothing else is affected.', {
+          name: zone.name,
+        })
+      )
+    ) {
       return;
     }
 
@@ -113,10 +129,10 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[380px_minmax(0,1fr)]">
       <Card className="h-fit p-4">
         <h2 className="text-[14px] font-semibold text-ink">
-          {editingId ? "Edit zone" : "Add a zone"}
+          {editingId ? t("Edit zone") : t("Add a zone")}
         </h2>
         <p className="mt-0.5 text-[12px] text-muted">
-          The centre and radius are used to place records on the map.
+          {t("The centre and radius are used to place records on the map.")}
         </p>
         {error ? (
           <p className="mt-3 rounded-control border border-negative/25 bg-negative-soft px-3 py-2 text-[12px] text-negative-ink">
@@ -125,7 +141,7 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
         ) : null}
 
         <form onSubmit={save} className="mt-3 space-y-3">
-          <Field label="Name">
+          <Field label={t("Name")}>
             <input
               required
               value={form.name}
@@ -133,7 +149,7 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
               className={fieldClass}
             />
           </Field>
-          <Field label="Description">
+          <Field label={t("Description")}>
             <textarea
               rows={2}
               value={form.description}
@@ -142,7 +158,7 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
             />
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Latitude">
+            <Field label={t("Latitude")}>
               <input
                 required
                 value={form.center_lat}
@@ -150,7 +166,7 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
                 className={fieldClass}
               />
             </Field>
-            <Field label="Longitude">
+            <Field label={t("Longitude")}>
               <input
                 required
                 value={form.center_lng}
@@ -158,7 +174,7 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
                 className={fieldClass}
               />
             </Field>
-            <Field label="Radius (m)">
+            <Field label={t("Radius (m)")}>
               <input
                 required
                 value={form.radius_m}
@@ -166,7 +182,7 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
                 className={fieldClass}
               />
             </Field>
-            <Field label="Colour">
+            <Field label={t("Colour")}>
               <input
                 type="color"
                 value={form.color}
@@ -179,11 +195,11 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className={`${btnPrimary} flex-1`}>
               {editingId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-              {editingId ? "Save changes" : "Add zone"}
+              {editingId ? t("Save changes") : t("Add zone")}
             </button>
             {editingId ? (
               <button type="button" onClick={reset} className={btnSecondary}>
-                Cancel
+                {t("Cancel")}
               </button>
             ) : null}
           </div>
@@ -192,8 +208,10 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
 
       <Card className="h-fit overflow-hidden">
         <div className="flex items-center justify-between border-b border-rule px-4 py-3">
-          <h2 className="text-[14px] font-semibold text-ink">Zones</h2>
-          <span className="text-[12px] text-muted">{initialZones.length} configured</span>
+          <h2 className="text-[14px] font-semibold text-ink">{t("Zones")}</h2>
+          <span className="text-[12px] text-muted">
+            {t("{count} configured", { count: initialZones.length })}
+          </span>
         </div>
 
         {notice ? (
@@ -204,7 +222,7 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
 
         {initialZones.length === 0 ? (
           <p className="px-4 py-6 text-[13px] text-muted">
-            No zones yet. Add the first one with the form on the left.
+            {t("No zones yet. Add the first one with the form on the left.")}
           </p>
         ) : (
           <ul className="divide-y divide-rule">
@@ -217,8 +235,9 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[14px] font-medium text-ink">{zone.name}</p>
                   <p className="truncate text-[12px] text-muted">
-                    {zone.center_lat.toFixed(4)}, {zone.center_lng.toFixed(4)} · radius{" "}
-                    {zone.radius_m} m{zone.description ? ` · ${zone.description}` : ""}
+                    {zone.center_lat.toFixed(4)}, {zone.center_lng.toFixed(4)} ·{" "}
+                    {t("radius {radius} m", { radius: zone.radius_m })}
+                    {zone.description ? ` · ${zone.description}` : ""}
                   </p>
                 </div>
                 <button
@@ -226,12 +245,12 @@ export function ZonesManager({ initialZones }: { initialZones: Zone[] }) {
                   onClick={() => startEdit(zone)}
                   className="h-8 rounded-control border border-control px-2.5 text-[12px] font-medium text-ink transition-colors hover:border-accent hover:text-accent"
                 >
-                  Edit
+                  {t("Edit")}
                 </button>
                 <button
                   type="button"
                   onClick={() => remove(zone)}
-                  aria-label={`Delete ${zone.name}`}
+                  aria-label={t("Delete {name}", { name: zone.name })}
                   className="flex h-8 w-8 items-center justify-center rounded-control border border-control text-muted transition-colors hover:border-negative/40 hover:bg-negative-soft hover:text-negative-ink"
                 >
                   <Trash2 className="h-4 w-4" strokeWidth={1.7} />

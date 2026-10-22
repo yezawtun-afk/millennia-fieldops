@@ -5,16 +5,18 @@ import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { textareaClass } from "@/components/ui";
+import { useI18n } from "@/i18n";
 
 export function ReviewPanel({ recordId }: { recordId: string }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [feedback, setFeedback] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function decide(status: "approved" | "rejected") {
     if (status === "rejected" && !feedback.trim()) {
-      setError("Please add a short reason before rejecting.");
+      setError(t("Please add a short reason before rejecting."));
       return;
     }
     setBusy(true);
@@ -52,12 +54,12 @@ export function ReviewPanel({ recordId }: { recordId: string }) {
       ) : null}
 
       <label className="block text-[12px] font-medium text-muted">
-        Comment (required to reject)
+        {t("Comment (required to reject)")}
         <textarea
           value={feedback}
           onChange={(event) => setFeedback(event.target.value)}
           rows={4}
-          placeholder="Notes for the field worker"
+          placeholder={t("Notes for the field worker")}
           className={`${textareaClass} mt-1`}
         />
       </label>
@@ -69,7 +71,7 @@ export function ReviewPanel({ recordId }: { recordId: string }) {
           disabled={busy}
           className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-control bg-accent px-3 text-[13px] font-medium text-white transition-colors hover:bg-primary disabled:opacity-60"
         >
-          <Check className="h-4 w-4" strokeWidth={2} /> Approve
+          <Check className="h-4 w-4" strokeWidth={2} /> {t("Approve")}
         </button>
         <button
           type="button"
@@ -77,7 +79,7 @@ export function ReviewPanel({ recordId }: { recordId: string }) {
           disabled={busy}
           className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-control border border-control bg-sheet px-3 text-[13px] font-medium text-negative-ink transition-colors hover:border-negative/40 hover:bg-negative-soft disabled:opacity-60"
         >
-          <X className="h-4 w-4" strokeWidth={2} /> Reject
+          <X className="h-4 w-4" strokeWidth={2} /> {t("Reject")}
         </button>
       </div>
     </div>

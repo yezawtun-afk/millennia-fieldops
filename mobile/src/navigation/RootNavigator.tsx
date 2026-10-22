@@ -13,7 +13,10 @@ import { NewRecordScreen } from "../screens/NewRecordScreen";
 import { MyRecordsScreen } from "../screens/MyRecordsScreen";
 import { RecordDetailsScreen } from "../screens/RecordDetailsScreen";
 import { NotificationsScreen } from "../screens/NotificationsScreen";
-import { useAutoUpload } from "../lib/useAutoUpload";
+import { ReviewScreen } from "../screens/ReviewScreen";
+import { ReviewRecordScreen } from "../screens/ReviewRecordScreen";
+import { LanguageButton } from "../components/LanguageButton";
+import { useI18n } from "../i18n";
 import { watchNotifications } from "../lib/notifications";
 import type { AuthStackParamList, MainTabParamList, RootStackParamList } from "./types";
 
@@ -40,12 +43,13 @@ function HeaderBrand() {
 // Log out lives in the header, like the "Log out" button on the dashboard.
 function HeaderLogout() {
   const { signOut } = useAuth();
+  const { t } = useI18n();
 
   function confirm() {
-    Alert.alert("Log out", "Sign out of Millennia FieldOps on this phone?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("Log out"), t("Sign out of Millennia FieldOps on this phone?"), [
+      { text: t("Cancel"), style: "cancel" },
       {
-        text: "Log out",
+        text: t("Log out"),
         style: "destructive",
         onPress: () => {
           void signOut();
@@ -55,21 +59,26 @@ function HeaderLogout() {
   }
 
   return (
-    <Pressable onPress={confirm} hitSlop={12} accessibilityLabel="Log out" style={headerStyles.logout}>
+    <Pressable
+      onPress={confirm}
+      hitSlop={12}
+      accessibilityLabel={t("Log out")}
+      style={headerStyles.logout}
+    >
       <Ionicons name="log-out-outline" size={18} color={colors.muted} />
-      <Text style={headerStyles.logoutText}>Log out</Text>
+      <Text style={headerStyles.logoutText}>{t("Log out")}</Text>
     </Pressable>
   );
 }
 
 function MainTabs() {
-  // Push anything queued as soon as the phone has a connection again.
-  useAutoUpload();
-
   // Watch for reviews while the app is open, and keep the tab badge honest.
-  const { session } = useAuth();
+  // Uploading is handled by SyncProvider, which also feeds the status badge.
+  const { session, profile } = useAuth();
+  const { t } = useI18n();
   const userId = session?.user.id ?? null;
   const [unread, setUnread] = useState(0);
+  const isReviewer = profile?.role === "supervisor" || profile?.role === "admin";
 
   useEffect(() => {
     if (!userId) {
@@ -87,7 +96,12 @@ function MainTabs() {
         headerShadowVisible: false,
         headerTitleAlign: "left",
         headerTitle: () => <HeaderBrand />,
-        headerRight: () => <HeaderLogout />,
+        headerRight: () => (
+          <View style={headerStyles.headerRight}>
+            <LanguageButton />
+            <HeaderLogout />
+          </View>
+        ),
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
         tabBarStyle: {
@@ -103,19 +117,24 @@ function MainTabs() {
                 ? "add-circle-outline"
                 : route.name === "Records"
                   ? "list-outline"
-                  : "notifications-outline";
+                  : route.name === "Review"
+                    ? "checkmark-done-outline"
+                    : "notifications-outline";
           return <Ionicons name={name} size={size} color={color} />;
         },
       })}
     >
-      <Tabs.Screen name="Home" component={HomeScreen} options={{ title: "Home" }} />
-      <Tabs.Screen name="New" component={NewRecordScreen} options={{ title: "New record" }} />
-      <Tabs.Screen name="Records" component={MyRecordsScreen} options={{ title: "My records" }} />
+      <Tabs.Screen name="Home" component={HomeScreen} options={{ title: t("Home") }} />
+      <Tabs.Screen name="New" component={NewRecordScreen} options={{ title: t("New record") }} />
+      <Tabs.Screen name="Records" component={MyRecordsScreen} options={{ title: t("My records") }} />
+      {isReviewer ? (
+        <Tabs.Screen name="Review" component={ReviewScreen} options={{ title: t("Review") }} />
+      ) : null}
       <Tabs.Screen
         name="Alerts"
         component={NotificationsScreen}
         options={{
-          title: "Notifications",
+          title: t("Notifications"),
           tabBarBadge: unread > 0 ? unread : undefined,
           tabBarBadgeStyle: { backgroundColor: colors.hazard, color: "#FFFFFF", fontSize: 11 },
         }}
@@ -126,6 +145,7 @@ function MainTabs() {
 
 export function RootNavigator() {
   const { session, loading } = useAuth();
+  const { t } = useI18n();
 
   if (loading) {
     return (
@@ -151,7 +171,17 @@ export function RootNavigator() {
         name="RecordDetails"
         component={RecordDetailsScreen}
         options={{
-          title: "Record",
+          title: t("Record"),
+          headerStyle: { backgroundColor: colors.page },
+          headerTintColor: colors.ink,
+          headerShadowVisible: false,
+        }}
+      />
+      <RootStack.Screen
+        name="ReviewRecord"
+        component={ReviewRecordScreen}
+        options={{
+          title: t("Review record"),
           headerStyle: { backgroundColor: colors.page },
           headerTintColor: colors.ink,
           headerShadowVisible: false,
@@ -175,4 +205,5 @@ const headerStyles = StyleSheet.create({
   brandSub: { color: colors.muted, fontSize: 11, lineHeight: 13 },
   logout: { flexDirection: "row", alignItems: "center", gap: 4 },
   logoutText: { color: colors.muted, fontSize: 13, fontWeight: "500" },
+  headerRight: { flexDirection: "row", alignItems: "center", gap: 12 },
 });

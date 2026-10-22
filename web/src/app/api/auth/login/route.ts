@@ -15,6 +15,7 @@ import { NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizePhone } from "@/lib/phone";
+import { getT } from "@/i18n/server";
 
 export const runtime = "nodejs";
 
@@ -54,10 +55,11 @@ function clientKey(request: Request): string {
 }
 
 export async function POST(request: Request) {
+  const t = await getT();
   const key = clientKey(request);
   if (isRateLimited(key)) {
     return NextResponse.json(
-      { error: "Too many attempts. Wait a few minutes and try again." },
+      { error: t("Too many attempts. Wait a few minutes and try again.") },
       { status: 429 }
     );
   }
@@ -74,7 +76,7 @@ export async function POST(request: Request) {
 
   if (!identifier.trim() || !password || password.length > 200) {
     return NextResponse.json(
-      { error: "Enter your phone number and password." },
+      { error: t("Enter your phone number and password.") },
       { status: 400 }
     );
   }
@@ -82,7 +84,7 @@ export async function POST(request: Request) {
   const phone = normalizePhone(identifier);
   if (!phone) {
     return NextResponse.json(
-      { error: "Enter a valid phone number, for example 012-345 6789." },
+      { error: t("Enter a valid phone number, for example 012-345 6789.") },
       { status: 400 }
     );
   }
@@ -106,7 +108,7 @@ export async function POST(request: Request) {
   if (lookupError) {
     // Usually means 01_schema.sql has not been re-run on this database yet.
     return NextResponse.json(
-      { error: "Phone sign-in is not available yet. Use your email for now." },
+      { error: t("Phone sign-in is not available yet. Use your email for now.") },
       { status: 503 }
     );
   }
@@ -115,7 +117,7 @@ export async function POST(request: Request) {
   // endpoint cannot be used to test which numbers have accounts.
   if (!profile?.email) {
     recordFailure(key);
-    return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 });
+    return NextResponse.json({ error: t(GENERIC_ERROR) }, { status: 401 });
   }
 
   const supabase = createSupabaseClient(url, anonKey, {
@@ -129,7 +131,7 @@ export async function POST(request: Request) {
 
   if (signInError || !signIn.session) {
     recordFailure(key);
-    return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 });
+    return NextResponse.json({ error: t(GENERIC_ERROR) }, { status: 401 });
   }
 
   // The password is correct, so the caller owns the account and it is safe to
@@ -140,8 +142,8 @@ export async function POST(request: Request) {
       {
         error:
           status === "pending"
-            ? "Your account request is waiting for an administrator to approve it."
-            : "Your account request was declined. Contact an administrator.",
+            ? t("Your account request is waiting for an administrator to approve it.")
+            : t("Your account request was declined. Contact an administrator."),
         code: status,
       },
       { status: 403 }
@@ -151,7 +153,7 @@ export async function POST(request: Request) {
   if (profile.is_active === false) {
     return NextResponse.json(
       {
-        error: "This account has been deactivated. Ask an administrator to reactivate it.",
+        error: t("That account has been deactivated. Ask an administrator to reactivate it."),
         code: "inactive",
       },
       { status: 403 }

@@ -3,15 +3,17 @@ import { getProfile } from "@/lib/supabase/server";
 import { getUsers } from "@/lib/data";
 import { PageHeader } from "@/components/ui";
 import { UsersManager } from "@/components/UsersManager";
+import { getT } from "@/i18n/server";
 
 export default async function UsersPage() {
+  const t = await getT();
   const profile = await getProfile();
   if (!profile) redirect("/login");
   if (profile.role !== "admin") {
     return (
       <div>
-        <PageHeader title="Users" />
-        <p className="text-sm text-muted">Only administrators can manage user accounts.</p>
+        <PageHeader title={t("Users")} />
+        <p className="text-sm text-muted">{t("Only administrators can manage user accounts.")}</p>
       </div>
     );
   }
@@ -22,11 +24,13 @@ export default async function UsersPage() {
   return (
     <div>
       <PageHeader
-        title="Accounts"
+        title={t("Accounts")}
         subtitle={
           waiting > 0
-            ? `Review ${waiting} account request${waiting === 1 ? "" : "s"}, assign roles, deactivate or delete access.`
-            : "Approve requests, assign roles, deactivate or delete access."
+            ? t("Review {count} account requests, assign roles, deactivate or delete access.", {
+                count: waiting,
+              })
+            : t("Approve requests, assign roles, deactivate or delete access.")
         }
       />
       <UsersManager initialUsers={users} currentUserId={profile.id} />

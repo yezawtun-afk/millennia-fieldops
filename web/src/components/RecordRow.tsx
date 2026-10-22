@@ -5,7 +5,8 @@
 import { useRouter } from "next/navigation";
 import { Camera, ChevronRight, Leaf, Droplets, TriangleAlert } from "lucide-react";
 import { formatDate, recordSubtitle } from "@/lib/format";
-import { SeverityBadge, StatusBadge } from "@/components/ui";
+import { SeverityBadge, StatusBadge } from "@/components/Pills";
+import { useI18n } from "@/i18n";
 import type { FieldRecord } from "@/lib/types";
 
 const TYPE_ICONS = { flora: Leaf, soil_water: Droplets, hazard: TriangleAlert };

@@ -3,19 +3,13 @@ import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from "react
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
-import { countDrafts, countPending } from "../lib/sqlite";
-import { syncOutbox } from "../lib/sync";
-import { fetchMyRecords } from "../lib/api";
-import { useOnlineStatus } from "../lib/network";
+import { useSync } from "../context/SyncContext";
+import { countPendingReviews, fetchMyRecords } from "../lib/api";
 import { appVersion, applyUpdate, checkForUpdate, runningBundle } from "../lib/updates";
+import { useI18n } from "../i18n";
 import { Banner, Button, Card, ListRow, Pill, SectionTitle, StatCell } from "../components/ui";
 import { colors, radius, spacing, type } from "../theme";
-import {
-  ROLE_LABELS,
-  STATUS_LABELS,
-  TYPE_COLORS,
-  formatDate,
-} from "../lib/format";
+import { ROLE_LABELS, STATUS_LABELS, TYPE_COLORS, formatDate } from "../lib/format";
 import type { FieldRecord, RecordType } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
 
@@ -23,14 +17,19 @@ type Props = TabScreenProps<"Home">;
 
 type Summary = { approved: number; pending: number; rejected: number };
 
-function greeting(): string {
+function greetingKey(): string {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
   return "Good evening";
 }
 
-const CAPTURE_OPTIONS: { type: RecordType; label: string; meta: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+const CAPTURE_OPTIONS: {
+  type: RecordType;
+  label: string;
+  meta: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
   { type: "flora", label: "Flora observation", meta: "Species, health, count", icon: "leaf-outline" },
   { type: "soil_water", label: "Soil & water reading", meta: "pH, moisture, turbidity", icon: "water-outline" },
   { type: "hazard", label: "Hazard report", meta: "Debris, erosion, drainage", icon: "warning-outline" },
@@ -38,59 +37,75 @@ const CAPTURE_OPTIONS: { type: RecordType; label: string; meta: string; icon: ke
 
 export function HomeScreen({ navigation }: Props) {
   const { profile } = useAuth();
-  const online = useOnlineStatus();
+  const { t } = useI18n();
+  const {
+    online,
+    syncing,
+    queued,
+    failed,
+    drafts,
+    lastSyncedAt,
+    status: syncStatus,
+    remaining,
+    syncNow,
+    refresh: refreshSync,
+  } = useSync();
+
   const [records, setRecords] = useState<FieldRecord[]>([]);
-  const [queued, setQueued] = useState(0);
-  const [drafts, setDrafts] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updateNote, setUpdateNote] = useState<string | null>(null);
+
+  const isReviewer = profile?.role === "supervisor" || profile?.role === "admin";
 
   // Download the waiting bundle and restart into it. On success the app reloads
   // itself, so nothing after that call runs.
   async function applyNow() {
     setCheckingUpdate(true);
-    setUpdateNote("Downloading the update...");
+    setUpdateNote(t("Downloading the update..."));
     const result = await applyUpdate();
     setCheckingUpdate(false);
-    if (!result.ok) setUpdateNote(result.message);
+    if (!result.ok) setUpdateNote(t(result.message));
   }
 
   // `silent` is the version that runs on its own when the app opens: it only
   // speaks up when there really is something to install.
-  const runUpdateCheck = useCallback(async (silent: boolean) => {
-    const check = await checkForUpdate();
+  const runUpdateCheck = useCallback(
+    async (silent: boolean) => {
+      const check = await checkForUpdate();
 
-    if (!check.supported) {
-      if (!silent) setUpdateNote(check.message);
-      return;
-    }
+      if (!check.supported) {
+        if (!silent) setUpdateNote(t(check.message));
+        return;
+      }
 
-    if (!check.available) {
-      if (!silent) setUpdateNote("You are on the latest version.");
-      return;
-    }
+      if (!check.available) {
+        if (!silent) setUpdateNote(t(check.message));
+        return;
+      }
 
-    if (silent) {
-      Alert.alert(
-        "Update available",
-        "A newer version of Millennia FieldOps is ready. Restart the app now to use it?",
-        [
-          { text: "Later", style: "cancel" },
-          { text: "Update now", onPress: () => void applyNow() },
-        ]
-      );
-      return;
-    }
+      if (silent) {
+        Alert.alert(
+          t("Update available"),
+          t("A newer version of Millennia FieldOps is ready. Restart the app now to use it?"),
+          [
+            { text: t("Later"), style: "cancel" },
+            { text: t("Update now"), onPress: () => void applyNow() },
+          ]
+        );
+        return;
+      }
 
-    await applyNow();
-  }, []);
+      await applyNow();
+    },
+    [t]
+  );
 
   useEffect(() => {
     void runUpdateCheck(true);
-  }, [runUpdateCheck]);
+      }, [runUpdateCheck]);
 
   // Counts come from every record this user has, not from the five shown below.
   const summary = records.reduce<Summary>(
@@ -106,35 +121,42 @@ export function HomeScreen({ navigation }: Props) {
   const recent = records.slice(0, 5);
 
   const refresh = useCallback(async () => {
-    setQueued(await countPending());
-    setDrafts(await countDrafts());
+    await refreshSync();
     if (!profile) return;
     try {
       setRecords(await fetchMyRecords(profile.id));
     } catch {
       // Offline: keep the records already loaded.
     }
-  }, [profile]);
+    if (profile.role === "supervisor" || profile.role === "admin") {
+      try {
+        setReviewCount(await countPendingReviews());
+      } catch {
+        // keep the last number
+      }
+    }
+  }, [profile, refreshSync]);
 
   const runSync = useCallback(async () => {
-    if (!profile) return;
-    setSyncing(true);
     setMessage(null);
-    const result = await syncOutbox(profile.id);
-    setSyncing(false);
+    const result = await syncNow();
     await refresh();
+    if (!result) {
+      setMessage(t("Could not start the upload. Check your connection."));
+      return;
+    }
     if (result.uploaded > 0 && result.failed === 0) {
-      setMessage(`Uploaded ${result.uploaded} record${result.uploaded === 1 ? "" : "s"}.`);
+      setMessage(t("Uploaded {count} records.", { count: result.uploaded }));
     } else if (result.failed > 0) {
       setMessage(
-        `${result.failed} record${result.failed === 1 ? "" : "s"} could not upload yet. ${
-          online ? "They will retry." : "They wait for a connection."
-        }`
+        online
+          ? t("{count} records could not upload yet. They will retry.", { count: result.failed })
+          : t("{count} records wait for a connection.", { count: result.failed })
       );
     } else {
-      setMessage("Everything is already uploaded.");
+      setMessage(t("Everything is already uploaded."));
     }
-  }, [profile, refresh, online]);
+  }, [syncNow, refresh, online, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -148,81 +170,87 @@ export function HomeScreen({ navigation }: Props) {
     setRefreshing(false);
   }
 
-  const firstName = profile?.full_name.split(" ")[0] ?? "field worker";
+  const firstName = profile?.full_name.split(" ")[0] ?? t("field worker");
 
   return (
     <ScrollView
       style={styles.screen}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+      }
     >
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.greeting}>{greeting()}</Text>
+          <Text style={styles.greeting}>{t(greetingKey())}</Text>
           <Text style={styles.name}>{firstName}</Text>
           <Text style={styles.meta}>
-            {profile ? `${ROLE_LABELS[profile.role]} · Millennia Village` : "Millennia Village"}
+            {profile
+              ? `${t(ROLE_LABELS[profile.role])} · Millennia Village`
+              : "Millennia Village"}
           </Text>
         </View>
-        <Pill
-          label={online ? "Online" : "Offline"}
-          color={online ? colors.primaryDark : colors.pendingInk}
-          background={online ? colors.primarySoft : colors.pendingSoft}
-          icon={
-            <Ionicons
-              name={online ? "wifi" : "cloud-offline-outline"}
-              size={11}
-              color={online ? colors.primaryDark : colors.pendingInk}
-            />
-          }
-        />
       </View>
 
-      <View style={styles.strip}>
-        <StatCell label="Approved" value={summary.approved} />
-        <StatCell label="In review" value={summary.pending} tone={summary.pending > 0 ? colors.pendingInk : colors.ink} />
-        <StatCell label="Rejected" value={summary.rejected} />
-        <StatCell label="Drafts" value={drafts} last />
-      </View>
+      <SyncBadge
+        status={syncStatus}
+        remaining={remaining}
+        queued={queued}
+        failed={failed}
+        online={online}
+        lastSyncedAt={lastSyncedAt}
+        syncing={syncing}
+        onSync={() => void runSync()}
+      />
 
-      {queued > 0 ? (
-        <View style={styles.queue}>
+      {isReviewer && reviewCount > 0 ? (
+        <View style={styles.reviewNote}>
           <View style={styles.queueTop}>
-            <Ionicons name="cloud-upload-outline" size={18} color={colors.pendingInk} />
-            <Text style={styles.queueText}>
-              {queued} record{queued === 1 ? "" : "s"} waiting to upload
+            <Ionicons name="checkmark-done-outline" size={18} color={colors.primaryDark} />
+            <Text style={styles.reviewText}>
+              {t("{count} waiting for review", { count: reviewCount })}
             </Text>
           </View>
           <Button
-            title={syncing ? "Syncing" : "Sync now"}
+            title={t("Open review queue")}
             variant="secondary"
-            onPress={runSync}
-            loading={syncing}
+            onPress={() => navigation.navigate("Review")}
             style={{ marginTop: spacing.sm }}
           />
         </View>
       ) : null}
 
+      <View style={styles.strip}>
+        <StatCell label={t("Approved")} value={summary.approved} />
+        <StatCell
+          label={t("In review")}
+          value={summary.pending}
+          tone={summary.pending > 0 ? colors.pendingInk : colors.ink}
+        />
+        <StatCell label={t("Rejected")} value={summary.rejected} />
+        <StatCell label={t("Drafts")} value={drafts} last />
+      </View>
+
       {drafts > 0 ? (
         <View style={styles.draftNote}>
           <Text style={styles.draftText}>
-            {drafts} unfinished draft{drafts === 1 ? "" : "s"} on this phone.
+            {t("{count} unfinished drafts on this phone.", { count: drafts })}
           </Text>
           <Text style={styles.draftLink} onPress={() => navigation.navigate("Records")}>
-            Finish in My records
+            {t("Finish in My records")}
           </Text>
         </View>
       ) : null}
 
       {message ? <Banner kind="info">{message}</Banner> : null}
 
-      <SectionTitle>Capture</SectionTitle>
+      <SectionTitle>{t("Capture")}</SectionTitle>
       <Card>
         {CAPTURE_OPTIONS.map((option, index) => (
           <ListRow
             key={option.type}
-            title={option.label}
-            meta={option.meta}
+            title={t(option.label)}
+            meta={t(option.meta)}
             last={index === CAPTURE_OPTIONS.length - 1}
             icon={
               <View
@@ -244,18 +272,20 @@ export function HomeScreen({ navigation }: Props) {
       <SectionTitle
         action={
           <Text style={styles.link} onPress={() => navigation.navigate("Records")}>
-            See all
+            {t("See all")}
           </Text>
         }
       >
-        Recent records
+        {t("Recent records")}
       </SectionTitle>
 
       {recent.length === 0 ? (
         <Card>
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>Nothing captured yet</Text>
-            <Text style={styles.emptyHint}>Pick a record type above to start. It works offline.</Text>
+            <Text style={styles.emptyTitle}>{t("Nothing captured yet")}</Text>
+            <Text style={styles.emptyHint}>
+              {t("Pick a record type above to start. It works offline.")}
+            </Text>
           </View>
         </Card>
       ) : (
@@ -264,12 +294,12 @@ export function HomeScreen({ navigation }: Props) {
             <ListRow
               key={record.id}
               title={record.title}
-              meta={`${record.zone?.name ?? "No zone"} · ${formatDate(record.observed_date)}`}
+              meta={`${record.zone?.name ?? t("No zone")} · ${formatDate(record.observed_date)}`}
               last={index === recent.length - 1}
               onPress={() => navigation.navigate("RecordDetails", { id: record.id })}
               right={
                 <Pill
-                  label={STATUS_LABELS[record.status]}
+                  label={t(STATUS_LABELS[record.status])}
                   color={
                     record.status === "pending"
                       ? colors.pendingInk
@@ -293,14 +323,14 @@ export function HomeScreen({ navigation }: Props) {
 
       <View style={{ height: spacing.xl }} />
 
-      <SectionTitle>App</SectionTitle>
+      <SectionTitle>{t("App")}</SectionTitle>
       <Card>
         <ListRow
-          title="Version"
+          title={t("Version")}
           meta={`${appVersion()} · ${runningBundle()}`}
           right={
             <Text style={styles.checkLink} onPress={() => void runUpdateCheck(false)}>
-              {checkingUpdate ? "Checking" : "Check for update"}
+              {checkingUpdate ? t("Checking") : t("Check for update")}
             </Text>
           }
           last
@@ -309,7 +339,7 @@ export function HomeScreen({ navigation }: Props) {
           <Text style={styles.updateNote}>{updateNote}</Text>
         ) : (
           <Text style={styles.updateHint}>
-            Improvements can arrive without reinstalling the app.
+            {t("Improvements can arrive without reinstalling the app.")}
           </Text>
         )}
       </Card>
@@ -317,6 +347,97 @@ export function HomeScreen({ navigation }: Props) {
       <View style={{ height: spacing.xl }} />
     </ScrollView>
   );
+}
+
+// The visual sync state. Four, not three: a failed upload is not the same as
+// "still waiting", and hiding it would leave a field worker guessing.
+function SyncBadge({
+  status,
+  remaining,
+  queued,
+  failed,
+  online,
+  syncing,
+  lastSyncedAt,
+  onSync,
+}: {
+  status: "synced" | "syncing" | "offline" | "needsRetry";
+  remaining: number;
+  queued: number;
+  failed: number;
+  online: boolean;
+  syncing: boolean;
+  lastSyncedAt: string | null;
+  onSync: () => void;
+}) {
+  const { t } = useI18n();
+
+  const palette =
+    status === "synced"
+      ? { bg: colors.approvedSoft, fg: colors.approvedInk, icon: "checkmark-circle" as const }
+      : status === "offline"
+        ? { bg: colors.rejectedSoft, fg: colors.rejectedInk, icon: "cloud-offline" as const }
+        : status === "needsRetry"
+          ? { bg: colors.rejectedSoft, fg: colors.rejectedInk, icon: "alert-circle" as const }
+          : { bg: colors.pendingSoft, fg: colors.pendingInk, icon: "sync" as const };
+
+  const title =
+    status === "synced"
+      ? t("Synced")
+      : status === "offline"
+        ? t("Offline")
+        : status === "needsRetry"
+          ? t("Needs retry")
+          : t("Syncing...");
+
+  const detail =
+    status === "synced"
+      ? t("All records uploaded")
+      : status === "offline"
+        ? queued > 0
+          ? t("{count} records queued for upload", { count: queued })
+          : t("Records are saved on this phone until you reconnect")
+        : status === "needsRetry"
+          ? t("{count} records need retry", { count: failed })
+          : t("{count} records remaining", { count: remaining });
+
+  const when =
+    status === "synced"
+      ? lastSyncedAt
+        ? t("Last upload {when}", { when: relativeTime(t, lastSyncedAt) })
+        : t("No uploads yet")
+      : null;
+
+  return (
+    <View style={[styles.syncCard, { backgroundColor: palette.bg }]}>
+      <View style={styles.syncTop}>
+        <View style={styles.syncIcon}>
+          <Ionicons name={palette.icon} size={18} color={palette.fg} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.syncTitle, { color: palette.fg }]}>{title}</Text>
+          <Text style={[styles.syncDetail, { color: palette.fg }]}>{detail}</Text>
+          {when ? <Text style={[styles.syncWhen, { color: palette.fg }]}>{when}</Text> : null}
+        </View>
+      </View>
+
+      {(remaining > 0 || syncing) && online ? (
+        <Text style={[styles.syncAction, { color: palette.fg }]} onPress={onSync}>
+          {syncing ? t("Syncing...") : t("Sync now")}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+function relativeTime(t: (text: string, params?: Record<string, string | number>) => string, iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return t("just now");
+  if (minutes < 60) return t("{count}m ago", { count: minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return t("{count}h ago", { count: hours });
+  return formatDate(iso);
 }
 
 const styles = StyleSheet.create({
@@ -334,6 +455,36 @@ const styles = StyleSheet.create({
   name: { ...type.title, marginTop: 1 },
   meta: { ...type.subhead, marginTop: 2 },
 
+  syncCard: {
+    borderRadius: radius.md,
+    borderCurve: "continuous",
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  syncTop: { flexDirection: "row", alignItems: "flex-start", gap: spacing.md },
+  syncIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.full,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.55)",
+  },
+  syncTitle: { fontSize: 15, fontWeight: "600" },
+  syncDetail: { fontSize: 13, marginTop: 1, lineHeight: 18 },
+  syncWhen: { fontSize: 12, marginTop: 3, opacity: 0.85 },
+  syncAction: { fontSize: 13, fontWeight: "600", marginTop: spacing.sm, textDecorationLine: "underline" },
+
+  reviewNote: {
+    marginBottom: spacing.md,
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.md,
+    borderCurve: "continuous",
+    padding: spacing.lg,
+  },
+  reviewText: { fontSize: 14, fontWeight: "500", color: colors.primaryDark },
+  queueTop: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+
   strip: {
     flexDirection: "row",
     backgroundColor: colors.card,
@@ -342,16 +493,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     paddingHorizontal: spacing.xs,
   },
-
-  queue: {
-    marginTop: spacing.md,
-    backgroundColor: colors.pendingSoft,
-    borderRadius: radius.md,
-    borderCurve: "continuous",
-    padding: spacing.lg,
-  },
-  queueTop: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  queueText: { fontSize: 14, fontWeight: "500", color: colors.pendingInk },
 
   draftNote: {
     marginTop: spacing.md,

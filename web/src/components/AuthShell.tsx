@@ -1,18 +1,29 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { useI18n } from "@/i18n";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 // Sign-in sits on the same tinted frame as the app: the header carries the
 // brand, and the form sits alone, centred, on one white sheet.
 export function AuthShell({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
+
   return (
     <div className="flex min-h-screen flex-col bg-frame">
-      <header className="flex h-14 items-center justify-between px-5 sm:px-8">
+      <header className="flex h-14 items-center justify-between gap-3 px-5 sm:px-8">
         <div className="flex items-center gap-2.5">
           <span className="flex h-7 w-7 items-center justify-center rounded-[6px] bg-accent-soft text-accent">
             <Leaf className="h-4 w-4" />
           </span>
           <span className="text-[13px] font-medium text-ink">Millennia FieldOps</span>
         </div>
-        <span className="hidden text-[12px] text-muted sm:block">Millennia Village · site monitoring</span>
+        <div className="flex items-center gap-3">
+          <span className="hidden text-[12px] text-muted sm:block">
+            {t("Millennia Village · site monitoring")}
+          </span>
+          <LanguageSwitcher compact />
+        </div>
       </header>
 
       {/* pb matches the header height, so the sheet is centred in the viewport

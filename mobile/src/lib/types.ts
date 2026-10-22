@@ -60,6 +60,7 @@ export interface FieldRecord {
   created_at: string;
 
   zone?: { id: string; name: string } | null;
+  submitter?: { id: string; full_name: string } | null;
 }
 
 export interface AppNotification {

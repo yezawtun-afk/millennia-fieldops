@@ -9,16 +9,17 @@ import {
   SectionCard,
   Stat,
   StatStrip,
-  StatusBadge,
   TypeDot,
   btnPrimary,
   btnSecondary,
   tdClass,
   thClass,
 } from "@/components/ui";
+import { StatusBadge } from "@/components/Pills";
 import { BarChart, RankBars } from "@/components/BarChart";
 import { RecordRow } from "@/components/RecordRow";
 import { formatDateTime } from "@/lib/format";
+import { getT, type ServerTranslate } from "@/i18n/server";
 import type { HazardSeverity, RecordType } from "@/lib/types";
 
 const BUCKET = "record-photos";
@@ -31,14 +32,15 @@ function startOfWeek(date: Date): Date {
   return start;
 }
 
-function ageLabel(iso: string): string {
+function ageLabel(t: ServerTranslate, iso: string): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days <= 0) return "today";
-  if (days === 1) return "1 day";
-  return `${days} days`;
+  if (days <= 0) return t("today");
+  if (days === 1) return t("1 day");
+  return t("{count} days", { count: days });
 }
 
 export default async function DashboardPage() {
+  const t = await getT();
   const [total, pending, approved, rejected, hazards, rejectedHazards, zones, records, queue, profile] =
     await Promise.all([
       countRecords(),
@@ -55,7 +57,7 @@ export default async function DashboardPage() {
 
   const activeHazards = Math.max(hazards - rejectedHazards, 0);
   const isReviewer = profile?.role === "supervisor" || profile?.role === "admin";
-  const oldestPending = queue[0]?.created_at ? ageLabel(queue[0].created_at) : null;
+  const oldestPending = queue[0]?.created_at ? ageLabel(t, queue[0].created_at) : null;
 
   // Eight weeks of submissions, Monday to Sunday.
   const thisWeek = startOfWeek(new Date());
@@ -109,18 +111,20 @@ export default async function DashboardPage() {
 
   const finding =
     pending > 0
-      ? `${pending} record${pending === 1 ? "" : "s"} waiting on a decision${oldestPending ? `, the oldest for ${oldestPending}` : ""}.`
-      : "Nothing is waiting for review. Everything captured has a decision.";
+      ? `${t("{count} records waiting on a decision", { count: pending })}${
+          oldestPending ? t(", the oldest for {age}", { age: oldestPending }) : ""
+        }.`
+      : t("Nothing is waiting for review. Everything captured has a decision.");
 
   return (
     <div>
       <PageHeader
-        title="Overview"
+        title={t("Overview")}
         subtitle={finding}
         actions={
           pending > 0 ? (
             <Link href="/records?status=pending" className={btnPrimary}>
-              {isReviewer ? "Review pending" : "View pending"}
+              {isReviewer ? t("Review pending") : t("View pending")}
               <ArrowRight className="h-4 w-4" strokeWidth={1.8} />
             </Link>
           ) : null
@@ -128,19 +132,19 @@ export default async function DashboardPage() {
       />
 
       <StatStrip>
-        <Stat label="Records" value={total.toLocaleString("en-GB")} />
+        <Stat label={t("Records")} value={total.toLocaleString("en-GB")} />
         <Stat
-          label="Waiting review"
+          label={t("Waiting review")}
           value={pending.toLocaleString("en-GB")}
-          hint={oldestPending ? `oldest ${oldestPending}` : undefined}
+          hint={oldestPending ? t("oldest {age}", { age: oldestPending }) : undefined}
           tone={pending > 0 ? "text-warning-ink" : "text-ink"}
         />
-        <Stat label="Approved" value={approved.toLocaleString("en-GB")} />
-        <Stat label="Rejected" value={rejected.toLocaleString("en-GB")} />
+        <Stat label={t("Approved")} value={approved.toLocaleString("en-GB")} />
+        <Stat label={t("Rejected")} value={rejected.toLocaleString("en-GB")} />
         <Stat
-          label="Active hazards"
+          label={t("Active hazards")}
           value={activeHazards.toLocaleString("en-GB")}
-          hint="not rejected"
+          hint={t("not rejected")}
           tone={activeHazards > 0 ? "text-negative-ink" : "text-ink"}
         />
       </StatStrip>
@@ -148,40 +152,50 @@ export default async function DashboardPage() {
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-4">
           <SectionCard
-            title="Submissions per week"
-            hint="Records created in the last eight weeks"
+            title={t("Submissions per week")}
+            hint={t("Records created in the last eight weeks")}
             action={
               <span className="text-[12px] text-muted">
-                {weekly.reduce((sum, week) => sum + week.value, 0)} total
+                {t("{count} total", {
+                  count: weekly.reduce((sum, week) => sum + week.value, 0),
+                })}
               </span>
             }
           >
-            <BarChart data={weekly} height={180} />
+            <BarChart data={weekly} height={180} unit={t("records")} />
           </SectionCard>
 
           <SectionCard
-            title="By monitoring zone"
+            title={t("By monitoring zone")}
             hint={
               records.length >= 1000
-                ? "Counted across the latest 1,000 submissions"
-                : `${zones.length} zones · ${byType.flora} flora, ${byType.soil_water} soil & water, ${byType.hazard} hazard`
+                ? t("Counted across the latest 1,000 submissions")
+                : t("{zones} zones · {flora} flora, {water} soil & water, {hazard} hazard", {
+                    zones: zones.length,
+                    flora: byType.flora,
+                    water: byType.soil_water,
+                    hazard: byType.hazard,
+                  })
             }
             bodyClassName=""
           >
             {zones.length === 0 ? (
               <div className="p-4">
-                <EmptyState title="No zones yet" hint="Add monitoring zones from the Zones page." />
+                <EmptyState
+                  title={t("No zones yet")}
+                  hint={t("Add monitoring zones from the Zones page.")}
+                />
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[420px]">
                   <thead>
                     <tr className="border-b border-rule">
-                      <th className={thClass}>Zone</th>
-                      <th className={`${thClass} text-right`}>Flora</th>
-                      <th className={`${thClass} text-right`}>Soil &amp; water</th>
-                      <th className={`${thClass} text-right`}>Hazard</th>
-                      <th className={`${thClass} text-right`}>Total</th>
+                      <th className={thClass}>{t("Zone")}</th>
+                      <th className={`${thClass} text-right`}>{t("Flora")}</th>
+                      <th className={`${thClass} text-right`}>{t("Soil & water")}</th>
+                      <th className={`${thClass} text-right`}>{t("Hazard")}</th>
+                      <th className={`${thClass} text-right`}>{t("Total")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -204,7 +218,7 @@ export default async function DashboardPage() {
                     ))}
                     {unzoned > 0 ? (
                       <tr className="text-muted">
-                        <td className={tdClass}>No zone</td>
+                        <td className={tdClass}>{t("No zone")}</td>
                         <td className={`${tdClass} text-right`}>-</td>
                         <td className={`${tdClass} text-right`}>-</td>
                         <td className={`${tdClass} text-right`}>-</td>
@@ -220,12 +234,12 @@ export default async function DashboardPage() {
 
         <div className="space-y-4">
           <SectionCard
-            title="Review queue"
-            hint={pending > 0 ? "Oldest first" : "Up to date"}
+            title={t("Review queue")}
+            hint={pending > 0 ? t("Oldest first") : t("Up to date")}
             bodyClassName="p-0"
           >
             {queue.length === 0 ? (
-              <p className="px-4 py-5 text-[13px] text-muted">No records are waiting for review.</p>
+              <p className="px-4 py-5 text-[13px] text-muted">{t("No records are waiting for review.")}</p>
             ) : (
               <ul className="divide-y divide-rule">
                 {queue.map((record) => (
@@ -237,7 +251,7 @@ export default async function DashboardPage() {
                             {record.title}
                           </span>
                           <span className="mt-0.5 block truncate text-[12px] text-muted">
-                            {record.zone?.name ?? "No zone"} · {ageLabel(record.created_at)} old
+                            {record.zone?.name ?? t("No zone")} · {t("{age} old", { age: ageLabel(t, record.created_at) })}
                           </span>
                         </span>
                         <TypeDot type={record.type} />
@@ -249,31 +263,35 @@ export default async function DashboardPage() {
             )}
             <div className="border-t border-rule p-3">
               <Link href="/records?status=pending" className={`${btnSecondary} w-full`}>
-                {isReviewer ? "Open the queue" : "View pending records"}
+                {isReviewer ? t("Open the queue") : t("View pending records")}
               </Link>
             </div>
           </SectionCard>
 
-          <SectionCard title="Hazard severity" hint="All hazard records" bodyClassName="p-0">
+          <SectionCard
+            title={t("Hazard severity")}
+            hint={t("All hazard records")}
+            bodyClassName="p-0"
+          >
             <RankBars
               data={(["critical", "medium", "low"] as HazardSeverity[]).map((severity) => ({
-                label: severity[0].toUpperCase() + severity.slice(1),
+                label: t(severity[0].toUpperCase() + severity.slice(1)),
                 value: bySeverity[severity],
               }))}
-              emptyLabel="No hazards recorded yet."
+              emptyLabel={t("No hazards recorded yet.")}
             />
             {bySeverity.unrated > 0 ? (
               <p className="border-t border-rule px-4 py-2 text-[12px] text-muted">
-                {bySeverity.unrated} hazard{bySeverity.unrated === 1 ? "" : "s"} without a severity
+                {t("{count} hazards without a severity", { count: bySeverity.unrated })}
               </p>
             ) : null}
           </SectionCard>
 
           <SectionCard
-            title="Recent submissions"
+            title={t("Recent submissions")}
             action={
               <Link href="/records" className="text-[12px] font-medium text-accent hover:underline">
-                All records
+                {t("All records")}
               </Link>
             }
             bodyClassName=""
@@ -281,8 +299,8 @@ export default async function DashboardPage() {
             {recent.length === 0 ? (
               <div className="p-4">
                 <EmptyState
-                  title="No records yet"
-                  hint="Records captured in the mobile app appear here once they sync."
+                  title={t("No records yet")}
+                  hint={t("Records captured in the mobile app appear here once they sync.")}
                 />
               </div>
             ) : (
@@ -295,7 +313,9 @@ export default async function DashboardPage() {
           </SectionCard>
 
           <p className="px-1 text-[12px] leading-relaxed text-muted">
-            Last record received {records[0] ? formatDateTime(records[0].created_at) : "never"}.
+            {t("Last record received {when}.", {
+              when: records[0] ? formatDateTime(records[0].created_at) : t("never"),
+            })}
           </p>
         </div>
       </div>
@@ -303,7 +323,7 @@ export default async function DashboardPage() {
       {pending > 0 ? (
         <div className="mt-4 flex items-center gap-2 text-[12px] text-muted lg:hidden">
           <StatusBadge status="pending" />
-          <span>{pending} waiting for a decision</span>
+          <span>{t("{count} records waiting on a decision", { count: pending })}</span>
         </div>
       ) : null}
     </div>

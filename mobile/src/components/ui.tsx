@@ -235,10 +235,13 @@ export function ChipGroup({
   options,
   value,
   onChange,
+  labelFor,
 }: {
   options: string[];
   value: string | null;
   onChange: (value: string) => void;
+  /** Display text for an option whose stored value must stay unchanged. */
+  labelFor?: (option: string) => string;
 }) {
   return (
     <View style={styles.chipRow}>
@@ -256,7 +259,9 @@ export function ChipGroup({
               pressed && { opacity: 0.7 },
             ]}
           >
-            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+              {labelFor ? labelFor(option) : option}
+            </Text>
           </Pressable>
         );
       })}

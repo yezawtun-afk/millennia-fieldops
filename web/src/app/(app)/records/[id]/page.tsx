@@ -4,20 +4,17 @@ import { ChevronLeft } from "lucide-react";
 import { getProfile } from "@/lib/supabase/server";
 import { getRecord } from "@/lib/data";
 import { signPhotoUrls } from "@/lib/photos";
-import {
-  Card,
-  PageHeader,
-  SeverityBadge,
-  StatusBadge,
-  TypePill,
-} from "@/components/ui";
+import { Card, PageHeader } from "@/components/ui";
+import { SeverityBadge, StatusBadge, TypePill } from "@/components/Pills";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { ReviewPanel } from "@/components/ReviewPanel";
 import { DeleteRecordButton } from "@/components/DeleteRecordButton";
 import { MapView } from "@/components/MapView";
+import { getT } from "@/i18n/server";
 import type { HazardSeverity } from "@/lib/types";
 
 export default async function RecordDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = await getT();
   const { id } = await params;
   const [record, profile] = await Promise.all([getRecord(id), getProfile()]);
   if (!record || !profile) notFound();
@@ -60,12 +57,14 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
         href="/records"
         className="mb-3 inline-flex items-center gap-1 text-[12px] font-medium text-muted transition-colors hover:text-ink"
       >
-        <ChevronLeft className="h-3.5 w-3.5" strokeWidth={1.8} /> Records
+        <ChevronLeft className="h-3.5 w-3.5" strokeWidth={1.8} /> {t("Records")}
       </Link>
 
       <PageHeader
         title={record.title}
-        subtitle={`${record.zone?.name ?? "No zone"} · observed ${formatDate(record.observed_date)} · submitted by ${record.submitter?.full_name ?? "unknown"}`}
+        subtitle={`${record.zone?.name ?? t("No zone")} · ${t("Observed").toLowerCase()} ${formatDate(
+          record.observed_date
+        )} · ${t("Submitted by").toLowerCase()} ${record.submitter?.full_name ?? t("unknown")}`}
         actions={
           <>
             <TypePill type={record.type} />
@@ -89,19 +88,19 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
         <div className="space-y-4">
           <Card>
             <h2 className="border-b border-rule px-4 py-3 text-[14px] font-semibold text-ink">
-              Details
+              {t("Details")}
             </h2>
             <dl className="grid grid-cols-1 gap-x-6 px-4 py-1 sm:grid-cols-2">
               {facts
                 .filter((fact) => fact.value)
                 .map((fact) => (
-                  <DetailRow key={fact.label} label={fact.label} value={fact.value} />
+                  <DetailRow key={fact.label} label={t(fact.label)} value={fact.value} />
                 ))}
-              <DetailRow label="Observed" value={formatDate(record.observed_date)} />
-              <DetailRow label="Zone" value={record.zone?.name ?? "No zone"} />
+              <DetailRow label={t("Observed")} value={formatDate(record.observed_date)} />
+              <DetailRow label={t("Zone")} value={record.zone?.name ?? t("No zone")} />
               {record.latitude != null && record.longitude != null ? (
                 <DetailRow
-                  label="Coordinates"
+                  label={t("Coordinates")}
                   value={`${record.latitude.toFixed(5)}, ${record.longitude.toFixed(5)}`}
                   mono
                 />
@@ -112,7 +111,7 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
           {record.notes ? (
             <Card>
               <h2 className="border-b border-rule px-4 py-3 text-[14px] font-semibold text-ink">
-                Notes
+                {t("Notes")}
               </h2>
               <p className="whitespace-pre-wrap px-4 py-3 text-[14px] leading-relaxed text-ink">
                 {record.notes}
@@ -123,7 +122,7 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
           {photoUrls.length > 0 ? (
             <Card>
               <h2 className="border-b border-rule px-4 py-3 text-[14px] font-semibold text-ink">
-                Photos
+                {t("Photos")}
                 <span className="ml-1.5 font-normal text-muted">({photoUrls.length})</span>
               </h2>
               <div className="flex flex-wrap gap-2 p-4">
@@ -138,7 +137,7 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={url}
-                      alt={`Record photo ${index + 1}`}
+                      alt={t("Record photo {number}", { number: index + 1 })}
                       className="photo-thumb h-32 w-32 transition-transform hover:scale-[1.02]"
                     />
                   </a>
@@ -150,7 +149,7 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
           {record.latitude != null && record.longitude != null ? (
             <Card className="overflow-hidden">
               <h2 className="border-b border-rule px-4 py-3 text-[14px] font-semibold text-ink">
-                Location
+                {t("Location")}
               </h2>
               <MapView
                 markers={[
@@ -171,7 +170,7 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
         <div className="space-y-4">
           <Card>
             <h2 className="border-b border-rule px-4 py-3 text-[14px] font-semibold text-ink">
-              Review
+              {t("Review")}
             </h2>
             <div className="p-4">
               {record.status === "pending" ? (
@@ -179,20 +178,22 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
                   <ReviewPanel recordId={record.id} />
                 ) : (
                   <p className="text-[13px] text-muted">
-                    Waiting for a supervisor. You will see the decision here.
+                    {t("Waiting for a supervisor. You will see the decision here.")}
                   </p>
                 )
               ) : (
                 <div className="text-[13px]">
                   <p className="text-ink">
-                    This record was{" "}
-                    <span className="font-medium">
-                      {record.status === "approved" ? "approved" : "rejected"}
-                    </span>
-                    {record.reviewed_at ? ` on ${formatDateTime(record.reviewed_at)}` : ""}.
+                    {t("This record was {status} on {date}.", {
+                      status:
+                        record.status === "approved" ? t("approved") : t("rejected"),
+                      date: record.reviewed_at ? formatDateTime(record.reviewed_at) : "-",
+                    })}
                   </p>
                   <p className="mt-1 text-muted">
-                    Reviewed by {record.reviewer?.full_name ?? "a reviewer"}.
+                    {t("Reviewed by {name}.", {
+                      name: record.reviewer?.full_name ?? t("a reviewer"),
+                    })}
                   </p>
                   {record.supervisor_feedback ? (
                     <p className="mt-3 rounded-control border border-rule bg-panel px-3 py-2 text-[13px] text-ink">
@@ -206,12 +207,15 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
 
           <Card>
             <h2 className="border-b border-rule px-4 py-3 text-[14px] font-semibold text-ink">
-              Submission
+              {t("Submission")}
             </h2>
             <dl className="px-4 py-1">
-              <DetailRow label="Submitted by" value={record.submitter?.full_name ?? "unknown"} />
-              <DetailRow label="Received" value={formatDateTime(record.created_at)} />
-              <DetailRow label="Reviewed by" value={record.reviewer?.full_name ?? null} />
+              <DetailRow
+                label={t("Submitted by")}
+                value={record.submitter?.full_name ?? t("unknown")}
+              />
+              <DetailRow label={t("Received")} value={formatDateTime(record.created_at)} />
+              <DetailRow label={t("Reviewed by")} value={record.reviewer?.full_name ?? null} />
             </dl>
           </Card>
         </div>

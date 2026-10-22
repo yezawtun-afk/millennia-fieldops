@@ -2,7 +2,8 @@
 import { supabase, PHOTO_BUCKET } from "./supabase";
 import type { AppNotification, FieldRecord, Zone } from "./types";
 
-const RECORD_SELECT = "*, zone:zones ( id, name )";
+const RECORD_SELECT =
+  "*, zone:zones ( id, name ), submitter:profiles!records_submitted_by_fkey ( id, full_name )";
 
 export async function fetchZones(): Promise<Zone[]> {
   const { data, error } = await supabase.from("zones").select("*").order("name");
@@ -24,6 +25,52 @@ export async function fetchRecord(id: string): Promise<FieldRecord | null> {
   const { data, error } = await supabase.from("records").select(RECORD_SELECT).eq("id", id).single();
   if (error) return null;
   return data as unknown as FieldRecord;
+}
+
+// ---- Supervisor review ----------------------------------------------------
+// Supervisors and administrators may read every record and update the review
+// fields (policies records_select / records_update_reviewer). The database
+// trigger notify_on_review then tells the field worker.
+export async function fetchPendingRecords(): Promise<FieldRecord[]> {
+  const { data, error } = await supabase
+    .from("records")
+    .select(RECORD_SELECT)
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data as unknown as FieldRecord[]) ?? [];
+}
+
+// Just the number, for the "waiting for review" shortcut on Home.
+export async function countPendingReviews(): Promise<number> {
+  const { count, error } = await supabase
+    .from("records")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending");
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+export async function reviewRecord(
+  id: string,
+  decision: "approved" | "rejected",
+  feedback: string
+): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("You need to be signed in to review a record.");
+
+  const { error } = await supabase
+    .from("records")
+    .update({
+      status: decision,
+      supervisor_feedback: feedback.trim() || null,
+      reviewed_by: user.id,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 export async function fetchNotifications(userId: string): Promise<AppNotification[]> {

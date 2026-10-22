@@ -118,6 +118,15 @@ export async function countDrafts(): Promise<number> {
   return row?.count ?? 0;
 }
 
+// Records whose last upload attempt failed and that need attention.
+export async function countFailed(): Promise<number> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ count: number }>(
+    "select count(*) as count from outbox where status = 'error'"
+  );
+  return row?.count ?? 0;
+}
+
 export async function removeOutbox(localId: string): Promise<void> {
   const db = await getDb();
   await db.runAsync("delete from outbox where local_id = ?", localId);

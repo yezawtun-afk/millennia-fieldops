@@ -89,11 +89,51 @@ async function runSync(userId: string): Promise<SyncResult> {
 // back" watcher; two runs at once would upload the same record twice.
 let inFlight: Promise<SyncResult> | null = null;
 
+// The status badge listens here, so "Syncing..." starts and stops with the real
+// upload - including uploads nobody pressed a button for.
+export interface SyncEvent {
+  running: boolean;
+  result?: SyncResult;
+}
+
+const listeners = new Set<(event: SyncEvent) => void>();
+
+export function subscribeSync(listener: (event: SyncEvent) => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function emitSync(event: SyncEvent): void {
+  for (const listener of listeners) {
+    try {
+      listener(event);
+    } catch {
+      // A broken listener must never break an upload.
+    }
+  }
+}
+
+export function isSyncing(): boolean {
+  return inFlight !== null;
+}
+
 export function syncOutbox(userId: string): Promise<SyncResult> {
   if (!inFlight) {
-    inFlight = runSync(userId).finally(() => {
-      inFlight = null;
-    });
+    emitSync({ running: true });
+    inFlight = runSync(userId)
+      .then((result) => {
+        emitSync({ running: false, result });
+        return result;
+      })
+      .catch((error) => {
+        emitSync({ running: false });
+        throw error;
+      })
+      .finally(() => {
+        inFlight = null;
+      });
   }
   return inFlight;
 }

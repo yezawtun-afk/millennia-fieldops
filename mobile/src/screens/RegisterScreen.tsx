@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAuth } from "../context/AuthContext";
+import { useI18n } from "../i18n";
+import { LanguageButton } from "../components/LanguageButton";
 import { Banner, Button, Card, Field, Input } from "../components/ui";
 import { colors, spacing, type } from "../theme";
 import type { AuthStackParamList } from "../navigation/types";
@@ -10,6 +12,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, "Register">;
 
 export function RegisterScreen({ navigation }: Props) {
   const { signUp } = useAuth();
+  const { t } = useI18n();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -20,11 +23,11 @@ export function RegisterScreen({ navigation }: Props) {
 
   async function onSubmit() {
     if (!phone.trim()) {
-      setError("Enter your phone number. It is how you will sign in.");
+      setError(t("Enter your phone number. It is how you will sign in."));
       return;
     }
     if (password.length < 6) {
-      setError("Choose a password of at least 6 characters.");
+      setError(t("Choose a password of at least 6 characters."));
       return;
     }
     setBusy(true);
@@ -35,13 +38,14 @@ export function RegisterScreen({ navigation }: Props) {
     setBusy(false);
 
     if (result.error) {
-      setError(result.error);
+      setError(t(result.error));
       return;
     }
 
     setMessage(
-      "Request sent. An administrator will review it, and you can sign in with your phone number " +
-        "once it is approved."
+      t(
+        "Request sent. An administrator will review it, and you can sign in with your phone number once it is approved."
+      )
     );
     setPassword("");
   }
@@ -49,20 +53,25 @@ export function RegisterScreen({ navigation }: Props) {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Request an account</Text>
+        <View style={styles.languageRow}>
+          <LanguageButton />
+        </View>
+
+        <Text style={styles.title}>{t("Request an account")}</Text>
         <Text style={styles.subtitle}>
-          Your phone number is how you sign in. An administrator reviews every request before it
-          can be used.
+          {t(
+            "Your phone number is how you sign in. An administrator reviews every request before it can be used."
+          )}
         </Text>
 
         <Card style={styles.card}>
           {error ? <Banner kind="error">{error}</Banner> : null}
           {message ? <Banner kind="success">{message}</Banner> : null}
 
-          <Field label="Full name">
-            <Input value={fullName} onChangeText={setFullName} placeholder="Your name" />
+          <Field label={t("Full name")}>
+            <Input value={fullName} onChangeText={setFullName} placeholder={t("Your name")} />
           </Field>
-          <Field label="Phone number">
+          <Field label={t("Phone number")}>
             <Input
               value={phone}
               onChangeText={setPhone}
@@ -71,7 +80,7 @@ export function RegisterScreen({ navigation }: Props) {
               placeholder="012-345 6789"
             />
           </Field>
-          <Field label="Email (optional)">
+          <Field label={t("Email (optional)")}>
             <Input
               value={email}
               onChangeText={setEmail}
@@ -81,19 +90,23 @@ export function RegisterScreen({ navigation }: Props) {
               placeholder="you@millennia.my"
             />
           </Field>
-          <Field label="Password">
+          <Field label={t("Password")}>
             <Input
               value={password}
               onChangeText={setPassword}
               secureTextEntry
               autoComplete="new-password"
-              placeholder="At least 6 characters"
+              placeholder={t("At least 6 characters")}
             />
           </Field>
 
-          <Button title="Send request" onPress={onSubmit} loading={busy} />
+          <Button title={t("Send request")} onPress={onSubmit} loading={busy} />
           <View style={{ height: spacing.md }} />
-          <Button title="Back to sign in" variant="secondary" onPress={() => navigation.goBack()} />
+          <Button
+            title={t("Back to sign in")}
+            variant="secondary"
+            onPress={() => navigation.goBack()}
+          />
         </Card>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -109,6 +122,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
   },
+  languageRow: { position: "absolute", top: spacing.xxl, right: spacing.lg, zIndex: 2 },
   title: { ...type.title, fontSize: 22, textAlign: "center" },
   subtitle: {
     ...type.subhead,

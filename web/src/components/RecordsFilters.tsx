@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { btnGhost, selectClass } from "@/components/ui";
+import { useI18n } from "@/i18n";
 import type { Zone } from "@/lib/types";
 
 export function RecordsFilters({ zones }: { zones: Zone[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { t } = useI18n();
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
 
@@ -49,8 +51,8 @@ export function RecordsFilters({ zones }: { zones: Zone[] }) {
         <input
           value={q}
           onChange={(event) => setQ(event.target.value)}
-          placeholder="Search title, species, notes"
-          aria-label="Search records"
+          placeholder={t("Search title, species, notes")}
+          aria-label={t("Search records")}
           className="h-9 w-full rounded-control border border-control bg-sheet pl-8 pr-3 text-[13px] text-ink placeholder:text-faint focus:border-accent focus:outline-none"
         />
       </form>
@@ -58,46 +60,46 @@ export function RecordsFilters({ zones }: { zones: Zone[] }) {
       <select
         value={searchParams.get("type") ?? ""}
         onChange={(event) => apply({ type: event.target.value })}
-        aria-label="Filter by type"
+        aria-label={t("Filter by type")}
         className={`${selectClass} sm:w-[136px]`}
       >
-        <option value="">All types</option>
-        <option value="flora">Flora</option>
-        <option value="soil_water">Soil &amp; water</option>
-        <option value="hazard">Hazard</option>
+        <option value="">{t("All types")}</option>
+        <option value="flora">{t("Flora")}</option>
+        <option value="soil_water">{t("Soil & water")}</option>
+        <option value="hazard">{t("Hazard")}</option>
       </select>
 
       <select
         value={searchParams.get("status") ?? ""}
         onChange={(event) => apply({ status: event.target.value })}
-        aria-label="Filter by status"
+        aria-label={t("Filter by status")}
         className={`${selectClass} sm:w-[150px]`}
       >
-        <option value="">All statuses</option>
-        <option value="pending">Pending review</option>
-        <option value="approved">Approved</option>
-        <option value="rejected">Rejected</option>
+        <option value="">{t("All statuses")}</option>
+        <option value="pending">{t("Pending review")}</option>
+        <option value="approved">{t("Approved")}</option>
+        <option value="rejected">{t("Rejected")}</option>
       </select>
 
       <select
         value={searchParams.get("severity") ?? ""}
         onChange={(event) => apply({ severity: event.target.value })}
-        aria-label="Filter by severity"
+        aria-label={t("Filter by severity")}
         className={`${selectClass} sm:w-[146px]`}
       >
-        <option value="">All severities</option>
-        <option value="low">Low</option>
-        <option value="medium">Medium</option>
-        <option value="critical">Critical</option>
+        <option value="">{t("All severities")}</option>
+        <option value="low">{t("Low")}</option>
+        <option value="medium">{t("Medium")}</option>
+        <option value="critical">{t("Critical")}</option>
       </select>
 
       <select
         value={searchParams.get("zone") ?? ""}
         onChange={(event) => apply({ zone: event.target.value })}
-        aria-label="Filter by zone"
+        aria-label={t("Filter by zone")}
         className={`${selectClass} sm:w-[150px]`}
       >
-        <option value="">All zones</option>
+        <option value="">{t("All zones")}</option>
         {zones.map((zone) => (
           <option key={zone.id} value={zone.id}>
             {zone.name}
@@ -111,7 +113,7 @@ export function RecordsFilters({ zones }: { zones: Zone[] }) {
           onClick={() => router.push(pathname)}
           className={`${btnGhost} sm:ml-auto`}
         >
-          <X className="h-4 w-4" strokeWidth={1.7} /> Clear filters
+          <X className="h-4 w-4" strokeWidth={1.7} /> {t("Clear filters")}
         </button>
       ) : null}
     </div>

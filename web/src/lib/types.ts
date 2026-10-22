@@ -74,6 +74,19 @@ export interface FieldRecord {
   reviewer?: { id: string; full_name: string } | null;
 }
 
+// One row of the append-only activity log (supabase/10_audit_logs.sql).
+export interface AuditLog {
+  id: number;
+  actor_id: string | null;
+  actor_name: string;
+  action: string;
+  entity: "record" | "account" | string;
+  entity_id: string | null;
+  summary: string;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
 export interface Notification {
   id: string;
   user_id: string;

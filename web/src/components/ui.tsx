@@ -1,15 +1,7 @@
 import type { ReactNode } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
-import type { HazardSeverity, RecordStatus, RecordType, UserRole } from "@/lib/types";
-import {
-  SEVERITY_LABELS,
-  SEVERITY_STYLES,
-  STATUS_LABELS,
-  STATUS_STYLES,
-  TYPE_DOT_CLASSES,
-  TYPE_LABELS,
-  TYPE_STYLES,
-} from "@/lib/format";
+import type { RecordType } from "@/lib/types";
+import { TYPE_DOT_CLASSES } from "@/lib/format";
 
 // ---- Shared control classes -----------------------------------------------
 // One shape and one height for every control; pages use these instead of
@@ -38,48 +30,9 @@ export const tdClass = "px-4 py-3 align-middle text-[14px] text-ink";
 
 // ---- Small pills / badges -------------------------------------------------
 
-function Pill({ className, children }: { className: string; children: ReactNode }) {
-  return (
-    <span
-      className={`inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium leading-5 ${className}`}
-    >
-      {children}
-    </span>
-  );
-}
-
-export function TypePill({ type }: { type: RecordType }) {
-  return <Pill className={TYPE_STYLES[type]}>{TYPE_LABELS[type]}</Pill>;
-}
-
-export function StatusBadge({ status }: { status: RecordStatus }) {
-  return <Pill className={STATUS_STYLES[status]}>{STATUS_LABELS[status]}</Pill>;
-}
-
-export function SeverityBadge({ severity }: { severity: HazardSeverity | null }) {
-  if (!severity) return <span className="text-muted">-</span>;
-  return <Pill className={SEVERITY_STYLES[severity]}>{SEVERITY_LABELS[severity]}</Pill>;
-}
-
 // The small coloured dot that stands in for a photo or a zone colour.
 export function TypeDot({ type }: { type: RecordType }) {
   return <span className={`inline-block h-2 w-2 rounded-full ${TYPE_DOT_CLASSES[type]}`} />;
-}
-
-const ROLE_STYLES: Record<UserRole, string> = {
-  field_worker: "bg-accent-soft text-accent",
-  supervisor: "bg-water-soft text-water",
-  admin: "bg-ink text-white",
-};
-
-export const ROLE_LABELS: Record<UserRole, string> = {
-  field_worker: "Field worker",
-  supervisor: "Supervisor",
-  admin: "Administrator",
-};
-
-export function RolePill({ role }: { role: UserRole }) {
-  return <Pill className={ROLE_STYLES[role]}>{ROLE_LABELS[role]}</Pill>;
 }
 
 // ---- Layout helpers -------------------------------------------------------

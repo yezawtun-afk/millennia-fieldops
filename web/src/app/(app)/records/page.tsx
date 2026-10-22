@@ -1,19 +1,13 @@
 import Link from "next/link";
 import { getProfile } from "@/lib/supabase/server";
 import { getZones, queryRecords } from "@/lib/data";
-import {
-  PageHeader,
-  TypePill,
-  StatusBadge,
-  SeverityBadge,
-  EmptyState,
-  tdClass,
-  thClass,
-} from "@/components/ui";
+import { EmptyState, PageHeader, tdClass, thClass } from "@/components/ui";
+import { SeverityBadge, StatusBadge, TypePill } from "@/components/Pills";
 import { formatDate, recordSubtitle } from "@/lib/format";
 import { RecordsFilters } from "@/components/RecordsFilters";
 import { ExportButtons } from "@/components/ExportButtons";
 import { DeleteRecordButton } from "@/components/DeleteRecordButton";
+import { getT } from "@/i18n/server";
 import type { HazardSeverity } from "@/lib/types";
 
 type SearchParams = Promise<{
@@ -25,6 +19,7 @@ type SearchParams = Promise<{
 }>;
 
 export default async function RecordsPage({ searchParams }: { searchParams: SearchParams }) {
+  const t = await getT();
   const params = await searchParams;
   const filters = {
     q: params.q,
@@ -54,24 +49,23 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
 
   const pendingShown = records.filter((record) => record.status === "pending").length;
 
+  const subtitle =
+    records.length === 0
+      ? t("No records match the current filters.")
+      : `${t("{count} records shown", { count: records.length })}${
+          pendingShown > 0 ? t(", {count} still waiting review", { count: pendingShown }) : ""
+        }.`;
+
   return (
     <div>
-      <PageHeader
-        title="Records"
-        subtitle={
-          records.length === 0
-            ? "No records match the current filters."
-            : `${records.length} record${records.length === 1 ? "" : "s"} shown${pendingShown > 0 ? `, ${pendingShown} still waiting review` : ""}.`
-        }
-        actions={<ExportButtons query={exportQuery} />}
-      />
+      <PageHeader title={t("Records")} subtitle={subtitle} actions={<ExportButtons query={exportQuery} />} />
 
       <RecordsFilters zones={zones} />
 
       {records.length === 0 ? (
         <EmptyState
-          title="No records match those filters"
-          hint="Clear the search box, or pick another type, status or zone."
+          title={t("No records match those filters")}
+          hint={t("Clear the search box, or pick another type, status or zone.")}
         />
       ) : (
         <div className="overflow-hidden rounded-card border border-line bg-sheet">
@@ -79,13 +73,13 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
             <table className="min-w-full">
               <thead>
                 <tr className="border-b border-rule">
-                  <th className={thClass}>Record</th>
-                  <th className={thClass}>Type</th>
-                  <th className={thClass}>Zone</th>
-                  <th className={`${thClass} text-right`}>Observed</th>
-                  <th className={thClass}>Status</th>
-                  <th className={`${thClass} hidden 2xl:table-cell`}>Submitted by</th>
-                  {isAdmin ? <th className={`${thClass} text-right`}>Actions</th> : null}
+                  <th className={thClass}>{t("Record")}</th>
+                  <th className={thClass}>{t("Type")}</th>
+                  <th className={thClass}>{t("Zone")}</th>
+                  <th className={`${thClass} text-right`}>{t("Observed")}</th>
+                  <th className={thClass}>{t("Status")}</th>
+                  <th className={`${thClass} hidden 2xl:table-cell`}>{t("Submitted by")}</th>
+                  {isAdmin ? <th className={`${thClass} text-right`}>{t("Actions")}</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -141,15 +135,17 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
 
       {isAdmin ? (
         <p className="mt-3 max-w-[85ch] text-[12px] leading-relaxed text-muted">
-          Deleting a record also removes its photos and review notifications. Field workers can
-          delete their own records only while they are still pending.
+          {t(
+            "Deleting a record also removes its photos and review notifications. Field workers can delete their own records only while they are still pending."
+          )}
         </p>
       ) : null}
 
       {!isReviewer ? (
         <p className="mt-3 max-w-[85ch] text-[12px] leading-relaxed text-muted">
-          You are signed in as a field worker. Open a record to view it; only supervisors and
-          administrators can approve or reject.
+          {t(
+            "You are signed in as a field worker. Open a record to view it; only supervisors and administrators can approve or reject."
+          )}
         </p>
       ) : null}
     </div>

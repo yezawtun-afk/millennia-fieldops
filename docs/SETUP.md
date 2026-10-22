@@ -39,12 +39,16 @@ In the Supabase dashboard, open **SQL Editor -> New query**. Run these files fro
    profile trigger existed; it adds the missing `profiles` rows.
 9. `09_delete_own_pending.sql` - lets a field worker delete their own record while it
    is still pending (administrators keep full delete).
+10. `10_audit_logs.sql` - the admin-only **activity log**: an append-only `audit_logs`
+    table, triggers that write an entry when a record or account changes, and a policy
+    that lets only administrators read it. Safe to run again.
 
-The generated `setup_all.sql` bundles 01-06 and 09 in one paste; the two optional
+The generated `setup_all.sql` bundles 01-06, 09 and 10 in one paste; the two optional
 files are kept separate because they change data.
 
 > **Already have a live database?** Re-run `01_schema.sql`, `02_policies.sql`,
-> `04_triggers.sql` and `09_delete_own_pending.sql`. All four are safe to run again.
+> `04_triggers.sql`, `09_delete_own_pending.sql` and `10_audit_logs.sql`. All five are safe
+> to run again.
 > `01` adds the new `profiles` columns (`phone`, `status`, the approval fields) to an
 > existing table; `02` makes every policy require an **approved and active** account;
 > `04` makes new sign-ups start as **pending** and stores the phone number. Existing

@@ -27,7 +27,8 @@ param(
         "04_triggers.sql",
         "05_seed.sql",
         "06_severity_levels.sql",
-        "09_delete_own_pending.sql"
+        "09_delete_own_pending.sql",
+        "10_audit_logs.sql"
     )
 )
 

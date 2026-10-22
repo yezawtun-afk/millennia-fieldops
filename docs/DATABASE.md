@@ -91,6 +91,10 @@ erDiagram
   the same table; unused columns stay `NULL`.
 - **notifications** - created by a trigger when a record is reviewed, and read by the
   mobile app.
+- **audit_logs** - an append-only trail written by triggers in `10_audit_logs.sql` when a
+  record is created, edited, reviewed, or deleted and when an account changes (role,
+  active flag, approval status). Only administrators may read it; nobody can edit or
+  delete entries through the API.
 
 ## Indexes
 
@@ -109,6 +113,7 @@ and `severity` so the dashboard filters stay fast.
 | Delete your own record **while pending** | `09_delete_own_pending.sql` | field workers can take back a mistake that has not been reviewed |
 | Delete photos | `03_storage.sql` | the uploader (their own folder) or an admin |
 | Notifications | `02_policies.sql` | each user only ever sees their own |
+| Read the activity log | `10_audit_logs.sql` | administrators only; entries are append-only |
 
 Deleting a record cascades: its review notifications go with it
 (`notifications.record_id ... on delete cascade`), and both apps clear the record's

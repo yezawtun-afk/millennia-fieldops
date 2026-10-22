@@ -3,10 +3,11 @@ import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } 
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
+import { useSync } from "../context/SyncContext";
 import { deleteRecord, fetchMyRecords } from "../lib/api";
 import { listOutbox, removeOutbox } from "../lib/sqlite";
 import { deletePhoto } from "../lib/photos";
-import { syncOutbox } from "../lib/sync";
+import { useI18n } from "../i18n";
 import { Banner, Button, Card, ListRow, Pill, SectionTitle } from "../components/ui";
 import { colors, radius, spacing, type } from "../theme";
 import { STATUS_LABELS, formatDate } from "../lib/format";
@@ -15,27 +16,28 @@ import type { TabScreenProps } from "../navigation/types";
 
 type Props = TabScreenProps<"Records">;
 
-function statusPill(status: FieldRecord["status"]) {
-  const palette =
-    status === "pending"
-      ? { fg: colors.pendingInk, bg: colors.pendingSoft }
-      : status === "approved"
-        ? { fg: colors.approvedInk, bg: colors.approvedSoft }
-        : { fg: colors.rejectedInk, bg: colors.rejectedSoft };
-  return <Pill label={STATUS_LABELS[status]} color={palette.fg} background={palette.bg} />;
-}
-
 export function MyRecordsScreen({ navigation }: Props) {
   const { profile, session } = useAuth();
+  const { t } = useI18n();
+  const { syncing, syncNow } = useSync();
   const userId = session?.user.id ?? profile?.id ?? null;
   const [records, setRecords] = useState<FieldRecord[]>([]);
   const [outbox, setOutbox] = useState<OutboxRow[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const drafts = outbox.filter((row) => row.status === "draft");
   const queued = outbox.filter((row) => row.status !== "draft");
+
+  function statusPill(status: FieldRecord["status"]) {
+    const palette =
+      status === "pending"
+        ? { fg: colors.pendingInk, bg: colors.pendingSoft }
+        : status === "approved"
+          ? { fg: colors.approvedInk, bg: colors.approvedSoft }
+          : { fg: colors.rejectedInk, bg: colors.rejectedSoft };
+    return <Pill label={t(STATUS_LABELS[status])} color={palette.fg} background={palette.bg} />;
+  }
 
   const load = useCallback(async () => {
     setOutbox(await listOutbox());
@@ -60,16 +62,15 @@ export function MyRecordsScreen({ navigation }: Props) {
   }
 
   async function runSync() {
-    if (!userId) return;
-    setSyncing(true);
-    const result = await syncOutbox(userId);
-    setSyncing(false);
+    const result = await syncNow();
     setMessage(
-      result.uploaded > 0
-        ? `Uploaded ${result.uploaded} record${result.uploaded === 1 ? "" : "s"}.`
-        : result.failed > 0
-          ? `${result.failed} record${result.failed === 1 ? "" : "s"} still waiting. Check the connection.`
-          : "Nothing to upload."
+      !result
+        ? t("Could not start the upload. Check your connection.")
+        : result.uploaded > 0
+          ? t("Uploaded {count} records.", { count: result.uploaded })
+          : result.failed > 0
+            ? t("{count} records still waiting. Check the connection.", { count: result.failed })
+            : t("Nothing to upload.")
     );
     await load();
   }
@@ -85,13 +86,15 @@ export function MyRecordsScreen({ navigation }: Props) {
 
   function confirmDeleteOutbox(row: OutboxRow, kind: "draft" | "queued") {
     Alert.alert(
-      kind === "draft" ? "Delete draft" : "Cancel upload",
+      kind === "draft" ? t("Delete draft") : t("Cancel upload"),
       kind === "draft"
-        ? `Discard the draft "${row.payload.title}" and its photos?`
-        : `Remove "${row.payload.title}" from the upload queue? It has not reached the server yet.`,
+        ? t('Discard the draft "{title}" and its photos?', { title: row.payload.title })
+        : t('Remove "{title}" from the upload queue? It has not reached the server yet.', {
+            title: row.payload.title,
+          }),
       [
-        { text: "Keep", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => void discard(row) },
+        { text: t("Keep"), style: "cancel" },
+        { text: t("Delete"), style: "destructive", onPress: () => void discard(row) },
       ]
     );
   }
@@ -100,12 +103,14 @@ export function MyRecordsScreen({ navigation }: Props) {
   // pending. The database enforces the same rule, so a reviewed record is safe.
   function confirmDeleteRecord(record: FieldRecord) {
     Alert.alert(
-      "Delete record",
-      `Delete "${record.title}"? This cannot be undone. The record and its photos are removed for everyone.`,
+      t("Delete record"),
+      t('Delete "{title}"? This cannot be undone. The record and its photos are removed for everyone.', {
+        title: record.title,
+      }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("Cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("Delete"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -113,8 +118,10 @@ export function MyRecordsScreen({ navigation }: Props) {
               await load();
             } catch {
               Alert.alert(
-                "Could not delete",
-                "Check your connection. Only your own records that are still pending can be deleted."
+                t("Could not delete"),
+                t(
+                  "Check your connection. Only your own records that are still pending can be deleted."
+                )
               );
             }
           },
@@ -132,9 +139,12 @@ export function MyRecordsScreen({ navigation }: Props) {
       }
     >
       <View style={styles.header}>
-        <Text style={styles.title}>My records</Text>
+        <Text style={styles.title}>{t("My records")}</Text>
         <Text style={styles.subhead}>
-          {records.length} submitted · {queued.length + drafts.length} on this phone
+          {t("{submitted} submitted · {local} on this phone", {
+            submitted: records.length,
+            local: queued.length + drafts.length,
+          })}
         </Text>
       </View>
 
@@ -142,18 +152,18 @@ export function MyRecordsScreen({ navigation }: Props) {
 
       {drafts.length > 0 ? (
         <>
-          <SectionTitle>Drafts</SectionTitle>
+          <SectionTitle>{t("Drafts")}</SectionTitle>
           <Card>
             {drafts.map((row, index) => (
               <ListRow
                 key={row.localId}
                 title={row.payload.title}
-                meta={`Not finished · started ${formatDate(row.createdAt)}`}
+                meta={t("Not finished · started {date}", { date: formatDate(row.createdAt) })}
                 last={index === drafts.length - 1}
                 onPress={() => navigation.navigate("New", { draftId: row.localId })}
                 right={
                   <Pressable
-                    accessibilityLabel={`Delete draft ${row.payload.title}`}
+                    accessibilityLabel={t("Delete draft {title}", { title: row.payload.title })}
                     hitSlop={8}
                     onPress={() => confirmDeleteOutbox(row, "draft")}
                     style={styles.trash}
@@ -170,7 +180,7 @@ export function MyRecordsScreen({ navigation }: Props) {
 
       {queued.length > 0 ? (
         <>
-          <SectionTitle>Waiting to upload</SectionTitle>
+          <SectionTitle>{t("Waiting to upload")}</SectionTitle>
           <Card>
             {queued.map((row, index) => (
               <ListRow
@@ -179,18 +189,20 @@ export function MyRecordsScreen({ navigation }: Props) {
                 meta={
                   row.status === "error" && row.error
                     ? row.error
-                    : `Queued · ${formatDate(row.payload.observed_date)}`
+                    : t("Queued · {date}", { date: formatDate(row.payload.observed_date) })
                 }
                 last={index === queued.length - 1}
                 right={
                   <View style={styles.rowRight}>
                     <Pill
-                      label={row.status === "error" ? "Failed" : "Queued"}
+                      label={row.status === "error" ? t("Failed") : t("Queued")}
                       color={row.status === "error" ? colors.rejectedInk : colors.pendingInk}
                       background={row.status === "error" ? colors.rejectedSoft : colors.pendingSoft}
                     />
                     <Pressable
-                      accessibilityLabel={`Remove ${row.payload.title} from the queue`}
+                      accessibilityLabel={t("Remove {title} from the queue", {
+                        title: row.payload.title,
+                      })}
                       hitSlop={8}
                       onPress={() => confirmDeleteOutbox(row, "queued")}
                       style={styles.trash}
@@ -203,7 +215,7 @@ export function MyRecordsScreen({ navigation }: Props) {
             ))}
           </Card>
           <Button
-            title={syncing ? "Syncing" : "Sync now"}
+            title={syncing ? t("Syncing") : t("Sync now")}
             variant="secondary"
             onPress={runSync}
             loading={syncing}
@@ -213,12 +225,14 @@ export function MyRecordsScreen({ navigation }: Props) {
         </>
       ) : null}
 
-      <SectionTitle>Submitted</SectionTitle>
+      <SectionTitle>{t("Submitted")}</SectionTitle>
       {records.length === 0 ? (
         <Card>
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>No records submitted yet</Text>
-            <Text style={styles.emptyHint}>Records you capture appear here once they upload.</Text>
+            <Text style={styles.emptyTitle}>{t("No records submitted yet")}</Text>
+            <Text style={styles.emptyHint}>
+              {t("Records you capture appear here once they upload.")}
+            </Text>
           </View>
         </Card>
       ) : (
@@ -227,7 +241,7 @@ export function MyRecordsScreen({ navigation }: Props) {
             <ListRow
               key={record.id}
               title={record.title}
-              meta={`${record.zone?.name ?? "No zone"} · ${formatDate(record.observed_date)}`}
+              meta={`${record.zone?.name ?? t("No zone")} · ${formatDate(record.observed_date)}`}
               last={index === records.length - 1}
               onPress={() => navigation.navigate("RecordDetails", { id: record.id })}
               right={
@@ -235,7 +249,7 @@ export function MyRecordsScreen({ navigation }: Props) {
                   {statusPill(record.status)}
                   {record.status === "pending" ? (
                     <Pressable
-                      accessibilityLabel={`Delete ${record.title}`}
+                      accessibilityLabel={t("Delete {title}", { title: record.title })}
                       hitSlop={8}
                       onPress={() => confirmDeleteRecord(record)}
                       style={styles.trash}
@@ -252,7 +266,7 @@ export function MyRecordsScreen({ navigation }: Props) {
 
       {records.some((record) => record.supervisor_feedback) ? (
         <Text style={styles.footnote}>
-          A supervisor left a comment on a record. Open it to read the note.
+          {t("A supervisor left a comment on a record. Open it to read the note.")}
         </Text>
       ) : null}
 

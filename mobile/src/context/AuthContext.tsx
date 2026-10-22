@@ -1,9 +1,18 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { requestAccount, signInWithPhone } from "../lib/api";
 import { looksLikePhone, normalizePhone } from "../lib/phone";
+import { useI18n } from "../i18n";
 import type { Profile } from "../lib/types";
 
 // The profile row (name, role) is cached on the phone. Starting the app with no
@@ -14,15 +23,18 @@ const PROFILE_CACHE_PREFIX = "millennia-fieldops.profile.";
 
 // Why a correct password still cannot get in. A missing status means the
 // database has not been upgraded yet, so the account is treated as approved.
-function refusalMessage(profile: Profile): string | null {
+function refusalMessage(
+  profile: Profile,
+  t: (text: string) => string
+): string | null {
   if (profile.status === "pending") {
-    return "Your account request is waiting for an administrator to approve it.";
+    return t("Your account request is waiting for an administrator to approve it.");
   }
   if (profile.status === "declined") {
-    return "Your account request was declined. Contact an administrator.";
+    return t("Your account request was declined. Contact an administrator.");
   }
   if (profile.is_active === false) {
-    return "This account has been deactivated. Ask an administrator to reactivate it.";
+    return t("This account has been deactivated. Ask an administrator to reactivate it.");
   }
   return null;
 }
@@ -46,6 +58,12 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
+  // Callbacks that run long after render (session restore, sign-in) need the
+  // current language without being recreated every time it changes.
+  const tRef = useRef(t);
+  tRef.current = t;
+
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Pending, declined and deactivated accounts are refused at the database
       // level too, but signing out here stops the app from pretending it is
       // still connected.
-      const refusal = refusalMessage(row);
+      const refusal = refusalMessage(row, tRef.current);
       if (refusal) {
         await supabase.auth.signOut();
         setProfile(null);
@@ -112,7 +130,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       .catch((error) => {
         if (!active) return;
-        setInitError(error instanceof Error ? error.message : "Could not restore your session.");
+        setInitError(
+          error instanceof Error ? error.message : tRef.current("Could not restore your session.")
+        );
         setLoading(false);
       });
 
@@ -139,7 +159,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // the number to an account and returns a normal session.
       const result = await signInWithPhone(value, password);
       if (!result.access_token || !result.refresh_token) {
-        return { error: result.error ?? "Incorrect phone number or password." };
+        return {
+          error: result.error
+            ? tRef.current(result.error)
+            : tRef.current("Incorrect phone number or password."),
+        };
       }
       const { error } = await supabase.auth.setSession({
         access_token: result.access_token,
@@ -162,7 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .select("*")
         .eq("id", data.user.id)
         .single();
-      const refusal = row ? refusalMessage(row as Profile) : null;
+      const refusal = row ? refusalMessage(row as Profile, tRef.current) : null;
       if (refusal) {
         await supabase.auth.signOut();
         return { error: refusal };
@@ -176,11 +200,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (email: string, password: string, fullName: string, phone?: string) => {
       const trimmedPhone = phone?.trim() ?? "";
       if (!trimmedPhone) {
-        return { error: "Enter your phone number. It is how you will sign in." };
+        return { error: tRef.current("Enter your phone number. It is how you will sign in.") };
       }
       const normalizedPhone = normalizePhone(trimmedPhone);
       if (!normalizedPhone) {
-        return { error: "Enter a valid phone number, for example 012-345 6789." };
+        return {
+          error: tRef.current("Enter a valid phone number, for example 012-345 6789."),
+        };
       }
 
       // The account is created (as pending) by the web dashboard, so the app

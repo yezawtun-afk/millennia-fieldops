@@ -1,10 +1,21 @@
 // Shared labels, colours and date helpers for the dashboard.
-import type { HazardSeverity, RecordStatus, RecordType } from "./types";
+import type {
+  HazardSeverity,
+  RecordStatus,
+  RecordType,
+  UserRole,
+} from "./types";
 
 export const TYPE_LABELS: Record<RecordType, string> = {
   flora: "Flora",
   soil_water: "Soil/Water",
   hazard: "Hazard",
+};
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  field_worker: "Field worker",
+  supervisor: "Supervisor",
+  admin: "Administrator",
 };
 
 export const STATUS_LABELS: Record<RecordStatus, string> = {

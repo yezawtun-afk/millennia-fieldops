@@ -12,12 +12,14 @@ export type MainTabParamList = {
   Home: undefined;
   New: { type?: RecordType; draftId?: string } | undefined;
   Records: undefined;
+  Review: undefined;
   Alerts: undefined;
 };
 
 export type RootStackParamList = {
   Tabs: undefined;
   RecordDetails: { id: string };
+  ReviewRecord: { id: string };
 };
 
 // Tab screens can also navigate to screens in the parent stack.
