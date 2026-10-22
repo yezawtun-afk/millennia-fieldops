@@ -96,3 +96,24 @@ export interface Notification {
   read_at: string | null;
   created_at: string;
 }
+
+// What the bell in the top bar shows. Field workers hear about decisions on
+// their own records; reviewers hear about records waiting for a decision.
+export interface WorkerNewsItem {
+  id: string;
+  recordId: string | null;
+  message: string;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface ReviewerNewsItem {
+  id: string;
+  title: string;
+  zoneName: string | null;
+  createdAt: string;
+}
+
+export type News =
+  | { kind: "worker"; unread: number; items: WorkerNewsItem[] }
+  | { kind: "reviewer"; pending: number; latestAt: string | null; items: ReviewerNewsItem[] };

@@ -22,8 +22,10 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { AutoRefresh } from "@/components/AutoRefresh";
+import { NewsBell } from "@/components/NewsBell";
 import { ROLE_LABELS } from "@/lib/format";
-import type { Profile } from "@/lib/types";
+import type { News, Profile } from "@/lib/types";
 
 type NavItem = {
   href: string;
@@ -225,7 +227,17 @@ function TopSearch() {
   );
 }
 
-export function AppShell({ profile, children }: { profile: Profile; children: React.ReactNode }) {
+export function AppShell({
+  profile,
+  news,
+  seenAt,
+  children,
+}: {
+  profile: Profile;
+  news: News;
+  seenAt: string | null;
+  children: React.ReactNode;
+}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
   const { t } = useI18n();
@@ -258,6 +270,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
           </span>
 
           <div className="ml-auto flex items-center gap-3">
+            <AutoRefresh />
             <TopSearch />
             <LanguageSwitcher compact />
             <Link
@@ -266,6 +279,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
             >
               {t("Pending review")}
             </Link>
+            <NewsBell profile={profile} news={news} seenAt={seenAt} />
           </div>
         </header>
 

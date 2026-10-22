@@ -563,4 +563,9 @@ export const zh: Record<string, string> = {
   "Enter your phone number and password.": "请输入手机号码和密码。",
   "Phone sign-in is not available yet. Use your email for now.":
     "手机号码登录尚未启用，请暂时使用电子邮箱。",
+  "Live": "实时",
+  "This page updates on its own": "此页面会自动更新",
+  "{count} unread": "{count} 条未读",
+  "Everything here has been read": "这里的内容都已读",
+  "Nothing is waiting for review": "没有等待审核的内容",
 };

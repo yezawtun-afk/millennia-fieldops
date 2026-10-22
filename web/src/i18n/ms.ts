@@ -597,4 +597,9 @@ export const ms: Record<string, string> = {
   "Enter your phone number and password.": "Masukkan nombor telefon dan kata laluan anda.",
   "Phone sign-in is not available yet. Use your email for now.":
     "Log masuk telefon belum tersedia. Gunakan e-mel anda buat masa ini.",
+  "Live": "Langsung",
+  "This page updates on its own": "Halaman ini dikemas kini secara automatik",
+  "{count} unread": "{count} belum dibaca",
+  "Everything here has been read": "Semua di sini telah dibaca",
+  "Nothing is waiting for review": "Tiada apa menunggu semakan",
 };

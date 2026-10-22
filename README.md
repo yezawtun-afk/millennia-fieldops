@@ -89,6 +89,12 @@ Demo accounts and a full end-of-project snapshot live in
 - Interactive **Leaflet map** of the site, opening on Millennia Village (2.752616,
   101.906463) with records plotted over the monitoring zones.
 - Review and verification: approve/reject with a comment (sent back to the worker).
+- **Live pages**: every screen re-fetches its data in place every ten seconds (the green
+  "Live" label in the header), so a record sent from the phone appears without pressing
+  refresh - and anything half-typed, such as a review comment, is kept.
+- **Notification bell** in the header: a red dot for field workers when a decision on one
+  of their records is unread, and for supervisors/admins when records have arrived since
+  they last opened the bell. The panel lists the news and can mark it all read.
 - **User management**: review account requests (approve / decline), create accounts, assign
   roles, **deactivate/reactivate**, and **delete** an account permanently (refused for
   anyone who already submitted field records - deactivate those instead).
