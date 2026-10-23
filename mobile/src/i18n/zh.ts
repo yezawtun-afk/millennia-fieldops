@@ -336,4 +336,29 @@ export const zh: Record<string, string> = {
   "Close menu": "关闭菜单",
   // The raised centre button in the tab bar.
   New: "新建",
+
+  // Profile screen.
+  Profile: "个人资料",
+  Account: "账户",
+  Email: "电子邮箱",
+  Phone: "电话号码",
+  "Member since": "加入日期",
+  "Not set": "未设置",
+  "Display name": "显示名称",
+  "Enter your name": "请输入你的名字",
+  "This name appears on the records you submit.": "此名称会显示在你提交的记录上。",
+  Save: "保存",
+  "Name updated": "名称已更新",
+  "Could not save your name. Try again.": "无法保存你的名字，请重试。",
+  "New password": "新密码",
+  "Confirm password": "确认密码",
+  "Use at least 8 characters": "至少使用 8 个字符",
+  "Type it again": "再次输入",
+  "Passwords do not match": "密码不一致",
+  "Your password must be at least 8 characters.": "密码至少需要 8 个字符。",
+  "Change password": "更改密码",
+  "Password updated": "密码已更新",
+  "Could not change your password. Try again.": "无法更改密码，请重试。",
+  "Ask an administrator to change your phone number or role.":
+    "请联系管理员更改电话号码或角色。",
 };

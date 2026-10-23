@@ -208,3 +208,22 @@ export async function requestAccount(
   }
   return { ok: true };
 }
+
+// ---- Own profile ----------------------------------------------------------
+// Only the display name is safe to change from the app. Role, status, email
+// and phone are restored by the protect_columns trigger (phone is also a way
+// to sign in), so an administrator changes those from the web dashboard.
+export async function updateDisplayName(userId: string, fullName: string): Promise<void> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ full_name: fullName })
+    .eq("id", userId)
+    .select("id")
+    .single();
+  if (error || !data) throw new Error(error?.message ?? "Could not save your name.");
+}
+
+export async function changePassword(password: string): Promise<{ error?: string }> {
+  const { error } = await supabase.auth.updateUser({ password });
+  return error ? { error: error.message } : {};
+}

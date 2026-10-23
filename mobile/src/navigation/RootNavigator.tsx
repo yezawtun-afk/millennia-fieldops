@@ -15,6 +15,7 @@ import { RecordDetailsScreen } from "../screens/RecordDetailsScreen";
 import { NotificationsScreen } from "../screens/NotificationsScreen";
 import { ReviewScreen } from "../screens/ReviewScreen";
 import { ReviewRecordScreen } from "../screens/ReviewRecordScreen";
+import { ProfileScreen } from "../screens/ProfileScreen";
 import { BottomBar } from "../components/BottomBar";
 import { LanguageSheet } from "../components/LanguageButton";
 import { Sidebar } from "../components/Sidebar";
@@ -89,6 +90,11 @@ function MainTabs({ navigation }: NativeStackScreenProps<RootStackParamList, "Ta
     navigation.navigate("ReviewQueue");
   }
 
+  function openProfile() {
+    setPanelOpen(false);
+    navigation.navigate("Profile");
+  }
+
   return (
     <>
       <Tabs.Navigator
@@ -120,6 +126,7 @@ function MainTabs({ navigation }: NativeStackScreenProps<RootStackParamList, "Ta
         onClose={() => setPanelOpen(false)}
         onOpenLanguage={openLanguage}
         onOpenReview={openReview}
+        onOpenProfile={openProfile}
       />
 
       <LanguageSheet visible={languageOpen} onClose={() => setLanguageOpen(false)} />
@@ -156,6 +163,16 @@ export function RootNavigator() {
         component={ReviewScreen}
         options={{
           title: t("Review queue"),
+          headerStyle: { backgroundColor: colors.page },
+          headerTintColor: colors.ink,
+          headerShadowVisible: false,
+        }}
+      />
+      <RootStack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          title: t("Profile"),
           headerStyle: { backgroundColor: colors.page },
           headerTintColor: colors.ink,
           headerShadowVisible: false,

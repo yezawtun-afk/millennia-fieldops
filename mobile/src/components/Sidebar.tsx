@@ -37,11 +37,13 @@ export function Sidebar({
   onClose,
   onOpenLanguage,
   onOpenReview,
+  onOpenProfile,
 }: {
   open: boolean;
   onClose: () => void;
   onOpenLanguage: () => void;
   onOpenReview: () => void;
+  onOpenProfile: () => void;
 }) {
   const { profile, signOut } = useAuth();
   const { locale, t } = useI18n();
@@ -212,7 +214,15 @@ export function Sidebar({
               </Pressable>
             </View>
 
-            <View style={styles.userCard}>
+            <Pressable
+              onPress={onOpenProfile}
+              accessibilityRole="button"
+              accessibilityLabel={t("Profile")}
+              style={({ pressed }) => [
+                styles.userCard,
+                pressed && { opacity: 0.75 },
+              ]}
+            >
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>{initial}</Text>
               </View>
@@ -225,7 +235,8 @@ export function Sidebar({
                   {contact ? ` · ${contact}` : ""}
                 </Text>
               </View>
-            </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+            </Pressable>
           </View>
 
           <ScrollView

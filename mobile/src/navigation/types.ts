@@ -20,6 +20,8 @@ export type RootStackParamList = {
   Tabs: NavigatorScreenParams<MainTabParamList> | undefined;
   /** The supervisor queue: opened from Home and the side panel, not a tab. */
   ReviewQueue: undefined;
+  /** Your own account: opened from the side panel's identity card. */
+  Profile: undefined;
   RecordDetails: { id: string };
   ReviewRecord: { id: string };
 };

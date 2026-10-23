@@ -363,4 +363,33 @@ export const ms: Record<string, string> = {
   "Close menu": "Tutup menu",
   // The raised centre button in the tab bar.
   New: "Baharu",
+
+  // Profile screen.
+  Profile: "Profil",
+  Account: "Akaun",
+  Email: "E-mel",
+  Phone: "Telefon",
+  "Member since": "Ahli sejak",
+  "Not set": "Belum ditetapkan",
+  "Display name": "Nama paparan",
+  "Enter your name": "Masukkan nama anda",
+  "This name appears on the records you submit.":
+    "Nama ini dipaparkan pada rekod yang anda hantar.",
+  Save: "Simpan",
+  "Name updated": "Nama dikemas kini",
+  "Could not save your name. Try again.":
+    "Tidak dapat menyimpan nama anda. Cuba lagi.",
+  "New password": "Kata laluan baharu",
+  "Confirm password": "Sahkan kata laluan",
+  "Use at least 8 characters": "Gunakan sekurang-kurangnya 8 aksara",
+  "Type it again": "Taip semula",
+  "Passwords do not match": "Kata laluan tidak sepadan",
+  "Your password must be at least 8 characters.":
+    "Kata laluan anda mesti sekurang-kurangnya 8 aksara.",
+  "Change password": "Tukar kata laluan",
+  "Password updated": "Kata laluan dikemas kini",
+  "Could not change your password. Try again.":
+    "Tidak dapat menukar kata laluan anda. Cuba lagi.",
+  "Ask an administrator to change your phone number or role.":
+    "Minta pentadbir menukar nombor telefon atau peranan anda.",
 };
