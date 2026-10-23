@@ -3,18 +3,20 @@
 // OpenStreetMap tiles as the website, so both show the same picture.
 //
 // The page itself lives in lib/mapHtml.ts.
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Linking, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { WebView } from "react-native-webview";
 import { buildMapHtml } from "../lib/mapHtml";
-import type { MapPoint, MapZone } from "../lib/mapHtml";
+import type { MapPoint, MapZone, UserLocation } from "../lib/mapHtml";
 import { Button } from "./ui";
 import { colors, spacing } from "../theme";
 
 export function RecordMap({
   points,
   zones,
+  userLocation = null,
+  centerRequest = 0,
   openRecordLabel,
   onOpenRecord,
   errorLabel,
@@ -22,6 +24,8 @@ export function RecordMap({
 }: {
   points: MapPoint[];
   zones: MapZone[];
+  userLocation?: UserLocation | null;
+  centerRequest?: number;
   openRecordLabel: string;
   onOpenRecord: (id: string) => void;
   errorLabel: string;
@@ -31,6 +35,8 @@ export function RecordMap({
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [detail, setDetail] = useState<string | null>(null);
+  const webViewRef = useRef<WebView>(null);
+  const handledCenterRef = useRef(0);
 
   // A stable HTML string keeps the WebView from reloading on unrelated
   // re-renders (a sync tick, for example). It changes with the data, the
@@ -50,6 +56,33 @@ export function RecordMap({
     }, 20000);
     return () => clearTimeout(timer);
   }, [ready, failed, attempt]);
+
+  // Location updates are injected instead of rebuilt into the HTML, so the
+  // WebView does not reload every time the phone moves.
+  useEffect(() => {
+    if (!ready) return;
+    const view = webViewRef.current;
+    if (!view) return;
+
+    if (!userLocation) {
+      view.injectJavaScript("window.clearUserLocation && window.clearUserLocation(); true;");
+      return;
+    }
+
+    const heading = userLocation.heading == null ? "null" : userLocation.heading.toFixed(1);
+    const accuracy =
+      userLocation.accuracy == null ? "null" : String(Math.round(userLocation.accuracy));
+    view.injectJavaScript(
+      `window.setUserLocation && window.setUserLocation(${userLocation.lat.toFixed(7)}, ${userLocation.lng.toFixed(7)}, ${heading}, ${accuracy}); true;`
+    );
+  }, [ready, userLocation]);
+
+  useEffect(() => {
+    if (!ready || !userLocation || centerRequest === 0) return;
+    if (handledCenterRef.current === centerRequest) return;
+    handledCenterRef.current = centerRequest;
+    webViewRef.current?.injectJavaScript("window.centerOnUser && window.centerOnUser(); true;");
+  }, [ready, userLocation, centerRequest]);
 
   if (failed) {
     return (
@@ -75,12 +108,14 @@ export function RecordMap({
     <View style={styles.fill}>
       <WebView
         key={attempt}
+        ref={webViewRef}
         originWhitelist={["*"]}
         source={{ html }}
         style={styles.web}
         javaScriptEnabled
         domStorageEnabled
         setSupportMultipleWindows={false}
+        onLoadStart={() => setReady(false)}
         onMessage={(event) => {
           try {
             const message = JSON.parse(event.nativeEvent.data) as {

@@ -107,6 +107,8 @@ export const ms: Record<string, string> = {
   "e.g. Wetland water reading": "cth. Bacaan air tanah lembap",
   "Email (optional)": "E-mel (pilihan)",
   "Email or phone number": "E-mel atau nombor telefon",
+  "Enable location access in Settings to show your position on the map.":
+    "Benarkan akses lokasi dalam Tetapan untuk menunjukkan kedudukan anda pada peta.",
   "Enable phone alerts": "Dayakan makluman telefon",
   "Enter a valid phone number, for example 012-345 6789.":
     "Masukkan nombor telefon yang sah, contohnya 012-345 6789.",
@@ -141,6 +143,7 @@ export const ms: Record<string, string> = {
   Later: "Kemudian",
   "Loading map...": "Memuatkan peta...",
   Location: "Lokasi",
+  "Location permission is off": "Kebenaran lokasi dimatikan",
   "Location unavailable": "Lokasi tidak tersedia",
   "Log out": "Log keluar",
   Map: "Peta",
@@ -151,6 +154,7 @@ export const ms: Record<string, string> = {
   "Millennia Village · field data capture": "Millennia Village · rakaman data lapangan",
   Mine: "Milik saya",
   "Monitoring zone": "Zon pemantauan",
+  "My location": "Lokasi saya",
   "My records": "Rekod saya",
   "Needs retry": "Perlu cuba semula",
   "New accounts are reviewed by an administrator before they can sign in. You join as a field worker; a supervisor or administrator widens the role from the web dashboard.":
@@ -177,6 +181,7 @@ export const ms: Record<string, string> = {
   "Open location in OpenStreetMap": "Buka lokasi dalam OpenStreetMap",
   "Open record": "Buka rekod",
   "Open review queue": "Buka baris gilir semakan",
+  "Open settings": "Buka tetapan",
   Password: "Kata laluan",
   "Phone number": "Nombor telefon",
   "Photo compressed for upload ({size})": "Foto dimampatkan untuk muat naik ({size})",
@@ -262,6 +267,8 @@ export const ms: Record<string, string> = {
   Title: "Tajuk",
   Today: "Hari ini",
   "Try again": "Cuba lagi",
+  "Turn on location services to show your position on the map.":
+    "Hidupkan perkhidmatan lokasi untuk menunjukkan kedudukan anda pada peta.",
   Unit: "Unit",
   "Unknown submitter": "Penghantar tidak diketahui",
   Unread: "Belum dibaca",

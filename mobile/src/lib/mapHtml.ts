@@ -17,6 +17,14 @@ export interface MapPoint {
   sub: string;
 }
 
+export interface UserLocation {
+  lat: number;
+  lng: number;
+  accuracy: number | null;
+  /** Degrees clockwise from north, or null when the compass is unavailable. */
+  heading: number | null;
+}
+
 export interface MapZone {
   id: string;
   lat: number;
@@ -72,6 +80,38 @@ export function buildMapHtml(points: MapPoint[], zones: MapZone[], labels: MapLa
   .popup-open { display: inline-block; margin-top: 8px; color: ${colors.primary}; font-weight: 600; text-decoration: none; }
   .leaflet-control-attribution { font-size: 10px; }
   .leaflet-control-zoom a { width: 34px; height: 34px; line-height: 32px; font-size: 20px; }
+  .user-location { background: transparent; border: 0; }
+  .user-dot {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    margin-left: -9px;
+    margin-top: -9px;
+    box-sizing: border-box;
+    border: 2.5px solid ${colors.ink};
+    border-radius: 50%;
+    background: ${colors.location};
+    box-shadow: 0 0 0 2px #fff, 0 2px 8px rgba(20, 24, 27, 0.4);
+  }
+  .user-cone {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 46px;
+    height: 40px;
+    margin-left: -23px;
+    margin-top: -40px;
+    transform-origin: 50% 100%;
+    clip-path: polygon(50% 100%, 100% 0, 0 0);
+    background: linear-gradient(to top, ${colors.location}, transparent);
+    opacity: 0.6;
+    filter: drop-shadow(0 0 1px rgba(20, 24, 27, 0.6));
+    display: none;
+    pointer-events: none;
+    will-change: transform;
+  }
 </style>
 </head>
 <body>
@@ -150,6 +190,77 @@ export function buildMapHtml(points: MapPoint[], zones: MapZone[], labels: MapLa
       .addTo(map);
     bounds.push([point.lat, point.lng]);
   });
+
+  var userMarker = null;
+  var userAccuracy = null;
+
+  window.setUserLocation = function (lat, lng, heading, accuracy) {
+    var point = [lat, lng];
+
+    if (!userMarker) {
+      userMarker = L.marker(point, {
+        icon: L.divIcon({
+          className: "user-location",
+          iconSize: [64, 64],
+          iconAnchor: [32, 32],
+          html: '<div class="user-cone"></div><div class="user-dot"></div>'
+        }),
+        interactive: false,
+        keyboard: false,
+        zIndexOffset: 1000
+      }).addTo(map);
+    } else {
+      userMarker.setLatLng(point);
+    }
+
+    if (typeof accuracy === "number" && isFinite(accuracy) && accuracy > 0) {
+      if (!userAccuracy) {
+        userAccuracy = L.circle(point, {
+          radius: accuracy,
+          color: "${colors.locationInk}",
+          weight: 1,
+          opacity: 0.5,
+          fillColor: "${colors.location}",
+          fillOpacity: 0.12,
+          interactive: false
+        }).addTo(map);
+        userAccuracy.bringToBack();
+      } else {
+        userAccuracy.setLatLng(point);
+        userAccuracy.setRadius(accuracy);
+      }
+    } else if (userAccuracy) {
+      map.removeLayer(userAccuracy);
+      userAccuracy = null;
+    }
+
+    var element = userMarker.getElement();
+    var cone = element ? element.querySelector(".user-cone") : null;
+    if (cone) {
+      if (typeof heading === "number" && isFinite(heading)) {
+        cone.style.display = "block";
+        cone.style.transform = "rotate(" + heading + "deg)";
+      } else {
+        cone.style.display = "none";
+      }
+    }
+  };
+
+  window.clearUserLocation = function () {
+    if (userMarker) {
+      map.removeLayer(userMarker);
+      userMarker = null;
+    }
+    if (userAccuracy) {
+      map.removeLayer(userAccuracy);
+      userAccuracy = null;
+    }
+  };
+
+  window.centerOnUser = function () {
+    if (!userMarker) return;
+    map.setView(userMarker.getLatLng(), Math.max(map.getZoom(), 17), { animate: true });
+  };
 
   if (bounds.length > 0) {
     map.fitBounds(bounds, { padding: [28, 28], maxZoom: 17 });

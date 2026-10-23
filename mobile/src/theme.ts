@@ -32,6 +32,11 @@ export const colors = {
   hazard: "#C4242A",
   hazardSoft: "#FDEEEE",
 
+  // The live "you are here" marker. Yellow is deliberately outside the record
+  // palette; the dark ink ring keeps it readable on pale map tiles.
+  location: "#FFD400",
+  locationInk: "#7A5D00",
+
   // Review status: pale tint plus the dark ink of the same hue.
   pending: "#92400E",
   pendingSoft: "#FFFBEB",
@@ -73,6 +78,8 @@ export const shadow = {
   fab: "0 6px 16px rgba(20, 24, 27, 0.24)",
   /** The slide-in panel, casting to the right over the screen. */
   panel: "8px 0 24px rgba(15, 32, 24, 0.18)",
+  /** A small floating control, such as the map's locate button. */
+  control: "0 2px 8px rgba(20, 24, 27, 0.18)",
 } as const;
 
 // The type ramp, mirroring the platform ramp so text feels native.

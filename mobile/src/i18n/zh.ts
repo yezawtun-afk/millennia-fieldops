@@ -94,6 +94,8 @@ export const zh: Record<string, string> = {
   "e.g. Wetland water reading": "例如：湿地水质读数",
   "Email (optional)": "电子邮箱（可选）",
   "Email or phone number": "电子邮箱或手机号码",
+  "Enable location access in Settings to show your position on the map.":
+    "请在设置中允许定位访问，以便在地图上显示您的位置。",
   "Enable phone alerts": "启用手机通知",
   "Enter a valid phone number, for example 012-345 6789.":
     "请输入有效的手机号码，例如 012-345 6789。",
@@ -125,6 +127,7 @@ export const zh: Record<string, string> = {
   Later: "稍后",
   "Loading map...": "正在加载地图……",
   Location: "位置",
+  "Location permission is off": "定位权限已关闭",
   "Location unavailable": "无法获取位置",
   "Log out": "退出登录",
   Map: "地图",
@@ -135,6 +138,7 @@ export const zh: Record<string, string> = {
   "Millennia Village · field data capture": "Millennia Village · 外勤数据采集",
   Mine: "我的",
   "Monitoring zone": "监测区域",
+  "My location": "我的位置",
   "My records": "我的记录",
   "Needs retry": "需要重试",
   "New accounts are reviewed by an administrator before they can sign in. You join as a field worker; a supervisor or administrator widens the role from the web dashboard.":
@@ -161,6 +165,7 @@ export const zh: Record<string, string> = {
   "Open location in OpenStreetMap": "在 OpenStreetMap 中打开位置",
   "Open record": "打开记录",
   "Open review queue": "打开审核队列",
+  "Open settings": "打开设置",
   Password: "密码",
   "Phone number": "手机号码",
   "Photo compressed for upload ({size})": "照片已压缩以供上传（{size}）",
@@ -238,6 +243,8 @@ export const zh: Record<string, string> = {
   Title: "标题",
   Today: "今天",
   "Try again": "重试",
+  "Turn on location services to show your position on the map.":
+    "请开启定位服务，以便在地图上显示您的位置。",
   Unit: "单位",
   "Unknown submitter": "未知提交人",
   Unread: "未读",
