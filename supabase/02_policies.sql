@@ -96,7 +96,7 @@ create policy profiles_update_admin on public.profiles
 -- ---------------------------------------------------------------------------
 -- zones
 --   read:   any signed-in user
---   write:  administrators only
+--   write:  supervisors and administrators
 -- ---------------------------------------------------------------------------
 drop policy if exists zones_select on public.zones;
 create policy zones_select on public.zones
@@ -106,18 +106,18 @@ create policy zones_select on public.zones
 drop policy if exists zones_insert_admin on public.zones;
 create policy zones_insert_admin on public.zones
   for insert to authenticated
-  with check (public.is_admin());
+  with check (public.is_reviewer());
 
 drop policy if exists zones_update_admin on public.zones;
 create policy zones_update_admin on public.zones
   for update to authenticated
-  using (public.is_admin())
-  with check (public.is_admin());
+  using (public.is_reviewer())
+  with check (public.is_reviewer());
 
 drop policy if exists zones_delete_admin on public.zones;
 create policy zones_delete_admin on public.zones
   for delete to authenticated
-  using (public.is_admin());
+  using (public.is_reviewer());
 
 -- ---------------------------------------------------------------------------
 -- records

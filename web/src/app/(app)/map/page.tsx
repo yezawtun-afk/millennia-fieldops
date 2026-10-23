@@ -48,7 +48,7 @@ export default async function MapPage() {
         <MapView
           markers={markers}
           zones={zoneShapes}
-          canManageZones={profile?.role === "admin"}
+          canManageZones={profile?.role === "admin" || profile?.role === "supervisor"}
         />
       </div>
 

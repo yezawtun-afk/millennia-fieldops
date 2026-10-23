@@ -584,4 +584,9 @@ export const zh: Record<string, string> = {
     "该区域仍有 {count} 条记录，因此无法删除。",
   "This zone still has records, so it cannot be deleted.":
     "该区域仍有记录，因此无法删除。",
+  "Delete this zone? Its {count} record will keep its details but have no zone.":
+    "删除这个区域？它的 {count} 条记录会保留，但将没有区域。",
+  "Delete this zone? Its {count} records will keep their details but have no zone.":
+    "删除这个区域？它的 {count} 条记录会保留，但将没有区域。",
+  "Your account cannot change zones.": "你的账号无法更改区域。",
 };

@@ -38,7 +38,7 @@ erDiagram
         uuid id PK
         record_type type "flora|soil_water|hazard"
         text title
-        uuid zone_id FK
+        uuid zone_id FK "null when the zone is deleted"
         timestamptz observed_date
         double latitude
         double longitude
@@ -114,6 +114,7 @@ and `severity` so the dashboard filters stay fast.
 | Delete photos | `03_storage.sql` | the uploader (their own folder) or an admin |
 | Notifications | `02_policies.sql` | each user only ever sees their own |
 | Read the activity log | `10_audit_logs.sql` | administrators only; entries are append-only |
+| Add or delete a zone | `02_policies.sql`, `11_zone_control.sql` | supervisors and admins; deleting a zone keeps its records, which lose the zone |
 
 Deleting a record cascades: its review notifications go with it
 (`notifications.record_id ... on delete cascade`), and both apps clear the record's

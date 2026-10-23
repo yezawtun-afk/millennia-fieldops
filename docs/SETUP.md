@@ -42,16 +42,21 @@ In the Supabase dashboard, open **SQL Editor -> New query**. Run these files fro
 10. `10_audit_logs.sql` - the admin-only **activity log**: an append-only `audit_logs`
     table, triggers that write an entry when a record or account changes, and a policy
     that lets only administrators read it. Safe to run again.
+11. `11_zone_control.sql` - lets **supervisors** add and delete zones (not just admins),
+    and lets a zone be deleted even when records point at it: the records are kept and
+    simply lose their zone. Safe to run again.
 
-The generated `setup_all.sql` bundles 01-06, 09 and 10 in one paste; the two optional
-files are kept separate because they change data.
+The generated `setup_all.sql` bundles 01-06, 09 and 10 in one paste (the zone rules
+from 11 are already part of it); the two optional files are kept separate because they
+change data.
 
 > **Already have a live database?** Re-run `01_schema.sql`, `02_policies.sql`,
-> `04_triggers.sql`, `09_delete_own_pending.sql` and `10_audit_logs.sql`. All five are safe
-> to run again.
+> `04_triggers.sql`, `09_delete_own_pending.sql`, `10_audit_logs.sql` and
+> `11_zone_control.sql`. All six are safe to run again.
 > `01` adds the new `profiles` columns (`phone`, `status`, the approval fields) to an
 > existing table; `02` makes every policy require an **approved and active** account;
-> `04` makes new sign-ups start as **pending** and stores the phone number. Existing
+> `04` makes new sign-ups start as **pending** and stores the phone number; `11` gives
+> supervisors the zone controls and lets a deleted zone keep its records. Existing
 > accounts stay approved, so nobody is locked out.
 
 ### Create your first admin

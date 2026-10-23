@@ -618,4 +618,9 @@ export const ms: Record<string, string> = {
     "Zon ini masih mempunyai {count} rekod, jadi ia tidak boleh dipadam.",
   "This zone still has records, so it cannot be deleted.":
     "Zon ini masih mempunyai rekod, jadi ia tidak boleh dipadam.",
+  "Delete this zone? Its {count} record will keep its details but have no zone.":
+    "Padam zon ini? {count} rekodnya akan kekal tetapi tidak mempunyai zon.",
+  "Delete this zone? Its {count} records will keep their details but have no zone.":
+    "Padam zon ini? {count} rekodnya akan kekal tetapi tidak mempunyai zon.",
+  "Your account cannot change zones.": "Akaun anda tidak boleh mengubah zon.",
 };

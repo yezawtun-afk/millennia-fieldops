@@ -1,11 +1,11 @@
 "use client";
 
-// What an administrator sees when they click a zone on the site map. Zones are
-// no longer managed on their own page, so the map is the place to remove one.
+// What a supervisor or administrator sees when they click a zone on the site
+// map. Zones are created with the drawing tool and removed from here.
 //
-// A zone cannot be deleted while field records still point at it (the foreign
-// key is "on delete restrict"). The record count comes from the page, and the
-// database's own refusal is translated into the same sentence as a fallback.
+// Deleting a zone never deletes field records: the foreign key is
+// "on delete set null", so the records keep their photos and readings and end
+// up with no zone. The confirm sentence says how many records that affects.
 import { useState } from "react";
 import { useMap } from "react-leaflet";
 import { useRouter } from "next/navigation";
@@ -26,15 +26,17 @@ export function ZonePopupActions({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (records > 0) {
-    return (
-      <p className="mt-1 text-[12px] leading-snug text-muted">
-        {records === 1
-          ? t("This zone still has {count} record, so it cannot be deleted.", { count: records })
-          : t("This zone still has {count} records, so it cannot be deleted.", {
-              count: records,
-            })}
-      </p>
+  function question(): string {
+    if (records === 0) return t("Delete this zone? Nothing else is affected.");
+    if (records === 1) {
+      return t(
+        "Delete this zone? Its {count} record will keep its details but have no zone.",
+        { count: records }
+      );
+    }
+    return t(
+      "Delete this zone? Its {count} records will keep their details but have no zone.",
+      { count: records }
     );
   }
 
@@ -43,16 +45,30 @@ export function ZonePopupActions({
     setError(null);
 
     const supabase = createClient();
-    const { error: dbError } = await supabase.from("zones").delete().eq("id", zoneId);
+    // Ask for the deleted row back. A delete that the database refuses because
+    // of its policies is reported as success with no rows, not as an error.
+    const { data: deleted, error: dbError } = await supabase
+      .from("zones")
+      .delete()
+      .eq("id", zoneId)
+      .select("id");
 
     setBusy(false);
 
     if (dbError) {
       setError(
-        dbError.code === "23503"
-          ? t("This zone still has records, so it cannot be deleted.")
-          : dbError.message
+        dbError.code === "42501"
+          ? t("Your account cannot change zones.")
+          : dbError.code === "23503"
+            ? // Only reachable on a database that has not run 11_zone_control.sql yet.
+              t("This zone still has records, so it cannot be deleted.")
+            : dbError.message
       );
+      return;
+    }
+
+    if (!deleted || deleted.length === 0) {
+      setError(t("Your account cannot change zones."));
       return;
     }
 
@@ -63,9 +79,7 @@ export function ZonePopupActions({
   if (confirming) {
     return (
       <div className="mt-1.5">
-        <p className="text-[12px] leading-snug text-muted">
-          {t("Delete this zone? Nothing else is affected.")}
-        </p>
+        <p className="text-[12px] leading-snug text-muted">{question()}</p>
         <div className="mt-1.5 flex items-center gap-2">
           <button
             type="button"

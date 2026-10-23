@@ -97,7 +97,7 @@ create table if not exists public.records (
   id                  uuid primary key default gen_random_uuid(),
   type                public.record_type   not null,
   title               text                 not null,
-  zone_id             uuid references public.zones (id) on delete restrict,
+  zone_id             uuid references public.zones (id) on delete set null,
   observed_date       timestamptz          not null default now(),
   latitude            double precision,
   longitude           double precision,

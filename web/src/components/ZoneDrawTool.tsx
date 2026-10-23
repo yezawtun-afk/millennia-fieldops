@@ -78,7 +78,11 @@ export function ZoneDrawTool({
 
     setBusy(false);
     if (dbError) {
-      setError(`${t("Could not save the zone.")} ${dbError.message}`);
+      setError(
+        dbError.code === "42501"
+          ? t("Your account cannot change zones.")
+          : `${t("Could not save the zone.")} ${dbError.message}`
+      );
       return;
     }
 
