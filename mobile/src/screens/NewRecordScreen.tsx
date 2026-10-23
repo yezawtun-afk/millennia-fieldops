@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Image,
@@ -17,6 +17,8 @@ import { useSync } from "../context/SyncContext";
 import { useI18n } from "../i18n";
 import { Banner, Button, Card, ChipGroup, Field, Input, SectionTitle } from "../components/ui";
 import { SpeciesPicker } from "../components/SpeciesPicker";
+import { AiSuggestionSheet } from "../components/AiSuggestionSheet";
+import { analyzeHazardPhoto, type HazardAiSuggestion } from "../lib/ai";
 import { colors, radius, spacing, type } from "../theme";
 import { enqueueRecord, getOutbox, markPending, saveDraft } from "../lib/sqlite";
 import { fetchZones } from "../lib/api";
@@ -83,6 +85,14 @@ export function NewRecordScreen({ navigation, route }: Props) {
   const [gpsBusy, setGpsBusy] = useState(false);
   const [speciesPickerOpen, setSpeciesPickerOpen] = useState(false);
 
+  // AI photo assist
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<HazardAiSuggestion | null>(null);
+  const [aiPhotoUri, setAiPhotoUri] = useState<string | null>(null);
+  const [aiSheetOpen, setAiSheetOpen] = useState(false);
+  const aiRequestRef = useRef(0);
+  const scrollRef = useRef<ScrollView>(null);
+
   // Flora fields
   const [species, setSpecies] = useState("");
   const [growthStage, setGrowthStage] = useState<string | null>(null);
@@ -110,6 +120,15 @@ export function NewRecordScreen({ navigation, route }: Props) {
 
   const draftParam = route.params?.draftId;
 
+  // Invalidate an in-flight AI request and drop any suggestion on screen.
+  function clearAi() {
+    aiRequestRef.current += 1;
+    setAiBusy(false);
+    setAiSuggestion(null);
+    setAiPhotoUri(null);
+    setAiSheetOpen(false);
+  }
+
   useEffect(() => {
     if (!route.params?.draftId && route.params?.type) setType(route.params.type);
   }, [route.params?.type, route.params?.draftId]);
@@ -122,6 +141,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
     (async () => {
       const row = await getOutbox(draftParam).catch(() => null);
       if (!active || !row) return;
+      clearAi();
       const p = row.payload;
 
       setType(p.type);
@@ -172,6 +192,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
   );
 
   function reset() {
+    clearAi();
     setTitle("");
     setNotes("");
     setPhotos([]);
@@ -197,6 +218,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
       source === "camera" ? await captureFromCamera() : await pickFromLibrary();
     if (!captured) return;
 
+    clearAi();
     setPhotos((prev) => [...prev, captured.uri]);
     setPhotoNote(
       captured.originalBytes > 0
@@ -211,6 +233,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
   // Removing a photo from the form should also remove the copy on the phone;
   // otherwise every discarded shot stays in the app folder for good.
   function removePhoto(uri: string) {
+    clearAi();
     setPhotos((prev) => prev.filter((item) => item !== uri));
     void deletePhoto(uri);
   }
@@ -250,6 +273,91 @@ export function NewRecordScreen({ navigation, route }: Props) {
     setReadingType(next);
     setReadingUnit(defaultUnitFor(next));
     setReadingValue("");
+  }
+
+  async function analyzePhoto() {
+    const photo = photos[0];
+    if (!photo) {
+      setMessage({ kind: "warning", text: t("Add a photo first.") });
+      return;
+    }
+    if (!online) {
+      setMessage({
+        kind: "warning",
+        text: t("AI needs a connection. Fill the form manually or save a draft."),
+      });
+      return;
+    }
+
+    const requestId = aiRequestRef.current + 1;
+    aiRequestRef.current = requestId;
+    setAiBusy(true);
+    setAiPhotoUri(photo);
+    setAiSuggestion(null);
+    setMessage(null);
+
+    const result = await analyzeHazardPhoto(photo);
+    if (aiRequestRef.current !== requestId) return;
+
+    setAiBusy(false);
+
+    if (!result.ok) {
+      setAiPhotoUri(null);
+      setMessage({ kind: "error", text: t(result.message) });
+      return;
+    }
+
+    const suggestion = result.suggestion;
+    if (!suggestion.title && !suggestion.hazard_type && !suggestion.severity && !suggestion.notes) {
+      setAiPhotoUri(null);
+      setMessage({
+        kind: "warning",
+        text: t("AI could not identify the hazard. Try a clearer photo."),
+      });
+      return;
+    }
+
+    setAiSuggestion(suggestion);
+    setAiSheetOpen(true);
+  }
+
+  function applyAiSuggestion(suggestion: HazardAiSuggestion) {
+    let keptExisting = false;
+
+    if (!title.trim() && suggestion.title) {
+      setTitle(suggestion.title);
+    } else if (title.trim() && suggestion.title) {
+      keptExisting = true;
+    }
+
+    if (!hazardType && suggestion.hazard_type) {
+      setHazardType(suggestion.hazard_type);
+    } else if (hazardType && suggestion.hazard_type) {
+      keptExisting = true;
+    }
+
+    if (!severity && suggestion.severity) {
+      setSeverity(suggestion.severity);
+    } else if (severity && suggestion.severity) {
+      keptExisting = true;
+    }
+
+    if (!notes.trim() && suggestion.notes) {
+      setNotes(suggestion.notes);
+    } else if (notes.trim() && suggestion.notes) {
+      keptExisting = true;
+    }
+
+    setAiSuggestion(null);
+    setAiPhotoUri(null);
+    setAiSheetOpen(false);
+    setMessage({
+      kind: "success",
+      text: keptExisting
+        ? t("AI suggestions applied. Fields you already filled were kept.")
+        : t("AI suggestions applied. Check every field before saving."),
+    });
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
   }
 
   // Everything the form holds right now, ready to be stored on the phone.
@@ -409,10 +517,16 @@ export function NewRecordScreen({ navigation, route }: Props) {
     readingType && readingValue.trim()
       ? validateReading(readingType, readingValue, readingUnit)
       : null;
+  const aiHint = !online
+    ? t("AI needs a connection. Fill the form manually or save a draft.")
+    : photos.length === 0
+      ? t("Add a photo first.")
+      : t("Sends the first photo for AI analysis. AI can be wrong - review before saving.");
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView
+        ref={scrollRef}
         style={styles.screen}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
@@ -430,7 +544,10 @@ export function NewRecordScreen({ navigation, route }: Props) {
           value={TYPE_OPTIONS.find((o) => o.value === type)?.label ?? null}
           onChange={(label) => {
             const found = TYPE_OPTIONS.find((o) => o.label === label);
-            if (found) setType(found.value);
+            if (found && found.value !== type) {
+              clearAi();
+              setType(found.value);
+            }
           }}
           labelFor={t}
         />
@@ -700,6 +817,24 @@ export function NewRecordScreen({ navigation, route }: Props) {
               style={styles.flexBtn}
             />
           </View>
+
+          {type === "hazard" ? (
+            <View style={styles.aiPanel}>
+              <View style={styles.aiHeading}>
+                <Ionicons name="sparkles-outline" size={17} color={colors.primaryDark} />
+                <Text style={styles.aiTitle}>{t("AI photo assist")}</Text>
+              </View>
+              <Text style={styles.helper}>{aiHint}</Text>
+              <View style={{ height: 10 }} />
+              <Button
+                title={aiBusy ? t("Analyzing photo...") : t("Auto-fill from photo")}
+                variant="secondary"
+                onPress={analyzePhoto}
+                loading={aiBusy}
+                disabled={!online || photos.length === 0 || aiBusy}
+              />
+            </View>
+          ) : null}
         </Card>
 
         <Button
@@ -722,6 +857,17 @@ export function NewRecordScreen({ navigation, route }: Props) {
         visible={speciesPickerOpen}
         onClose={() => setSpeciesPickerOpen(false)}
         onSelect={setSpecies}
+      />
+      <AiSuggestionSheet
+        visible={aiSheetOpen}
+        photoUri={aiPhotoUri}
+        suggestion={aiSuggestion}
+        onClose={() => {
+          setAiSheetOpen(false);
+          setAiSuggestion(null);
+          setAiPhotoUri(null);
+        }}
+        onApply={applyAiSuggestion}
       />
     </KeyboardAvoidingView>
   );
@@ -769,5 +915,13 @@ const styles = StyleSheet.create({
   photoRemoveText: { color: colors.onTint, fontWeight: "600", fontSize: 12, lineHeight: 15 },
   photoButtons: { flexDirection: "row", marginTop: spacing.md, gap: spacing.sm },
   flexBtn: { flex: 1 },
+  aiPanel: {
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.line,
+  },
+  aiHeading: { flexDirection: "row", alignItems: "center", gap: 6 },
+  aiTitle: { fontSize: 13, fontWeight: "700", color: colors.primaryDark },
   footerHint: { fontSize: 12, color: colors.muted, marginTop: spacing.md, lineHeight: 18 },
 });

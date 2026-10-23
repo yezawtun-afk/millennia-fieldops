@@ -107,6 +107,14 @@ async function persist(uri: string): Promise<string> {
   return target.uri;
 }
 
+// A smaller copy just for AI analysis: less data to send, faster response, and
+// still enough detail for a hazard photo. The caller should delete the returned
+// cache file after reading it.
+export async function preparePhotoForAi(uri: string): Promise<string> {
+  const result = await shrink(uri, 1024, 0.55);
+  return result.uri;
+}
+
 export async function captureFromCamera(): Promise<CapturedPhoto | null> {
   const permission = await ImagePicker.requestCameraPermissionsAsync();
   if (!permission.granted) return null;

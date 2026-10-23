@@ -466,4 +466,43 @@ export const zh: Record<string, string> = {
   "Depth of the soil profile at the sample point.": "采样点的土壤剖面深度。",
   "e.g. {value}": "例如 {value}",
   "Choose a reading type first.": "请先选择读数类型。",
+  "AI photo assist": "AI 照片辅助",
+  "Sends the first photo for AI analysis. AI can be wrong - review before saving.":
+    "发送第一张照片进行 AI 分析。AI 可能会出错——保存前请检查。",
+  "AI needs a connection. Fill the form manually or save a draft.":
+    "AI 需要网络连接。请手动填写表单或保存草稿。",
+  "Add a photo first.": "请先添加照片。",
+  "Analyzing photo...": "正在分析照片……",
+  "Auto-fill from photo": "从照片自动填写",
+  "AI suggestions": "AI 建议",
+  "Review before adding them to the form.": "添加到表单前请先检查。",
+  "Confidence {percent}%": "置信度 {percent}%",
+  "AI is not confident. Please check the category and severity carefully.":
+    "AI 信心不足。请仔细检查类别和严重程度。",
+  "Suggested title": "建议标题",
+  "Suggested category": "建议类别",
+  "Suggested severity": "建议严重程度",
+  "Suggested notes": "建议备注",
+  "Not determined": "无法确定",
+  "AI can be wrong. Check the photo and every field before saving.":
+    "AI 可能会出错。保存前请检查照片和每个字段。",
+  "Apply suggestions": "应用建议",
+  Dismiss: "忽略",
+  "AI could not identify the hazard. Try a clearer photo.":
+    "AI 无法识别隐患。请尝试更清晰的照片。",
+  "AI suggestions applied. Fields you already filled were kept.":
+    "已应用 AI 建议。您已填写的字段已保留。",
+  "AI suggestions applied. Check every field before saving.":
+    "已应用 AI 建议。保存前请检查每个字段。",
+  "Too many AI requests. Try again later.": "AI 请求过多。请稍后再试。",
+  "AI is busy. Try again later.": "AI 当前繁忙，请稍后再试。",
+  "Photo is too large for AI analysis. Try another photo.":
+    "照片太大，无法进行 AI 分析。请尝试其他照片。",
+  "AI is not set up yet. Ask an administrator.": "AI 尚未配置。请联系管理员。",
+  "Please sign in again to use AI.": "请重新登录以使用 AI。",
+  "AI took too long. Try again or fill the form manually.":
+    "AI 响应时间过长。请重试或手动填写表单。",
+  "AI could not analyze this photo. You can still save the record manually.":
+    "AI 无法分析此照片。您仍可手动保存记录。",
+  "The AI result could not be read. Try again.": "无法读取 AI 结果。请重试。",
 };

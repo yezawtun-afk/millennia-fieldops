@@ -513,4 +513,43 @@ export const ms: Record<string, string> = {
     "Kedalaman profil tanah pada titik sampel.",
   "e.g. {value}": "cth. {value}",
   "Choose a reading type first.": "Pilih jenis bacaan dahulu.",
+  "AI photo assist": "Bantuan foto AI",
+  "Sends the first photo for AI analysis. AI can be wrong - review before saving.":
+    "Menghantar foto pertama untuk analisis AI. AI boleh tersilap - semak sebelum menyimpan.",
+  "AI needs a connection. Fill the form manually or save a draft.":
+    "AI memerlukan sambungan. Isi borang secara manual atau simpan draf.",
+  "Add a photo first.": "Tambah foto dahulu.",
+  "Analyzing photo...": "Menganalisis foto...",
+  "Auto-fill from photo": "Isi automatik daripada foto",
+  "AI suggestions": "Cadangan AI",
+  "Review before adding them to the form.": "Semak sebelum menambahnya ke borang.",
+  "Confidence {percent}%": "Keyakinan {percent}%",
+  "AI is not confident. Please check the category and severity carefully.":
+    "AI tidak begitu yakin. Sila semak kategori dan keterukan dengan teliti.",
+  "Suggested title": "Tajuk cadangan",
+  "Suggested category": "Kategori cadangan",
+  "Suggested severity": "Keterukan cadangan",
+  "Suggested notes": "Nota cadangan",
+  "Not determined": "Tidak dapat ditentukan",
+  "AI can be wrong. Check the photo and every field before saving.":
+    "AI boleh tersilap. Semak foto dan setiap medan sebelum menyimpan.",
+  "Apply suggestions": "Gunakan cadangan",
+  Dismiss: "Abaikan",
+  "AI could not identify the hazard. Try a clearer photo.":
+    "AI tidak dapat mengenal pasti bahaya. Cuba foto yang lebih jelas.",
+  "AI suggestions applied. Fields you already filled were kept.":
+    "Cadangan AI digunakan. Medan yang sudah anda isi dikekalkan.",
+  "AI suggestions applied. Check every field before saving.":
+    "Cadangan AI digunakan. Semak setiap medan sebelum menyimpan.",
+  "Too many AI requests. Try again later.": "Terlalu banyak permintaan AI. Cuba lagi kemudian.",
+  "AI is busy. Try again later.": "AI sedang sibuk. Cuba lagi kemudian.",
+  "Photo is too large for AI analysis. Try another photo.":
+    "Foto terlalu besar untuk analisis AI. Cuba foto lain.",
+  "AI is not set up yet. Ask an administrator.": "AI belum disediakan. Tanya pentadbir.",
+  "Please sign in again to use AI.": "Sila log masuk semula untuk menggunakan AI.",
+  "AI took too long. Try again or fill the form manually.":
+    "AI mengambil masa terlalu lama. Cuba lagi atau isi borang secara manual.",
+  "AI could not analyze this photo. You can still save the record manually.":
+    "AI tidak dapat menganalisis foto ini. Anda masih boleh menyimpan rekod secara manual.",
+  "The AI result could not be read. Try again.": "Hasil AI tidak dapat dibaca. Cuba lagi.",
 };
