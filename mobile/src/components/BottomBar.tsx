@@ -96,6 +96,7 @@ export function BottomBar({
 
   return (
     <View style={styles.root}>
+      <View style={styles.headroom} />
       <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
         <View style={styles.slots}>
           {items.map((item) => {
@@ -184,8 +185,8 @@ export function BottomBar({
 const styles = StyleSheet.create({
   root: {
     backgroundColor: colors.page,
-    paddingTop: HEADROOM,
   },
+  headroom: { height: HEADROOM },
   bar: {
     backgroundColor: colors.card,
     borderTopWidth: StyleSheet.hairlineWidth,
