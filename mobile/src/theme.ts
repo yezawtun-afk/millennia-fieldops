@@ -66,6 +66,15 @@ export const spacing = {
 
 export const radius = { sm: 8, md: 12, lg: 16, full: 999 } as const;
 
+// Soft shadows, drawn with the CSS-style `boxShadow` prop so Android and iOS
+// render the same thing (the legacy shadow*/elevation props are not used).
+export const shadow = {
+  /** The raised centre button in the tab bar. */
+  fab: "0 6px 16px rgba(20, 24, 27, 0.24)",
+  /** The slide-in panel, casting to the right over the screen. */
+  panel: "8px 0 24px rgba(15, 32, 24, 0.18)",
+} as const;
+
 // The type ramp, mirroring the platform ramp so text feels native.
 export const type = {
   title: { fontSize: 24, fontWeight: "600", color: colors.ink, letterSpacing: -0.3 },

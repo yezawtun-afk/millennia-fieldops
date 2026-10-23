@@ -4,7 +4,7 @@
 // entry in mobile/eas.json). Running `eas update --channel preview` publishes a
 // new JavaScript bundle to that channel; the app then downloads it on the next
 // launch (app.json sets checkAutomatically: ON_LOAD) or on demand from the
-// "App" card on the Home screen. No new APK, no reinstall.
+// side panel. No new APK, no reinstall.
 //
 // A new APK is still needed whenever *native* code changes (a new Expo module,
 // permissions, icons). Then bump `expo.version` in app.json so installed apps

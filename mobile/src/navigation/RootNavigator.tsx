@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { createNativeStackNavigator, type NativeStackScreenProps } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
@@ -16,7 +15,9 @@ import { RecordDetailsScreen } from "../screens/RecordDetailsScreen";
 import { NotificationsScreen } from "../screens/NotificationsScreen";
 import { ReviewScreen } from "../screens/ReviewScreen";
 import { ReviewRecordScreen } from "../screens/ReviewRecordScreen";
-import { LanguageButton } from "../components/LanguageButton";
+import { BottomBar } from "../components/BottomBar";
+import { LanguageSheet } from "../components/LanguageButton";
+import { Sidebar } from "../components/Sidebar";
 import { useI18n } from "../i18n";
 import { watchNotifications } from "../lib/notifications";
 import type { AuthStackParamList, MainTabParamList, RootStackParamList } from "./types";
@@ -41,45 +42,32 @@ function HeaderBrand() {
   );
 }
 
-// Log out lives in the header, like the "Log out" button on the dashboard.
-function HeaderLogout() {
-  const { signOut } = useAuth();
+// The panel's door: a plain menu mark, same weight as the other header icons.
+function HeaderMenu({ onPress }: { onPress: () => void }) {
   const { t } = useI18n();
-
-  function confirm() {
-    Alert.alert(t("Log out"), t("Sign out of Millennia FieldOps on this phone?"), [
-      { text: t("Cancel"), style: "cancel" },
-      {
-        text: t("Log out"),
-        style: "destructive",
-        onPress: () => {
-          void signOut();
-        },
-      },
-    ]);
-  }
 
   return (
     <Pressable
-      onPress={confirm}
+      onPress={onPress}
       hitSlop={12}
-      accessibilityLabel={t("Log out")}
-      style={headerStyles.logout}
+      accessibilityRole="button"
+      accessibilityLabel={t("Open menu")}
+      style={({ pressed }) => [headerStyles.menu, pressed && { opacity: 0.55 }]}
     >
-      <Ionicons name="log-out-outline" size={18} color={colors.muted} />
-      <Text style={headerStyles.logoutText}>{t("Log out")}</Text>
+      <Ionicons name="menu" size={24} color={colors.ink} />
     </Pressable>
   );
 }
 
-function MainTabs() {
-  // Watch for reviews while the app is open, and keep the tab badge honest.
+function MainTabs({ navigation }: NativeStackScreenProps<RootStackParamList, "Tabs">) {
+  // Watch for reviews while the app is open, and keep the bar badge honest.
   // Uploading is handled by SyncProvider, which also feeds the status badge.
-  const { session, profile } = useAuth();
+  const { session } = useAuth();
   const { t } = useI18n();
   const userId = session?.user.id ?? null;
   const [unread, setUnread] = useState(0);
-  const isReviewer = profile?.role === "supervisor" || profile?.role === "admin";
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
 
   useEffect(() => {
     if (!userId) {
@@ -89,61 +77,53 @@ function MainTabs() {
     return watchNotifications(userId, setUnread);
   }, [userId]);
 
+  function openLanguage() {
+    setPanelOpen(false);
+    // Let the panel finish leaving before the sheet arrives; two modals
+    // overlapping is unreliable on iOS.
+    setTimeout(() => setLanguageOpen(true), 240);
+  }
+
+  function openReview() {
+    setPanelOpen(false);
+    navigation.navigate("ReviewQueue");
+  }
+
   return (
-    <Tabs.Navigator
-      screenOptions={({ route }) => ({
-        headerStyle: { backgroundColor: colors.page },
-        headerTintColor: colors.ink,
-        headerShadowVisible: false,
-        headerTitleAlign: "left",
-        headerTitle: () => <HeaderBrand />,
-        headerRight: () => (
-          <View style={headerStyles.headerRight}>
-            <LanguageButton />
-            <HeaderLogout />
-          </View>
-        ),
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.muted,
-        tabBarStyle: {
-          backgroundColor: colors.card,
-          borderTopColor: colors.line,
-        },
-        tabBarLabelStyle: { fontSize: isReviewer ? 10 : 11, fontWeight: "500" },
-        tabBarIcon: ({ color, size }) => {
-          const name =
-            route.name === "Home"
-              ? "home-outline"
-              : route.name === "New"
-                ? "add-circle-outline"
-                : route.name === "Records"
-                  ? "list-outline"
-                  : route.name === "Map"
-                    ? "map-outline"
-                    : route.name === "Review"
-                      ? "checkmark-done-outline"
-                      : "notifications-outline";
-          return <Ionicons name={name} size={size} color={color} />;
-        },
-      })}
-    >
-      <Tabs.Screen name="Home" component={HomeScreen} options={{ title: t("Home") }} />
-      <Tabs.Screen name="New" component={NewRecordScreen} options={{ title: t("New record") }} />
-      <Tabs.Screen name="Records" component={MyRecordsScreen} options={{ title: t("My records") }} />
-      <Tabs.Screen name="Map" component={MapScreen} options={{ title: t("Map") }} />
-      {isReviewer ? (
-        <Tabs.Screen name="Review" component={ReviewScreen} options={{ title: t("Review") }} />
-      ) : null}
-      <Tabs.Screen
-        name="Alerts"
-        component={NotificationsScreen}
-        options={{
-          title: t("Notifications"),
-          tabBarBadge: unread > 0 ? unread : undefined,
-          tabBarBadgeStyle: { backgroundColor: colors.hazard, color: "#FFFFFF", fontSize: 11 },
+    <>
+      <Tabs.Navigator
+        tabBar={(props) => <BottomBar {...props} unread={unread} />}
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.page },
+          headerTintColor: colors.ink,
+          headerShadowVisible: false,
+          headerTitleAlign: "left",
+          headerTitle: () => <HeaderBrand />,
+          headerLeft: () => <HeaderMenu onPress={() => setPanelOpen(true)} />,
         }}
+      >
+        <Tabs.Screen name="Home" component={HomeScreen} options={{ title: t("Home") }} />
+        <Tabs.Screen name="Map" component={MapScreen} options={{ title: t("Map") }} />
+        <Tabs.Screen name="New" component={NewRecordScreen} options={{ title: t("New record") }} />
+        <Tabs.Screen name="Records" component={MyRecordsScreen} options={{ title: t("My records") }} />
+        {/* Review is not a tab: it lives in the side panel and opens as a
+            normal screen with a back button. */}
+        <Tabs.Screen
+          name="Alerts"
+          component={NotificationsScreen}
+          options={{ title: t("Notifications") }}
+        />
+      </Tabs.Navigator>
+
+      <Sidebar
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        onOpenLanguage={openLanguage}
+        onOpenReview={openReview}
       />
-    </Tabs.Navigator>
+
+      <LanguageSheet visible={languageOpen} onClose={() => setLanguageOpen(false)} />
+    </>
   );
 }
 
@@ -171,6 +151,16 @@ export function RootNavigator() {
   return (
     <RootStack.Navigator>
       <RootStack.Screen name="Tabs" component={MainTabs} options={{ headerShown: false }} />
+      <RootStack.Screen
+        name="ReviewQueue"
+        component={ReviewScreen}
+        options={{
+          title: t("Review queue"),
+          headerStyle: { backgroundColor: colors.page },
+          headerTintColor: colors.ink,
+          headerShadowVisible: false,
+        }}
+      />
       <RootStack.Screen
         name="RecordDetails"
         component={RecordDetailsScreen}
@@ -207,7 +197,5 @@ const headerStyles = StyleSheet.create({
   },
   brandTitle: { color: colors.ink, fontSize: 14, fontWeight: "600", lineHeight: 17 },
   brandSub: { color: colors.muted, fontSize: 11, lineHeight: 13 },
-  logout: { flexDirection: "row", alignItems: "center", gap: 4 },
-  logoutText: { color: colors.muted, fontSize: 13, fontWeight: "500" },
-  headerRight: { flexDirection: "row", alignItems: "center", gap: 12 },
+  menu: { paddingHorizontal: 2 },
 });

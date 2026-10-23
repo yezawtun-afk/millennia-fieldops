@@ -357,4 +357,10 @@ export const ms: Record<string, string> = {
     "Tidak dapat menghantar permohonan. Cuba lagi sebentar.",
   "The server sent an unexpected answer. Try again in a moment.":
     "Pelayan memberi jawapan tidak dijangka. Cuba lagi sebentar.",
+
+  // Side panel.
+  "Open menu": "Buka menu",
+  "Close menu": "Tutup menu",
+  // The raised centre button in the tab bar.
+  New: "Baharu",
 };

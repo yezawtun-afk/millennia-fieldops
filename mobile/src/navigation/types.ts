@@ -1,4 +1,4 @@
-import type { CompositeScreenProps } from "@react-navigation/native";
+import type { CompositeScreenProps, NavigatorScreenParams } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RecordType } from "../lib/types";
@@ -10,15 +10,16 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   Home: undefined;
+  Map: undefined;
   New: { type?: RecordType; draftId?: string } | undefined;
   Records: undefined;
-  Map: undefined;
-  Review: undefined;
   Alerts: undefined;
 };
 
 export type RootStackParamList = {
-  Tabs: undefined;
+  Tabs: NavigatorScreenParams<MainTabParamList> | undefined;
+  /** The supervisor queue: opened from Home and the side panel, not a tab. */
+  ReviewQueue: undefined;
   RecordDetails: { id: string };
   ReviewRecord: { id: string };
 };

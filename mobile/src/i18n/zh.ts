@@ -330,4 +330,10 @@ export const zh: Record<string, string> = {
   "Could not send the request. Try again in a moment.": "无法发送申请，请稍后重试。",
   "The server sent an unexpected answer. Try again in a moment.":
     "服务器返回了异常结果，请稍后重试。",
+
+  // Side panel.
+  "Open menu": "打开菜单",
+  "Close menu": "关闭菜单",
+  // The raised centre button in the tab bar.
+  New: "新建",
 };

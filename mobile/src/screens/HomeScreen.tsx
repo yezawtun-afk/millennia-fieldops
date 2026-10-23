@@ -5,9 +5,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { useSync } from "../context/SyncContext";
 import { countPendingReviews, fetchMyRecords } from "../lib/api";
-import { appVersion, applyUpdate, checkForUpdate, runningBundle } from "../lib/updates";
+import { applyUpdate, checkForUpdate } from "../lib/updates";
 import { useI18n } from "../i18n";
 import { Banner, Button, Card, ListRow, Pill, SectionTitle, StatCell } from "../components/ui";
+import { SyncBadge } from "../components/SyncBadge";
 import { colors, radius, spacing, type } from "../theme";
 import { ROLE_LABELS, STATUS_LABELS, TYPE_COLORS, formatDate } from "../lib/format";
 import type { FieldRecord, RecordType } from "../lib/types";
@@ -55,38 +56,24 @@ export function HomeScreen({ navigation }: Props) {
   const [reviewCount, setReviewCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [checkingUpdate, setCheckingUpdate] = useState(false);
-  const [updateNote, setUpdateNote] = useState<string | null>(null);
 
   const isReviewer = profile?.role === "supervisor" || profile?.role === "admin";
 
   // Download the waiting bundle and restart into it. On success the app reloads
   // itself, so nothing after that call runs.
   async function applyNow() {
-    setCheckingUpdate(true);
-    setUpdateNote(t("Downloading the update..."));
     const result = await applyUpdate();
-    setCheckingUpdate(false);
-    if (!result.ok) setUpdateNote(t(result.message));
+    if (!result.ok) Alert.alert(t("Check for update"), t(result.message));
   }
 
-  // `silent` is the version that runs on its own when the app opens: it only
-  // speaks up when there really is something to install.
-  const runUpdateCheck = useCallback(
-    async (silent: boolean) => {
-      const check = await checkForUpdate();
-
-      if (!check.supported) {
-        if (!silent) setUpdateNote(t(check.message));
-        return;
-      }
-
-      if (!check.available) {
-        if (!silent) setUpdateNote(t(check.message));
-        return;
-      }
-
-      if (silent) {
+  // Runs by itself when the app opens. Updates can also be checked from the
+  // side panel, so this screen only speaks up when there is something to
+  // install.
+  useEffect(() => {
+    let active = true;
+    checkForUpdate()
+      .then((check) => {
+        if (!active || !check.supported || !check.available) return;
         Alert.alert(
           t("Update available"),
           t("A newer version of Millennia FieldOps is ready. Restart the app now to use it?"),
@@ -95,17 +82,12 @@ export function HomeScreen({ navigation }: Props) {
             { text: t("Update now"), onPress: () => void applyNow() },
           ]
         );
-        return;
-      }
-
-      await applyNow();
-    },
-    [t]
-  );
-
-  useEffect(() => {
-    void runUpdateCheck(true);
-      }, [runUpdateCheck]);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [t]);
 
   // Counts come from every record this user has, not from the five shown below.
   const summary = records.reduce<Summary>(
@@ -214,7 +196,7 @@ export function HomeScreen({ navigation }: Props) {
           <Button
             title={t("Open review queue")}
             variant="secondary"
-            onPress={() => navigation.navigate("Review")}
+            onPress={() => navigation.navigate("ReviewQueue")}
             style={{ marginTop: spacing.sm }}
           />
         </View>
@@ -322,122 +304,8 @@ export function HomeScreen({ navigation }: Props) {
       )}
 
       <View style={{ height: spacing.xl }} />
-
-      <SectionTitle>{t("App")}</SectionTitle>
-      <Card>
-        <ListRow
-          title={t("Version")}
-          meta={`${appVersion()} · ${runningBundle()}`}
-          right={
-            <Text style={styles.checkLink} onPress={() => void runUpdateCheck(false)}>
-              {checkingUpdate ? t("Checking") : t("Check for update")}
-            </Text>
-          }
-          last
-        />
-        {updateNote ? (
-          <Text style={styles.updateNote}>{updateNote}</Text>
-        ) : (
-          <Text style={styles.updateHint}>
-            {t("Improvements can arrive without reinstalling the app.")}
-          </Text>
-        )}
-      </Card>
-
-      <View style={{ height: spacing.xl }} />
     </ScrollView>
   );
-}
-
-// The visual sync state. Four, not three: a failed upload is not the same as
-// "still waiting", and hiding it would leave a field worker guessing.
-function SyncBadge({
-  status,
-  remaining,
-  queued,
-  failed,
-  online,
-  syncing,
-  lastSyncedAt,
-  onSync,
-}: {
-  status: "synced" | "syncing" | "offline" | "needsRetry";
-  remaining: number;
-  queued: number;
-  failed: number;
-  online: boolean;
-  syncing: boolean;
-  lastSyncedAt: string | null;
-  onSync: () => void;
-}) {
-  const { t } = useI18n();
-
-  const palette =
-    status === "synced"
-      ? { bg: colors.approvedSoft, fg: colors.approvedInk, icon: "checkmark-circle" as const }
-      : status === "offline"
-        ? { bg: colors.rejectedSoft, fg: colors.rejectedInk, icon: "cloud-offline" as const }
-        : status === "needsRetry"
-          ? { bg: colors.rejectedSoft, fg: colors.rejectedInk, icon: "alert-circle" as const }
-          : { bg: colors.pendingSoft, fg: colors.pendingInk, icon: "sync" as const };
-
-  const title =
-    status === "synced"
-      ? t("Synced")
-      : status === "offline"
-        ? t("Offline")
-        : status === "needsRetry"
-          ? t("Needs retry")
-          : t("Syncing...");
-
-  const detail =
-    status === "synced"
-      ? t("All records uploaded")
-      : status === "offline"
-        ? queued > 0
-          ? t("{count} records queued for upload", { count: queued })
-          : t("Records are saved on this phone until you reconnect")
-        : status === "needsRetry"
-          ? t("{count} records need retry", { count: failed })
-          : t("{count} records remaining", { count: remaining });
-
-  const when =
-    status === "synced"
-      ? lastSyncedAt
-        ? t("Last upload {when}", { when: relativeTime(t, lastSyncedAt) })
-        : t("No uploads yet")
-      : null;
-
-  return (
-    <View style={[styles.syncCard, { backgroundColor: palette.bg }]}>
-      <View style={styles.syncTop}>
-        <View style={styles.syncIcon}>
-          <Ionicons name={palette.icon} size={18} color={palette.fg} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.syncTitle, { color: palette.fg }]}>{title}</Text>
-          <Text style={[styles.syncDetail, { color: palette.fg }]}>{detail}</Text>
-          {when ? <Text style={[styles.syncWhen, { color: palette.fg }]}>{when}</Text> : null}
-        </View>
-      </View>
-
-      {(remaining > 0 || syncing) && online ? (
-        <Text style={[styles.syncAction, { color: palette.fg }]} onPress={onSync}>
-          {syncing ? t("Syncing...") : t("Sync now")}
-        </Text>
-      ) : null}
-    </View>
-  );
-}
-
-function relativeTime(t: (text: string, params?: Record<string, string | number>) => string, iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return t("just now");
-  if (minutes < 60) return t("{count}m ago", { count: minutes });
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return t("{count}h ago", { count: hours });
-  return formatDate(iso);
 }
 
 const styles = StyleSheet.create({
@@ -454,26 +322,6 @@ const styles = StyleSheet.create({
   greeting: { ...type.caption, fontSize: 13 },
   name: { ...type.title, marginTop: 1 },
   meta: { ...type.subhead, marginTop: 2 },
-
-  syncCard: {
-    borderRadius: radius.md,
-    borderCurve: "continuous",
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  syncTop: { flexDirection: "row", alignItems: "flex-start", gap: spacing.md },
-  syncIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.full,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.55)",
-  },
-  syncTitle: { fontSize: 15, fontWeight: "600" },
-  syncDetail: { fontSize: 13, marginTop: 1, lineHeight: 18 },
-  syncWhen: { fontSize: 12, marginTop: 3, opacity: 0.85 },
-  syncAction: { fontSize: 13, fontWeight: "600", marginTop: spacing.sm, textDecorationLine: "underline" },
 
   reviewNote: {
     marginBottom: spacing.md,
@@ -514,22 +362,8 @@ const styles = StyleSheet.create({
   },
 
   link: { fontSize: 13, fontWeight: "500", color: colors.primary },
-  checkLink: { fontSize: 13, fontWeight: "500", color: colors.primary },
 
   empty: { paddingVertical: spacing.lg, alignItems: "center", gap: 2 },
   emptyTitle: { fontSize: 15, fontWeight: "500", color: colors.ink },
   emptyHint: { ...type.caption, textAlign: "center" },
-
-  updateNote: {
-    ...type.caption,
-    color: colors.primaryDark,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-  },
-  updateHint: {
-    ...type.caption,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-    paddingTop: 2,
-  },
 });

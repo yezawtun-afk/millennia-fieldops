@@ -1,14 +1,64 @@
 // Language switch: a small globe that opens a sheet with the three languages.
 // A sheet rather than Alert.alert because Android only shows three buttons in
 // an alert, and we need three choices plus cancel.
+//
+// The sheet is exported on its own so the side panel can open it without
+// nesting one modal inside another.
 import React, { useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LOCALES, useI18n } from "../i18n";
 import { colors, radius, spacing, type } from "../theme";
 
-export function LanguageButton({ tint = colors.muted }: { tint?: string }) {
+export function LanguageSheet({
+  visible,
+  onClose,
+}: {
+  visible: boolean;
+  onClose: () => void;
+}) {
   const { locale, setLocale, t } = useI18n();
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <Pressable style={styles.sheet} onPress={() => undefined}>
+          <Text style={styles.title}>{t("Language")}</Text>
+          {LOCALES.map((item) => {
+            const selected = item.value === locale;
+            return (
+              <Pressable
+                key={item.value}
+                onPress={() => {
+                  setLocale(item.value);
+                  onClose();
+                }}
+                style={({ pressed }) => [
+                  styles.row,
+                  selected && styles.rowSelected,
+                  pressed && { opacity: 0.75 },
+                ]}
+              >
+                <Text style={[styles.rowText, selected && styles.rowTextSelected]}>
+                  {item.label}
+                </Text>
+                {selected ? (
+                  <Ionicons name="checkmark" size={18} color={colors.primary} />
+                ) : null}
+              </Pressable>
+            );
+          })}
+          <Pressable onPress={onClose} style={styles.cancel}>
+            <Text style={styles.cancelText}>{t("Cancel")}</Text>
+          </Pressable>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+export function LanguageButton({ tint = colors.muted }: { tint?: string }) {
+  const { locale, t } = useI18n();
   const [open, setOpen] = useState(false);
   const current = LOCALES.find((item) => item.value === locale) ?? LOCALES[0];
 
@@ -25,40 +75,7 @@ export function LanguageButton({ tint = colors.muted }: { tint?: string }) {
         <Text style={[styles.triggerText, { color: tint }]}>{current.short}</Text>
       </Pressable>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
-          <Pressable style={styles.sheet} onPress={() => undefined}>
-            <Text style={styles.title}>{t("Language")}</Text>
-            {LOCALES.map((item) => {
-              const selected = item.value === locale;
-              return (
-                <Pressable
-                  key={item.value}
-                  onPress={() => {
-                    setLocale(item.value);
-                    setOpen(false);
-                  }}
-                  style={({ pressed }) => [
-                    styles.row,
-                    selected && styles.rowSelected,
-                    pressed && { opacity: 0.75 },
-                  ]}
-                >
-                  <Text style={[styles.rowText, selected && styles.rowTextSelected]}>
-                    {item.label}
-                  </Text>
-                  {selected ? (
-                    <Ionicons name="checkmark" size={18} color={colors.primary} />
-                  ) : null}
-                </Pressable>
-              );
-            })}
-            <Pressable onPress={() => setOpen(false)} style={styles.cancel}>
-              <Text style={styles.cancelText}>{t("Cancel")}</Text>
-            </Pressable>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <LanguageSheet visible={open} onClose={() => setOpen(false)} />
     </>
   );
 }

@@ -1,20 +1,22 @@
 // The supervisor queue: every record still waiting for a decision, oldest
-// first. Tapping a row opens the decision screen. Only supervisors and
-// administrators see this tab (RootNavigator hides it for field workers, and
-// the database refuses the update for them anyway).
+// first. Tapping a row opens the decision screen. It opens from Home and from
+// the side panel as a normal screen with a back button, not as a tab: only
+// supervisors and administrators see the way in (the database refuses the
+// update for everyone else anyway).
 import React, { useCallback, useState } from "react";
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { fetchPendingRecords } from "../lib/api";
 import { useI18n } from "../i18n";
 import { Banner, Card, EmptyState, ListRow, Pill } from "../components/ui";
 import { colors, spacing, type } from "../theme";
 import { formatDate, TYPE_COLORS, TYPE_LABELS } from "../lib/format";
 import type { FieldRecord } from "../lib/types";
-import type { TabScreenProps } from "../navigation/types";
+import type { RootStackParamList } from "../navigation/types";
 
-type Props = TabScreenProps<"Review">;
+type Props = NativeStackScreenProps<RootStackParamList, "ReviewQueue">;
 
 export function ReviewScreen({ navigation }: Props) {
   const { t } = useI18n();
