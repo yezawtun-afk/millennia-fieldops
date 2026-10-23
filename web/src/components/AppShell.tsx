@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   Table2,
   Map as MapIcon,
-  MapPin,
   Users as UsersIcon,
   History,
   LogOut,
@@ -47,7 +46,6 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Administration",
     items: [
-      { href: "/zones", label: "Zones", icon: MapPin, roles: ["admin"] },
       { href: "/users", label: "Accounts", icon: UsersIcon, roles: ["admin"] },
       { href: "/audit", label: "Activity log", icon: History, roles: ["admin"] },
     ],
@@ -188,7 +186,6 @@ const TITLES: Record<string, string> = {
   "/dashboard": "Overview",
   "/records": "Records",
   "/map": "Site map",
-  "/zones": "Zones",
   "/users": "Accounts",
   "/audit": "Activity log",
 };

@@ -183,7 +183,7 @@ export default async function DashboardPage() {
               <div className="p-4">
                 <EmptyState
                   title={t("No zones yet")}
-                  hint={t("Add monitoring zones from the Zones page.")}
+                  hint={t("Add monitoring zones from the site map.")}
                 />
               </div>
             ) : (

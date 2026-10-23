@@ -609,4 +609,13 @@ export const ms: Record<string, string> = {
   "Save zone": "Simpan zon",
   "Could not save the zone.": "Tidak dapat menyimpan zon.",
   "Use {colour}": "Guna {colour}",
+  "Add monitoring zones from the site map.": "Tambah zon pemantauan dari peta tapak.",
+  "Delete zone": "Padam zon",
+  "Delete this zone? Nothing else is affected.": "Padam zon ini? Tiada perkara lain terjejas.",
+  "This zone still has {count} record, so it cannot be deleted.":
+    "Zon ini masih mempunyai {count} rekod, jadi ia tidak boleh dipadam.",
+  "This zone still has {count} records, so it cannot be deleted.":
+    "Zon ini masih mempunyai {count} rekod, jadi ia tidak boleh dipadam.",
+  "This zone still has records, so it cannot be deleted.":
+    "Zon ini masih mempunyai rekod, jadi ia tidak boleh dipadam.",
 };

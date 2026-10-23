@@ -575,4 +575,13 @@ export const zh: Record<string, string> = {
   "Save zone": "保存区域",
   "Could not save the zone.": "无法保存区域。",
   "Use {colour}": "使用 {colour}",
+  "Add monitoring zones from the site map.": "在场地地图上添加监测区域。",
+  "Delete zone": "删除区域",
+  "Delete this zone? Nothing else is affected.": "删除这个区域？不会影响其他内容。",
+  "This zone still has {count} record, so it cannot be deleted.":
+    "该区域仍有 {count} 条记录，因此无法删除。",
+  "This zone still has {count} records, so it cannot be deleted.":
+    "该区域仍有 {count} 条记录，因此无法删除。",
+  "This zone still has records, so it cannot be deleted.":
+    "该区域仍有记录，因此无法删除。",
 };

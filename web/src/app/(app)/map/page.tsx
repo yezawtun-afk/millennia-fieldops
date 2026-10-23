@@ -29,6 +29,9 @@ export default async function MapPage() {
     radius: z.radius_m,
     color: z.color,
     name: z.name,
+    // A zone that still has records cannot be deleted (the database refuses),
+    // so the popup says so instead of offering a button that would fail.
+    records: records.filter((r) => r.zone?.id === z.id).length,
   }));
 
   return (
@@ -45,7 +48,7 @@ export default async function MapPage() {
         <MapView
           markers={markers}
           zones={zoneShapes}
-          canAddZone={profile?.role === "admin"}
+          canManageZones={profile?.role === "admin"}
         />
       </div>
 

@@ -90,8 +90,8 @@ Demo accounts and a full end-of-project snapshot live in
   101.906463) with records plotted over the monitoring zones.
 - **Add a monitoring zone straight from the map** (administrators): press *Add zone*,
   click the centre, drag the radius slider with a live preview, type a name, pick a colour
-  and save - the circle appears without leaving the map. /zones still handles renaming,
-  resizing and deleting.
+  and save - the circle appears without leaving the map. Clicking a zone on the map also
+  lets an administrator delete it, once no records use it.
 - Review and verification: approve/reject with a comment (sent back to the worker).
 - **Live pages**: every screen re-fetches its data in place every ten seconds (the green
   "Live" label in the header), so a record sent from the phone appears without pressing
@@ -104,7 +104,7 @@ Demo accounts and a full end-of-project snapshot live in
   anyone who already submitted field records - deactivate those instead).
 - **Delete records**: administrators can remove a record permanently (bin icon in the
   records list or on the record page); its photos and notifications go with it.
-- Monitoring **zones** management.
+- Monitoring **zones**: draw a new one on the map; delete an unused one from its popup.
 - **Reports and export**: CSV of filtered records and a **PDF hazard summary**.
 - **Three languages** (English, Bahasa Melayu, 简体中文) with a language picker in the
   header; the choice is stored in a cookie.

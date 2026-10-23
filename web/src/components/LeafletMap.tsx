@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Circle, CircleMarker, MapContainer, Popup, TileLayer, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { ZoneDrawTool } from "./ZoneDrawTool";
+import { ZonePopupActions } from "./ZonePopupActions";
 
 export interface MapMarker {
   id: string;
@@ -22,6 +23,8 @@ export interface MapZone {
   radius: number;
   color: string;
   name: string;
+  /** How many field records point at this zone. A zone with records cannot be deleted. */
+  records: number;
 }
 
 // Millennia Village: the map opens on the site itself, not on whatever happens
@@ -33,12 +36,12 @@ export function LeafletMap({
   markers,
   zones,
   height,
-  canAddZone = false,
+  canManageZones = false,
 }: {
   markers: MapMarker[];
   zones: MapZone[];
   height: number | string;
-  canAddZone?: boolean;
+  canManageZones?: boolean;
 }) {
   // The zone tool's own little state. It lives here because the preview circle
   // is drawn on the map, next to the real zones.
@@ -74,6 +77,8 @@ export function LeafletMap({
           >
             <Popup>
               <strong>{z.name}</strong>
+              <div className="text-[12px] text-muted">{z.radius} m</div>
+              {canManageZones ? <ZonePopupActions zoneId={z.id} records={z.records} /> : null}
             </Popup>
           </Circle>
         ))}
@@ -121,7 +126,7 @@ export function LeafletMap({
         ) : null}
       </MapContainer>
 
-      {canAddZone ? (
+      {canManageZones ? (
         <ZoneDrawTool
           drawing={drawing}
           centre={centre}
