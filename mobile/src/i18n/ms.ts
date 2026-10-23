@@ -471,4 +471,46 @@ export const ms: Record<string, string> = {
     "Laporan mesti diluluskan sebelum kerja boleh diselesaikan.",
   "The record stays approved and also shows as completed.":
     "Rekod kekal diluluskan dan juga ditunjukkan sebagai selesai.",
+  "Capture a GPS location before submitting.": "Rakam lokasi GPS sebelum menghantar.",
+  "GPS accuracy is unknown. Capture the location again before submitting.":
+    "Ketepatan GPS tidak diketahui. Rakam lokasi semula sebelum menghantar.",
+  "GPS accuracy is unknown. Move to open sky and capture the location again.":
+    "Ketepatan GPS tidak diketahui. Bergerak ke kawasan terbuka dan rakam lokasi semula.",
+  "GPS accuracy is ±{accuracy} m. Move to open sky and capture again. Records need ±{limit} m or better.":
+    "Ketepatan GPS ialah ±{accuracy} m. Bergerak ke kawasan terbuka dan rakam semula. Rekod memerlukan ±{limit} m atau lebih baik.",
+  "Accuracy unknown - capture again before submitting.":
+    "Ketepatan tidak diketahui - rakam semula sebelum menghantar.",
+  "GPS accuracy ±{accuracy} m · {quality}": "Ketepatan GPS ±{accuracy} m · {quality}",
+  Good: "Baik",
+  Weak: "Lemah",
+  "Move to open sky and tap Update GPS location. Records need ±{limit} m or better.":
+    "Bergerak ke kawasan terbuka dan ketik Kemas kini lokasi GPS. Rekod memerlukan ±{limit} m atau lebih baik.",
+  "Species catalog": "Katalog spesies",
+  "Pick a site species or search for another name.":
+    "Pilih spesies tapak atau cari nama lain.",
+  "Search scientific or common name": "Cari nama saintifik atau nama biasa",
+  "Search species": "Cari spesies",
+  "No species found": "Tiada spesies ditemui",
+  "Close this list and type the name in the form.":
+    "Tutup senarai ini dan taip nama dalam borang.",
+  'Use "{name}"': 'Gunakan "{name}"',
+  "Browse species catalog": "Semak imbas katalog spesies",
+  "Pick from the site catalog or type a name.":
+    "Pilih daripada katalog tapak atau taip nama.",
+  "Choose a unit for {type}.": "Pilih unit untuk {type}.",
+  "Enter a valid number for {type}.": "Masukkan nombor yang sah untuk {type}.",
+  "Reading is outside the expected range ({min}–{max} {unit}).":
+    "Bacaan di luar julat dijangka ({min}–{max} {unit}).",
+  "0–14 pH. 7 is neutral.": "0–14 pH. 7 ialah neutral.",
+  "Soil moisture as a percentage of a saturated sample.":
+    "Kelembapan tanah sebagai peratusan sampel tepu.",
+  "Depth from a fixed gauge mark or the water surface.":
+    "Kedalaman dari tanda tolok tetap atau permukaan air.",
+  "Lower NTU means clearer water.": "NTU lebih rendah bermaksud air lebih jernih.",
+  "Water or soil temperature at the sample point.":
+    "Suhu air atau tanah pada titik sampel.",
+  "Depth of the soil profile at the sample point.":
+    "Kedalaman profil tanah pada titik sampel.",
+  "e.g. {value}": "cth. {value}",
+  "Choose a reading type first.": "Pilih jenis bacaan dahulu.",
 };

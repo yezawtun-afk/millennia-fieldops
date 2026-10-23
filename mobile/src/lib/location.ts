@@ -7,6 +7,13 @@ export interface Coordinates {
   accuracy: number | null;
 }
 
+/** A fix at or below this radius is good enough to submit. */
+export const GPS_ACCURACY_LIMIT_M = 20;
+
+export function isGpsAccuracyGood(accuracy: number | null | undefined): boolean {
+  return accuracy != null && Number.isFinite(accuracy) && accuracy > 0 && accuracy <= GPS_ACCURACY_LIMIT_M;
+}
+
 export async function getCurrentCoordinates(): Promise<Coordinates | null> {
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== "granted") return null;

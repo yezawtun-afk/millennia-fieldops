@@ -91,6 +91,8 @@ export interface OutboxRecord {
   observed_date: string;
   latitude: number | null;
   longitude: number | null;
+  /** Reported GPS accuracy in metres; null for older drafts or an unknown fix. */
+  gps_accuracy?: number | null;
   notes: string | null;
   photos: string[]; // local file:// URIs
 

@@ -432,4 +432,38 @@ export const zh: Record<string, string> = {
     "报告必须获批后才能完成工作。",
   "The record stays approved and also shows as completed.":
     "记录仍保持已批准状态，并同时显示为已完成。",
+  "Capture a GPS location before submitting.": "提交前请先获取 GPS 位置。",
+  "GPS accuracy is unknown. Capture the location again before submitting.":
+    "GPS 精度未知。提交前请重新获取位置。",
+  "GPS accuracy is unknown. Move to open sky and capture the location again.":
+    "GPS 精度未知。请到开阔处并重新获取位置。",
+  "GPS accuracy is ±{accuracy} m. Move to open sky and capture again. Records need ±{limit} m or better.":
+    "GPS 精度为 ±{accuracy} 米。请到开阔处重新获取。记录需要 ±{limit} 米或更好。",
+  "Accuracy unknown - capture again before submitting.": "精度未知——提交前请重新获取。",
+  "GPS accuracy ±{accuracy} m · {quality}": "GPS 精度 ±{accuracy} 米 · {quality}",
+  Good: "良好",
+  Weak: "较弱",
+  "Move to open sky and tap Update GPS location. Records need ±{limit} m or better.":
+    "请到开阔处并点击“更新 GPS 位置”。记录需要 ±{limit} 米或更好。",
+  "Species catalog": "物种目录",
+  "Pick a site species or search for another name.": "选择场地物种，或搜索其他名称。",
+  "Search scientific or common name": "搜索学名或俗名",
+  "Search species": "搜索物种",
+  "No species found": "未找到物种",
+  "Close this list and type the name in the form.": "关闭此列表，在表单中输入名称。",
+  'Use "{name}"': '使用“{name}”',
+  "Browse species catalog": "浏览物种目录",
+  "Pick from the site catalog or type a name.": "从场地目录中选择，或直接输入名称。",
+  "Choose a unit for {type}.": "请为 {type} 选择单位。",
+  "Enter a valid number for {type}.": "请输入有效的 {type} 数值。",
+  "Reading is outside the expected range ({min}–{max} {unit}).":
+    "读数超出预期范围（{min}–{max} {unit}）。",
+  "0–14 pH. 7 is neutral.": "0–14 pH，7 为中性。",
+  "Soil moisture as a percentage of a saturated sample.": "土壤含水量占饱和样本的百分比。",
+  "Depth from a fixed gauge mark or the water surface.": "从固定水尺标记或水面测量的深度。",
+  "Lower NTU means clearer water.": "NTU 越低，水质越清澈。",
+  "Water or soil temperature at the sample point.": "采样点的水温或土温。",
+  "Depth of the soil profile at the sample point.": "采样点的土壤剖面深度。",
+  "e.g. {value}": "例如 {value}",
+  "Choose a reading type first.": "请先选择读数类型。",
 };

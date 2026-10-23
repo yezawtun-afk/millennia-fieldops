@@ -1,4 +1,5 @@
 import { colors } from "../theme";
+import { READING_DEFINITIONS } from "./measurements";
 import type { HazardSeverity, RecordStatus, RecordType, UserRole } from "./types";
 
 export const ROLE_LABELS: Record<UserRole, string> = {
@@ -53,7 +54,7 @@ export const HAZARD_TYPES = [
   "Silt runoff",
   "Rockfall risk",
 ];
-export const READING_TYPES = ["pH", "Moisture", "Water level", "Turbidity", "Temperature", "Soil depth"];
+export const READING_TYPES = Object.keys(READING_DEFINITIONS);
 
 export function formatDate(value: string | null | undefined): string {
   if (!value) return "-";

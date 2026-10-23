@@ -7,6 +7,7 @@
 // page.
 import { colors } from "../theme";
 import { LEAFLET_CSS, LEAFLET_JS } from "./leafletBundle";
+import { MARKER_CLUSTER_CSS, MARKER_CLUSTER_JS } from "./markerClusterBundle";
 
 export interface MapPoint {
   id: string;
@@ -70,6 +71,7 @@ export function buildMapHtml(points: MapPoint[], zones: MapZone[], labels: MapLa
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <style>${LEAFLET_CSS}</style>
+<style>${MARKER_CLUSTER_CSS}</style>
 <style>
   html, body { margin: 0; padding: 0; height: 100%; background: ${colors.page}; }
   #map { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: ${colors.line}; }
@@ -80,6 +82,31 @@ export function buildMapHtml(points: MapPoint[], zones: MapZone[], labels: MapLa
   .popup-open { display: inline-block; margin-top: 8px; color: ${colors.primary}; font-weight: 600; text-decoration: none; }
   .leaflet-control-attribution { font-size: 10px; }
   .leaflet-control-zoom a { width: 34px; height: 34px; line-height: 32px; font-size: 20px; }
+  .record-pin { background: transparent; border: 0; }
+  .record-pin-dot {
+    width: 16px;
+    height: 16px;
+    box-sizing: border-box;
+    border: 2.5px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(20, 24, 27, 0.45);
+  }
+  .record-cluster { background: transparent; border: 0; }
+  .record-cluster-inner {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    background: ${colors.primary};
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(20, 24, 27, 0.35);
+  }
   .user-location { background: transparent; border: 0; }
   .user-dot {
     position: absolute;
@@ -117,6 +144,7 @@ export function buildMapHtml(points: MapPoint[], zones: MapZone[], labels: MapLa
 <body>
 <div id="map"></div>
 <script>${LEAFLET_JS.replace(/<\/script/gi, "<\\/script")}</script>
+<script>${MARKER_CLUSTER_JS.replace(/<\/script/gi, "<\\/script")}</script>
 <script>
   var DATA = ${toScriptJson(data)};
 
@@ -173,23 +201,53 @@ export function buildMapHtml(points: MapPoint[], zones: MapZone[], labels: MapLa
     bounds.push([zone.lat, zone.lng]);
   });
 
+  // Cluster only the record pins. Monitoring zones stay as circles on the map,
+  // and a single record always opens its own popup instead of a cluster bubble.
+  var recordLayer = typeof L.markerClusterGroup === "function"
+    ? L.markerClusterGroup({
+        maxClusterRadius: 46,
+        showCoverageOnHover: false,
+        spiderfyOnMaxZoom: true,
+        disableClusteringAtZoom: 18,
+        removeOutsideVisibleBounds: true,
+        chunkedLoading: true,
+        chunkInterval: 200,
+        chunkDelay: 50,
+        iconCreateFunction: function (cluster) {
+          var count = cluster.getChildCount();
+          var size = count < 10 ? 34 : count < 100 ? 40 : 46;
+          return L.divIcon({
+            className: "record-cluster",
+            html: '<div class="record-cluster-inner">' + count + '</div>',
+            iconSize: [size, size],
+            iconAnchor: [size / 2, size / 2]
+          });
+        }
+      })
+    : L.layerGroup();
+
   DATA.points.forEach(function (point) {
-    L.circleMarker([point.lat, point.lng], {
-      radius: 7,
-      color: "#FFFFFF",
-      weight: 2,
-      fillColor: point.color,
-      fillOpacity: 1
-    })
-      .bindPopup(
-        '<strong>' + escapeHtml(point.label) + '</strong>' +
-        '<div class="popup-sub">' + escapeHtml(point.sub) + '</div>' +
-        '<a class="popup-open" href="#" onclick="openRecord(\\'' + escapeHtml(point.id) + '\\');return false;">' +
-        escapeHtml(DATA.openLabel) + '</a>'
-      )
-      .addTo(map);
+    var marker = L.marker([point.lat, point.lng], {
+      icon: L.divIcon({
+        className: "record-pin",
+        html: '<div class="record-pin-dot" style="background-color:' + point.color + '"></div>',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8]
+      }),
+      title: point.label
+    });
+
+    marker.bindPopup(
+      '<strong>' + escapeHtml(point.label) + '</strong>' +
+      '<div class="popup-sub">' + escapeHtml(point.sub) + '</div>' +
+      '<a class="popup-open" href="#" onclick="openRecord(\\'' + escapeHtml(point.id) + '\\');return false;">' +
+      escapeHtml(DATA.openLabel) + '</a>'
+    );
+    recordLayer.addLayer(marker);
     bounds.push([point.lat, point.lng]);
   });
+
+  recordLayer.addTo(map);
 
   var userMarker = null;
   var userAccuracy = null;

@@ -11,15 +11,27 @@ import {
   View,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { useSync } from "../context/SyncContext";
 import { useI18n } from "../i18n";
 import { Banner, Button, Card, ChipGroup, Field, Input, SectionTitle } from "../components/ui";
+import { SpeciesPicker } from "../components/SpeciesPicker";
 import { colors, radius, spacing, type } from "../theme";
 import { enqueueRecord, getOutbox, markPending, saveDraft } from "../lib/sqlite";
 import { fetchZones } from "../lib/api";
 import { useOnlineStatus } from "../lib/network";
-import { getCurrentCoordinates } from "../lib/location";
+import {
+  GPS_ACCURACY_LIMIT_M,
+  getCurrentCoordinates,
+  isGpsAccuracyGood,
+  type Coordinates,
+} from "../lib/location";
+import {
+  defaultUnitFor,
+  getReadingDefinition,
+  validateReading,
+} from "../lib/measurements";
 import {
   captureFromCamera,
   deletePhoto,
@@ -67,8 +79,9 @@ export function NewRecordScreen({ navigation, route }: Props) {
   const [notes, setNotes] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoNote, setPhotoNote] = useState<string | null>(null);
-  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [coords, setCoords] = useState<Coordinates | null>(null);
   const [gpsBusy, setGpsBusy] = useState(false);
+  const [speciesPickerOpen, setSpeciesPickerOpen] = useState(false);
 
   // Flora fields
   const [species, setSpecies] = useState("");
@@ -117,7 +130,11 @@ export function NewRecordScreen({ navigation, route }: Props) {
       setPhotos(p.photos);
       setCoords(
         p.latitude !== null && p.longitude !== null
-          ? { latitude: p.latitude, longitude: p.longitude }
+          ? {
+              latitude: p.latitude,
+              longitude: p.longitude,
+              accuracy: p.gps_accuracy ?? null,
+            }
           : null
       );
       setSpecies(p.species_name ?? "");
@@ -128,7 +145,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
       setSeverity(p.severity);
       setReadingType(p.reading_type);
       setReadingValue(p.reading_value === null ? "" : String(p.reading_value));
-      setReadingUnit(p.reading_unit ?? "");
+      setReadingUnit(p.reading_unit ?? defaultUnitFor(p.reading_type));
       setZoneId(p.zone_id);
       setObservedDate(p.observed_date);
       setDraftId(row.localId);
@@ -160,6 +177,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
     setPhotos([]);
     setPhotoNote(null);
     setCoords(null);
+    setSpeciesPickerOpen(false);
     setSpecies("");
     setGrowthStage(null);
     setHealthCondition(null);
@@ -199,6 +217,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
 
   async function captureGps() {
     setGpsBusy(true);
+    setMessage(null);
     const result = await getCurrentCoordinates();
     setGpsBusy(false);
     if (!result) {
@@ -208,7 +227,29 @@ export function NewRecordScreen({ navigation, route }: Props) {
       );
       return;
     }
-    setCoords({ latitude: result.latitude, longitude: result.longitude });
+    setCoords(result);
+
+    if (result.accuracy == null) {
+      setMessage({
+        kind: "warning",
+        text: t("GPS accuracy is unknown. Move to open sky and capture the location again."),
+      });
+    } else if (!isGpsAccuracyGood(result.accuracy)) {
+      setMessage({
+        kind: "warning",
+        text: t(
+          "GPS accuracy is ±{accuracy} m. Move to open sky and capture again. Records need ±{limit} m or better.",
+          { accuracy: Math.round(result.accuracy), limit: GPS_ACCURACY_LIMIT_M }
+        ),
+      });
+    }
+  }
+
+  function chooseReadingType(next: string) {
+    if (next === readingType) return;
+    setReadingType(next);
+    setReadingUnit(defaultUnitFor(next));
+    setReadingValue("");
   }
 
   // Everything the form holds right now, ready to be stored on the phone.
@@ -220,6 +261,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
       observed_date: observedDate,
       latitude: coords?.latitude ?? null,
       longitude: coords?.longitude ?? null,
+      gps_accuracy: coords?.accuracy ?? null,
       notes: notes.trim() || null,
       photos,
       species_name: type === "flora" ? species.trim() || null : null,
@@ -249,6 +291,20 @@ export function NewRecordScreen({ navigation, route }: Props) {
       return t("Choose a reading type - or save it as a draft.");
     if (type === "soil_water" && !readingValue.trim())
       return t("Add the reading value - or save it as a draft.");
+    if (type === "soil_water") {
+      const readingError = validateReading(readingType, readingValue, readingUnit);
+      if (readingError) return t(readingError.key, readingError.params);
+    }
+    if (!coords) return t("Capture a GPS location before submitting.");
+    if (coords.accuracy == null) {
+      return t("GPS accuracy is unknown. Capture the location again before submitting.");
+    }
+    if (!isGpsAccuracyGood(coords.accuracy)) {
+      return t(
+        "GPS accuracy is ±{accuracy} m. Move to open sky and capture again. Records need ±{limit} m or better.",
+        { accuracy: Math.round(coords.accuracy), limit: GPS_ACCURACY_LIMIT_M }
+      );
+    }
     return null;
   }
 
@@ -343,6 +399,17 @@ export function NewRecordScreen({ navigation, route }: Props) {
     }
   }
 
+  const readingDefinition = getReadingDefinition(readingType);
+  const unitOptions = readingDefinition
+    ? readingUnit && !readingDefinition.units.includes(readingUnit)
+      ? [...readingDefinition.units, readingUnit]
+      : readingDefinition.units
+    : [];
+  const readingError =
+    readingType && readingValue.trim()
+      ? validateReading(readingType, readingValue, readingUnit)
+      : null;
+
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView
@@ -432,6 +499,21 @@ export function NewRecordScreen({ navigation, route }: Props) {
                   onChangeText={setSpecies}
                   placeholder="e.g. Dicranopteris linearis"
                 />
+                <Pressable
+                  onPress={() => setSpeciesPickerOpen(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("Browse species catalog")}
+                  style={({ pressed }) => [
+                    styles.catalogButton,
+                    pressed ? { opacity: 0.7 } : null,
+                  ]}
+                >
+                  <Ionicons name="search" size={15} color={colors.primaryDark} />
+                  <Text style={styles.catalogText}>{t("Browse species catalog")}</Text>
+                </Pressable>
+                <Text style={styles.helper}>
+                  {t("Pick from the site catalog or type a name.")}
+                </Text>
               </Field>
               <Field label={t("Growth stage")}>
                 <ChipGroup
@@ -489,7 +571,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
                 <ChipGroup
                   options={READING_TYPES}
                   value={readingType}
-                  onChange={setReadingType}
+                  onChange={chooseReadingType}
                   labelFor={t}
                 />
               </Field>
@@ -498,15 +580,31 @@ export function NewRecordScreen({ navigation, route }: Props) {
                   value={readingValue}
                   onChangeText={setReadingValue}
                   keyboardType="decimal-pad"
-                  placeholder="e.g. 6.8"
+                  placeholder={
+                    readingDefinition
+                      ? t("e.g. {value}", { value: readingDefinition.example })
+                      : t("Choose a reading type first.")
+                  }
                 />
+                {readingDefinition ? (
+                  <Text style={styles.helper}>{t(readingDefinition.hint)}</Text>
+                ) : null}
+                {readingError ? (
+                  <Text style={styles.helperError}>
+                    {t(readingError.key, readingError.params)}
+                  </Text>
+                ) : null}
               </Field>
               <Field label={t("Unit")}>
-                <Input
-                  value={readingUnit}
-                  onChangeText={setReadingUnit}
-                  placeholder={t("e.g. pH / NTU / m")}
-                />
+                {readingDefinition ? (
+                  <ChipGroup
+                    options={unitOptions}
+                    value={readingUnit || null}
+                    onChange={setReadingUnit}
+                  />
+                ) : (
+                  <Text style={styles.helper}>{t("Choose a reading type first.")}</Text>
+                )}
               </Field>
             </>
           ) : null}
@@ -524,9 +622,32 @@ export function NewRecordScreen({ navigation, route }: Props) {
         <Card padded style={{ marginBottom: spacing.lg }}>
           <SectionTitle>{t("Location")}</SectionTitle>
           {coords ? (
-            <Text style={styles.coords}>
-              {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
-            </Text>
+            <>
+              <Text style={styles.coords}>
+                {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
+              </Text>
+              <Text
+                style={[
+                  styles.helper,
+                  !isGpsAccuracyGood(coords.accuracy) ? styles.helperError : null,
+                ]}
+              >
+                {coords.accuracy == null
+                  ? t("Accuracy unknown - capture again before submitting.")
+                  : t("GPS accuracy ±{accuracy} m · {quality}", {
+                      accuracy: Math.round(coords.accuracy),
+                      quality: isGpsAccuracyGood(coords.accuracy) ? t("Good") : t("Weak"),
+                    })}
+              </Text>
+              {!isGpsAccuracyGood(coords.accuracy) ? (
+                <Text style={styles.helper}>
+                  {t(
+                    "Move to open sky and tap Update GPS location. Records need ±{limit} m or better.",
+                    { limit: GPS_ACCURACY_LIMIT_M }
+                  )}
+                </Text>
+              ) : null}
+            </>
           ) : (
             <Text style={styles.helper}>{t("No GPS captured yet.")}</Text>
           )}
@@ -597,6 +718,11 @@ export function NewRecordScreen({ navigation, route }: Props) {
           )}
         </Text>
       </ScrollView>
+      <SpeciesPicker
+        visible={speciesPickerOpen}
+        onClose={() => setSpeciesPickerOpen(false)}
+        onSelect={setSpecies}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -609,6 +735,21 @@ const styles = StyleSheet.create({
   title: { ...type.title },
   subhead: { ...type.subhead, marginTop: 2, maxWidth: 320 },
   helper: { fontSize: 12, color: colors.muted, marginTop: 6 },
+  helperError: { fontSize: 12, color: colors.rejectedInk, marginTop: 6, lineHeight: 17 },
+  catalogButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    marginTop: 8,
+    paddingHorizontal: 10,
+    minHeight: 34,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.control,
+    backgroundColor: colors.panel,
+  },
+  catalogText: { fontSize: 12, fontWeight: "600", color: colors.primaryDark },
   photoNote: { fontSize: 12, color: colors.primaryDark, marginTop: 6, lineHeight: 17 },
   coords: { fontSize: 15, fontWeight: "500", color: colors.ink },
   photoRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
