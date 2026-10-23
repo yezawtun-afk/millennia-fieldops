@@ -392,8 +392,8 @@ export const zh: Record<string, string> = {
   ", {count} still waiting review": "，其中 {count} 条仍在等待审核",
   "No records match the current filters.": "没有记录符合当前筛选条件。",
   "No records match those filters": "没有记录符合这些筛选条件",
-  "Clear the search box, or pick another type, status or zone.":
-    "清空搜索框，或选择其他类型、状态或区域。",
+  "Clear the search box, or pick another type, status, completion or zone.":
+    "清空搜索框，或选择其他类型、状态、完成状态或区域。",
   Type: "类型",
   Observed: "观察日期",
   Status: "状态",
@@ -408,6 +408,10 @@ export const zh: Record<string, string> = {
   "All types": "所有类型",
   "Filter by status": "按状态筛选",
   "All statuses": "所有状态",
+  Filters: "筛选",
+  Completion: "完成状态",
+  Incomplete: "未完成",
+  "Filter by completion": "按完成状态筛选",
   "Filter by severity": "按严重程度筛选",
   "All severities": "所有严重程度",
   "Filter by zone": "按区域筛选",

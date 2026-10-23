@@ -377,6 +377,22 @@ export const zh: Record<string, string> = {
   "Showing {shown} of {total}": "显示 {shown} / {total} 条",
   "No records match": "没有匹配的记录",
   "Try a different word or clear the filters.": "尝试其他关键词或清除筛选。",
+  Filters: "筛选",
+  Status: "状态",
+  Type: "类型",
+  Completion: "完成状态",
+  Incomplete: "未完成",
+  Reset: "重置",
+  Apply: "应用",
+  Close: "关闭",
+  "No jobs to do": "没有待办工作",
+  "No completed jobs yet": "暂无已完成的工作",
+  "Approved hazards you still need to finish appear here.":
+    "已批准但尚未完成的隐患工作会显示在这里。",
+  "Finished jobs appear here with their notes and after photos.":
+    "已完成的工作会连同备注和完成后照片显示在这里。",
+  "Completion filters use the job state, so the review status is set to all.":
+    "完成状态筛选按工作状态筛选，因此审核状态会设为全部。",
 
   // Finishing an approved hazard job.
   "To do": "待办",

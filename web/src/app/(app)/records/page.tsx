@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getProfile } from "@/lib/supabase/server";
 import { getZones, queryRecords } from "@/lib/data";
 import { EmptyState, PageHeader, tdClass, thClass } from "@/components/ui";
-import { SeverityBadge, StatusBadge, TypePill } from "@/components/Pills";
+import { CompletedBadge, SeverityBadge, StatusBadge, TypePill } from "@/components/Pills";
 import { formatDate, recordSubtitle } from "@/lib/format";
 import { RecordsFilters } from "@/components/RecordsFilters";
 import { ExportButtons } from "@/components/ExportButtons";
@@ -14,6 +14,7 @@ type SearchParams = Promise<{
   q?: string;
   type?: string;
   status?: string;
+  completion?: string;
   severity?: string;
   zone?: string;
 }>;
@@ -25,6 +26,7 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
     q: params.q,
     type: params.type,
     status: params.status,
+    completion: params.completion,
     severity: params.severity,
     zoneId: params.zone,
   };
@@ -42,6 +44,7 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
       q: params.q ?? "",
       type: params.type ?? "",
       status: params.status ?? "",
+      completion: params.completion ?? "",
       severity: params.severity ?? "",
       zone: params.zone ?? "",
     }).filter(([, v]) => v)
@@ -65,7 +68,7 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
       {records.length === 0 ? (
         <EmptyState
           title={t("No records match those filters")}
-          hint={t("Clear the search box, or pick another type, status or zone.")}
+          hint={t("Clear the search box, or pick another type, status, completion or zone.")}
         />
       ) : (
         <div className="overflow-hidden rounded-card border border-line bg-sheet">
@@ -110,7 +113,10 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
                       {formatDate(record.observed_date)}
                     </td>
                     <td className={tdClass}>
-                      <StatusBadge status={record.status} />
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <StatusBadge status={record.status} />
+                        {record.completed_at ? <CompletedBadge /> : null}
+                      </div>
                     </td>
                     <td className={`${tdClass} hidden whitespace-nowrap text-muted 2xl:table-cell`}>
                       {record.submitter?.full_name ?? "-"}

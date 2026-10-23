@@ -21,40 +21,23 @@ import {
   Banner,
   Button,
   Card,
-  ChipGroup,
   ListRow,
   Pill,
   SearchInput,
   SectionTitle,
 } from "../components/ui";
+import {
+  RecordFilterSheet,
+  type CompletionFilter,
+  type StatusFilter,
+  type TypeFilter,
+} from "../components/RecordFilterSheet";
 import { colors, radius, spacing, type } from "../theme";
 import { STATUS_LABELS, formatDate } from "../lib/format";
 import type { FieldRecord, OutboxRow } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
 
 type Props = TabScreenProps<"Records">;
-
-// The filters use short labels that fit a chip; the stored values stay as the
-// database spells them.
-const STATUS_FILTERS = ["all", "pending", "approved", "rejected"] as const;
-const TYPE_FILTERS = ["all", "flora", "soil_water", "hazard"] as const;
-
-type StatusFilter = (typeof STATUS_FILTERS)[number];
-type TypeFilter = (typeof TYPE_FILTERS)[number];
-
-const STATUS_CHIP_LABELS: Record<StatusFilter, string> = {
-  all: "All statuses",
-  pending: "Pending",
-  approved: "Approved",
-  rejected: "Rejected",
-};
-
-const TYPE_CHIP_LABELS: Record<TypeFilter, string> = {
-  all: "All types",
-  flora: "Flora",
-  soil_water: "Soil & water",
-  hazard: "Hazard",
-};
 
 // Case-insensitive "contains" across any of the given fields.
 function matchesQuery(
@@ -85,14 +68,35 @@ export function MyRecordsScreen({ navigation }: Props) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const needle = query.trim().toLowerCase();
   const filtersActive =
-    needle.length > 0 || statusFilter !== "all" || typeFilter !== "all";
+    needle.length > 0 ||
+    statusFilter !== "all" ||
+    typeFilter !== "all" ||
+    completionFilter !== "all";
+  const activeFilterCount = [statusFilter, typeFilter, completionFilter].filter(
+    (value) => value !== "all"
+  ).length;
 
-  // A review status only exists after upload, so a status filter hides the
-  // local drafts and queue instead of pretending a draft is "approved".
-  const showLocal = statusFilter === "all";
+  // A review status only exists after upload, and a completion only exists once
+  // a job is done, so either filter hides the local drafts and queue rather than
+  // pretending a draft is "approved" or "complete".
+  const showLocal = statusFilter === "all" && completionFilter === "all";
+
+  // The type and search filters apply to every group below, so they are worked
+  // out once.
+  const base = useMemo(
+    () =>
+      records.filter(
+        (record) =>
+          (typeFilter === "all" || record.type === typeFilter) &&
+          matchesQuery(needle, record.title, record.species_name, record.notes)
+      ),
+    [records, typeFilter, needle]
+  );
 
   const localRows = useMemo(
     () =>
@@ -109,52 +113,63 @@ export function MyRecordsScreen({ navigation }: Props) {
     [outbox, typeFilter, needle]
   );
 
-  const submitted = useMemo(
-    () =>
-      records.filter(
-        (record) =>
-          !isOpenJob(record) &&
-          (statusFilter === "all" || record.status === statusFilter) &&
-          (typeFilter === "all" || record.type === typeFilter) &&
-          matchesQuery(needle, record.title, record.species_name, record.notes)
-      ),
-    [records, statusFilter, typeFilter, needle]
-  );
+  // "Incomplete" removes the finished jobs from Submitted; "Completed" keeps
+  // only them. In both cases the review-status filter is ignored because the
+  // sheet locks it to "All statuses".
+  const submitted = useMemo(() => {
+    if (completionFilter === "open") return [];
+    return base.filter((record) => {
+      if (isOpenJob(record)) return false;
+      if (completionFilter === "done")
+        return record.type === "hazard" && Boolean(record.completed_at);
+      return statusFilter === "all" || record.status === statusFilter;
+    });
+  }, [base, completionFilter, statusFilter]);
 
-  // The filter row's "All" and "Approved" include the jobs that still need
-  // doing. Pending and Rejected are about review decisions, so open jobs (which
-  // are always approved) would be out of place there.
-  const showToDo = statusFilter === "all" || statusFilter === "approved";
-
-  const openJobs = useMemo(
-    () =>
-      showToDo
-        ? records.filter(
-            (record) =>
-              isOpenJob(record) &&
-              (typeFilter === "all" || record.type === typeFilter) &&
-              matchesQuery(needle, record.title, record.species_name, record.notes)
-          )
-        : [],
-    [records, showToDo, typeFilter, needle]
-  );
+  // All and Approved include jobs that still need doing. Pending and Rejected
+  // are about review decisions, so open jobs (which are always approved) would
+  // be out of place there.
+  const openJobs = useMemo(() => {
+    if (completionFilter === "done") return [];
+    if (
+      completionFilter === "all" &&
+      statusFilter !== "all" &&
+      statusFilter !== "approved"
+    ) {
+      return [];
+    }
+    return base.filter(isOpenJob);
+  }, [base, completionFilter, statusFilter]);
 
   const drafts = showLocal ? localRows.filter((row) => row.status === "draft") : [];
   const queued = showLocal ? localRows.filter((row) => row.status !== "draft") : [];
 
   const anyMatch =
     drafts.length + queued.length + openJobs.length + submitted.length > 0;
-  // What "Showing X of Y" counts. With a status filter the local rows are
-  // deliberately out of scope, so they should not inflate the total either.
-  const visibleTotal = showLocal
-    ? records.length + outbox.length
-    : records.length;
+  // What "Showing X of Y" counts. With a status or completion filter the local
+  // rows are deliberately out of scope, so they should not inflate the total.
+  const visibleTotal = useMemo(() => {
+    const inTypeScope = records.filter(
+      (record) => typeFilter === "all" || record.type === typeFilter
+    );
+    if (completionFilter === "open") return inTypeScope.filter(isOpenJob).length;
+    if (completionFilter === "done")
+      return inTypeScope.filter(
+        (record) => record.type === "hazard" && Boolean(record.completed_at)
+      ).length;
+    if (!showLocal) return inTypeScope.length;
+    const localInTypeScope = outbox.filter(
+      (row) => typeFilter === "all" || row.payload.type === typeFilter
+    );
+    return inTypeScope.length + localInTypeScope.length;
+  }, [records, outbox, typeFilter, completionFilter, showLocal]);
   const visibleShown = drafts.length + queued.length + openJobs.length + submitted.length;
 
   function clearFilters() {
     setQuery("");
     setStatusFilter("all");
     setTypeFilter("all");
+    setCompletionFilter("all");
     Keyboard.dismiss();
   }
 
@@ -282,24 +297,45 @@ export function MyRecordsScreen({ navigation }: Props) {
       {/* Nothing to search before the first record exists. */}
       {records.length > 0 || outbox.length > 0 ? (
         <View style={styles.filters}>
-          <SearchInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder={t("Search title, species, notes")}
-            accessibilityLabel={t("Search records")}
-          />
-          <ChipGroup
-            options={[...STATUS_FILTERS]}
-            value={statusFilter}
-            onChange={(value) => setStatusFilter(value as StatusFilter)}
-            labelFor={(value) => t(STATUS_CHIP_LABELS[value as StatusFilter])}
-          />
-          <ChipGroup
-            options={[...TYPE_FILTERS]}
-            value={typeFilter}
-            onChange={(value) => setTypeFilter(value as TypeFilter)}
-            labelFor={(value) => t(TYPE_CHIP_LABELS[value as TypeFilter])}
-          />
+          <View style={styles.searchRow}>
+            <View style={styles.searchBox}>
+              <SearchInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder={t("Search title, species, notes")}
+                accessibilityLabel={t("Search records")}
+              />
+            </View>
+            <Pressable
+              onPress={() => setFiltersOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={t("Filters")}
+              style={({ pressed }) => [
+                styles.filterButton,
+                activeFilterCount > 0 ? styles.filterButtonActive : null,
+                pressed ? { opacity: 0.7 } : null,
+              ]}
+            >
+              <Ionicons
+                name="options-outline"
+                size={17}
+                color={activeFilterCount > 0 ? colors.primaryDark : colors.ink}
+              />
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  activeFilterCount > 0 ? styles.filterButtonTextActive : null,
+                ]}
+              >
+                {t("Filters")}
+              </Text>
+              {activeFilterCount > 0 ? (
+                <View style={styles.filterBadge}>
+                  <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+                </View>
+              ) : null}
+            </Pressable>
+          </View>
           {filtersActive ? (
             <View style={styles.filterFooter}>
               <Text style={styles.filterCount}>
@@ -328,10 +364,30 @@ export function MyRecordsScreen({ navigation }: Props) {
       {filtersActive && !anyMatch ? (
         <Card>
           <View style={styles.empty}>
-            <Ionicons name="search" size={22} color={colors.muted} />
-            <Text style={styles.emptyTitle}>{t("No records match")}</Text>
+            <Ionicons
+              name={
+                completionFilter === "done"
+                  ? "checkmark-done-outline"
+                  : completionFilter === "open"
+                    ? "construct-outline"
+                    : "search"
+              }
+              size={22}
+              color={colors.muted}
+            />
+            <Text style={styles.emptyTitle}>
+              {completionFilter === "open"
+                ? t("No jobs to do")
+                : completionFilter === "done"
+                  ? t("No completed jobs yet")
+                  : t("No records match")}
+            </Text>
             <Text style={styles.emptyHint}>
-              {t("Try a different word or clear the filters.")}
+              {completionFilter === "open"
+                ? t("Approved hazards you still need to finish appear here.")
+                : completionFilter === "done"
+                  ? t("Finished jobs appear here with their notes and after photos.")
+                  : t("Try a different word or clear the filters.")}
             </Text>
             <Button
               title={t("Clear filters")}
@@ -527,6 +583,21 @@ export function MyRecordsScreen({ navigation }: Props) {
       ) : null}
 
       <View style={{ height: spacing.xxl }} />
+
+      <RecordFilterSheet
+        visible={filtersOpen}
+        status={statusFilter}
+        type={typeFilter}
+        completion={completionFilter}
+        onClose={() => setFiltersOpen(false)}
+        onApply={(next) => {
+          setStatusFilter(next.status);
+          setTypeFilter(next.type);
+          setCompletionFilter(next.completion);
+          setFiltersOpen(false);
+          Keyboard.dismiss();
+        }}
+      />
     </ScrollView>
   );
 }
@@ -538,6 +609,36 @@ const styles = StyleSheet.create({
   title: { ...type.title },
   subhead: { ...type.subhead, marginTop: 2 },
   filters: { gap: spacing.sm, marginBottom: spacing.lg },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  searchBox: { flex: 1 },
+  filterButton: {
+    height: 46,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.control,
+    backgroundColor: colors.card,
+  },
+  filterButtonActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
+  },
+  filterButtonText: { fontSize: 14, fontWeight: "500", color: colors.ink },
+  filterButtonTextActive: { color: colors.primaryDark, fontWeight: "600" },
+  filterBadge: {
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 5,
+    borderRadius: radius.full,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.primary,
+  },
+  filterBadgeText: { fontSize: 11, fontWeight: "600", color: colors.onTint },
   filterFooter: {
     flexDirection: "row",
     alignItems: "center",

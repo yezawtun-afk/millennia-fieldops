@@ -30,7 +30,7 @@ export function RecordsFilters({ zones }: { zones: Zone[] }) {
     router.push(query ? `${pathname}?${query}` : pathname);
   }
 
-  const hasFilters = ["q", "type", "status", "severity", "zone"].some((key) =>
+  const hasFilters = ["q", "type", "status", "completion", "severity", "zone"].some((key) =>
     searchParams.get(key)
   );
 
@@ -59,7 +59,7 @@ export function RecordsFilters({ zones }: { zones: Zone[] }) {
 
       <select
         value={searchParams.get("type") ?? ""}
-        onChange={(event) => apply({ type: event.target.value })}
+        onChange={(event) => apply({ type: event.target.value, completion: "" })}
         aria-label={t("Filter by type")}
         className={`${selectClass} sm:w-[136px]`}
       >
@@ -71,7 +71,7 @@ export function RecordsFilters({ zones }: { zones: Zone[] }) {
 
       <select
         value={searchParams.get("status") ?? ""}
-        onChange={(event) => apply({ status: event.target.value })}
+        onChange={(event) => apply({ status: event.target.value, completion: "" })}
         aria-label={t("Filter by status")}
         className={`${selectClass} sm:w-[150px]`}
       >
@@ -79,6 +79,26 @@ export function RecordsFilters({ zones }: { zones: Zone[] }) {
         <option value="pending">{t("Pending review")}</option>
         <option value="approved">{t("Approved")}</option>
         <option value="rejected">{t("Rejected")}</option>
+      </select>
+
+      <select
+        value={searchParams.get("completion") ?? ""}
+        onChange={(event) => {
+          const completion = event.target.value;
+          // A completion is either an open or a finished hazard job, so it
+          // cannot sit alongside a different type or review status.
+          apply(
+            completion
+              ? { completion, type: "", status: "" }
+              : { completion: "" }
+          );
+        }}
+        aria-label={t("Filter by completion")}
+        className={`${selectClass} sm:w-[150px]`}
+      >
+        <option value="">{t("All")}</option>
+        <option value="open">{t("Incomplete")}</option>
+        <option value="done">{t("Completed")}</option>
       </select>
 
       <select

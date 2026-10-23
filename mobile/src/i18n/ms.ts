@@ -410,6 +410,22 @@ export const ms: Record<string, string> = {
   "No records match": "Tiada rekod sepadan",
   "Try a different word or clear the filters.":
     "Cuba perkataan lain atau kosongkan penapis.",
+  Filters: "Penapis",
+  Status: "Status",
+  Type: "Jenis",
+  Completion: "Status kerja",
+  Incomplete: "Belum selesai",
+  Reset: "Set semula",
+  Apply: "Guna",
+  Close: "Tutup",
+  "No jobs to do": "Tiada kerja untuk dilakukan",
+  "No completed jobs yet": "Belum ada kerja selesai",
+  "Approved hazards you still need to finish appear here.":
+    "Bahaya yang diluluskan dan masih perlu diselesaikan akan muncul di sini.",
+  "Finished jobs appear here with their notes and after photos.":
+    "Kerja yang selesai akan muncul di sini bersama nota dan foto selepas.",
+  "Completion filters use the job state, so the review status is set to all.":
+    "Penapis status kerja menggunakan status kerja, jadi status semakan ditetapkan kepada semua.",
 
   // Finishing an approved hazard job.
   "To do": "Untuk dibuat",

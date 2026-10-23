@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     q: sp.get("q") ?? undefined,
     type: sp.get("type") ?? undefined,
     status: sp.get("status") ?? undefined,
+    completion: sp.get("completion") ?? undefined,
     severity: sp.get("severity") ?? undefined,
     zoneId: sp.get("zone") ?? undefined,
   });

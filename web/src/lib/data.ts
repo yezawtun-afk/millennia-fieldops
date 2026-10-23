@@ -17,6 +17,8 @@ export interface RecordFilters {
   status?: string;
   severity?: string;
   zoneId?: string;
+  /** "open" = approved hazard still to do, "done" = finished hazard job. */
+  completion?: string;
 }
 
 // PostgREST reads the inside of an `or=` filter as syntax, so commas,
@@ -31,8 +33,18 @@ export async function queryRecords(filters: RecordFilters = {}): Promise<FieldRe
   const supabase = await createClient();
   let query = supabase.from("records").select(RECORD_SELECT).order("created_at", { ascending: false });
 
-  if (filters.type) query = query.eq("type", filters.type);
-  if (filters.status) query = query.eq("status", filters.status);
+  if (filters.completion === "open" || filters.completion === "done") {
+    // Completion is a property of an approved hazard job, so it replaces the
+    // type and status filters instead of combining with them.
+    query = query.eq("type", "hazard").eq("status", "approved");
+    query =
+      filters.completion === "open"
+        ? query.is("completed_at", null)
+        : query.not("completed_at", "is", null);
+  } else {
+    if (filters.type) query = query.eq("type", filters.type);
+    if (filters.status) query = query.eq("status", filters.status);
+  }
   if (filters.severity) query = query.eq("severity", filters.severity);
   if (filters.zoneId) query = query.eq("zone_id", filters.zoneId);
   if (filters.q) {
@@ -58,8 +70,16 @@ export async function countRecords(filters: RecordFilters = {}): Promise<number>
   const supabase = await createClient();
   let query = supabase.from("records").select("id", { count: "exact", head: true });
 
-  if (filters.type) query = query.eq("type", filters.type);
-  if (filters.status) query = query.eq("status", filters.status);
+  if (filters.completion === "open" || filters.completion === "done") {
+    query = query.eq("type", "hazard").eq("status", "approved");
+    query =
+      filters.completion === "open"
+        ? query.is("completed_at", null)
+        : query.not("completed_at", "is", null);
+  } else {
+    if (filters.type) query = query.eq("type", filters.type);
+    if (filters.status) query = query.eq("status", filters.status);
+  }
   if (filters.severity) query = query.eq("severity", filters.severity);
   if (filters.zoneId) query = query.eq("zone_id", filters.zoneId);
 

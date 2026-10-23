@@ -302,12 +302,15 @@ export function ChipGroup({
   value,
   onChange,
   labelFor,
+  disabled,
 }: {
   options: string[];
   value: string | null;
   onChange: (value: string) => void;
   /** Display text for an option whose stored value must stay unchanged. */
   labelFor?: (option: string) => string;
+  /** A group that does not apply to the current choice stays readable but inert. */
+  disabled?: boolean;
 }) {
   return (
     <View style={styles.chipRow}>
@@ -317,12 +320,14 @@ export function ChipGroup({
           <Pressable
             key={option}
             onPress={() => onChange(option)}
+            disabled={disabled}
             accessibilityRole="button"
-            accessibilityState={{ selected }}
+            accessibilityState={{ selected, disabled: !!disabled }}
             style={({ pressed }) => [
               styles.chip,
               selected && styles.chipSelected,
-              pressed && { opacity: 0.7 },
+              disabled && styles.chipDisabled,
+              pressed && !disabled && { opacity: 0.7 },
             ]}
           >
             <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
@@ -472,6 +477,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   chipSelected: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
+  chipDisabled: { opacity: 0.45 },
   chipText: { fontSize: 13, color: colors.ink },
   chipTextSelected: { color: colors.primaryDark, fontWeight: "600" },
   banner: {
