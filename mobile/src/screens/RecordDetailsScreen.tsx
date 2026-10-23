@@ -2,6 +2,7 @@ import React, { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, Image, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { Ionicons } from "@expo/vector-icons";
 import { deleteRecord, fetchRecord, signPhotoUrls } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../i18n";
@@ -21,6 +22,7 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
   const userId = session?.user.id ?? profile?.id ?? null;
   const [record, setRecord] = useState<FieldRecord | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
+  const [completionPhotos, setCompletionPhotos] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
 
@@ -34,6 +36,13 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
         setRecord(data);
         if (data && data.photos?.length) {
           setPhotos(await signPhotoUrls(data.photos));
+        } else {
+          setPhotos([]);
+        }
+        if (data && data.completion_photos?.length) {
+          setCompletionPhotos(await signPhotoUrls(data.completion_photos));
+        } else {
+          setCompletionPhotos([]);
         }
         setLoading(false);
       })();
@@ -62,6 +71,7 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
   }
 
   const isOwnRecord = Boolean(userId && record.submitted_by === userId);
+  const isCompleted = Boolean(record.completed_at);
   // Your own record, not reviewed yet: you may take it back.
   const canDelete = isOwnRecord && record.status === "pending";
 
@@ -144,6 +154,16 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
           color={STATUS_COLORS[record.status].fg}
           background={STATUS_COLORS[record.status].bg}
         />
+        {isCompleted ? (
+          <Pill
+            label={t("Completed")}
+            color={colors.approvedInk}
+            background={colors.approvedSoft}
+            icon={
+              <Ionicons name="checkmark-circle" size={13} color={colors.approvedInk} />
+            }
+          />
+        ) : null}
         {record.type === "hazard" && record.severity ? (
           <Pill
             label={t(record.severity)}
@@ -236,6 +256,53 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
           </>
         )}
       </Card>
+
+      {record.type === "hazard" && record.status === "approved" ? (
+        <Card padded style={styles.cardSpacing}>
+          <SectionTitle>{t("Work")}</SectionTitle>
+          {isCompleted ? (
+            <View style={styles.reviewText}>
+              <Text style={styles.body}>
+                {t("Completed by {name} on {date}.", {
+                  name:
+                    record.completer?.full_name ??
+                    record.submitter?.full_name ??
+                    t("the field worker"),
+                  date: formatDateTime(record.completed_at),
+                })}
+              </Text>
+              {record.completion_note ? (
+                <Text style={styles.feedback}>{record.completion_note}</Text>
+              ) : null}
+              {completionPhotos.length > 0 ? (
+                <View style={{ marginTop: spacing.md }}>
+                  <Text style={styles.factLabel}>{t("After photos")}</Text>
+                  <View style={styles.photoRow}>
+                    {completionPhotos.map((uri) => (
+                      <Image key={uri} source={{ uri }} style={styles.photo} />
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+            </View>
+          ) : (
+            <>
+              <Text style={styles.muted}>
+                {isOwnRecord
+                  ? t("The report is approved. Do the work, then mark the job as done.")
+                  : t("Waiting for the worker to finish the job.")}
+              </Text>
+              {isOwnRecord ? (
+                <Button
+                  title={t("Finish job")}
+                  onPress={() => navigation.navigate("CompleteJob", { id: record.id })}
+                  style={{ marginTop: spacing.md }}
+                />
+              ) : null}
+            </>
+          )}
+        </Card>
+      ) : null}
 
       {canDelete ? (
         <View style={{ marginTop: spacing.lg }}>

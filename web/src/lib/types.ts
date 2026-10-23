@@ -68,10 +68,18 @@ export interface FieldRecord {
   reviewed_at: string | null;
   created_at: string;
 
+  // Set when the worker finishes an approved hazard job
+  // (supabase/12_job_completion.sql). The review status stays "approved".
+  completed_at?: string | null;
+  completed_by?: string | null;
+  completion_note?: string | null;
+  completion_photos?: string[];
+
   // Joined fields (filled by the query helpers).
   zone?: { id: string; name: string } | null;
   submitter?: { id: string; full_name: string } | null;
   reviewer?: { id: string; full_name: string } | null;
+  completer?: { id: string; full_name: string } | null;
 }
 
 // One row of the append-only activity log (supabase/10_audit_logs.sql).

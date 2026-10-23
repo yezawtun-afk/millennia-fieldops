@@ -1,8 +1,9 @@
 // The sync engine. Uploads queued records (and their photos) to Supabase,
 // then removes them from the local outbox.
-import { supabase, PHOTO_BUCKET } from "./supabase";
+import { supabase } from "./supabase";
 import { listOutbox, markError, removeOutbox } from "./sqlite";
 import { deletePhoto } from "./photos";
+import { uploadRecordPhoto } from "./upload";
 import type { OutboxRecord } from "./types";
 
 export interface SyncResult {
@@ -10,25 +11,12 @@ export interface SyncResult {
   failed: number;
 }
 
-async function uploadPhoto(uri: string, path: string): Promise<string> {
-  // Read the local file into an ArrayBuffer, then upload it.
-  const response = await fetch(uri);
-  const arrayBuffer = await response.arrayBuffer();
-
-  const { error } = await supabase.storage
-    .from(PHOTO_BUCKET)
-    .upload(path, arrayBuffer, { contentType: "image/jpeg", upsert: true });
-
-  if (error) throw new Error(error.message);
-  return path;
-}
-
 async function pushRecord(record: OutboxRecord, userId: string) {
   // 1. Upload the photos and collect their storage paths.
   const photoPaths: string[] = [];
   for (let i = 0; i < record.photos.length; i += 1) {
     const path = `${userId}/${record.localId}/${i}.jpg`;
-    photoPaths.push(await uploadPhoto(record.photos[i], path));
+    photoPaths.push(await uploadRecordPhoto(record.photos[i], path));
   }
 
   // 2. Insert the record row.

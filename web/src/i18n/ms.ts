@@ -623,4 +623,14 @@ export const ms: Record<string, string> = {
   "Delete this zone? Its {count} records will keep their details but have no zone.":
     "Padam zon ini? {count} rekodnya akan kekal tetapi tidak mempunyai zon.",
   "Your account cannot change zones.": "Akaun anda tidak boleh mengubah zon.",
+
+  // Job completion on the record page and in the activity log.
+  Work: "Kerja",
+  Completed: "Selesai",
+  "Completed by {name} on {date}.": "Diselesaikan oleh {name} pada {date}.",
+  "Waiting for the worker to finish the job.": "Menunggu petugas menyelesaikan kerja.",
+  "After photos": "Foto selepas",
+  "After photo {number}": "Foto selepas {number}",
+  "the field worker": "petugas lapangan",
+  "Job completed": "Kerja selesai",
 };

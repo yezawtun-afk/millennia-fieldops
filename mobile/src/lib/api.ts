@@ -3,7 +3,7 @@ import { supabase, PHOTO_BUCKET } from "./supabase";
 import type { AppNotification, FieldRecord, Zone } from "./types";
 
 const RECORD_SELECT =
-  "*, zone:zones ( id, name ), submitter:profiles!records_submitted_by_fkey ( id, full_name )";
+  "*, zone:zones ( id, name ), submitter:profiles!records_submitted_by_fkey ( id, full_name ), completer:profiles!records_completed_by_fkey ( id, full_name )";
 
 export async function fetchZones(): Promise<Zone[]> {
   const { data, error } = await supabase.from("zones").select("*").order("name");
@@ -124,6 +124,24 @@ export async function deleteRecord(id: string, photos: string[] = []): Promise<v
       // ignore
     }
   }
+}
+
+// ---- Finishing a hazard job ------------------------------------------------
+// The database function is the gatekeeper: it checks that the caller submitted
+// the record, that it is an approved hazard, and that it is not already done.
+// The app only sends the note and the paths of photos that were already
+// uploaded to the worker's own folder (see lib/upload.ts).
+export async function completeRecord(
+  id: string,
+  note: string | null,
+  photoPaths: string[]
+): Promise<{ error?: string }> {
+  const { error } = await supabase.rpc("complete_record", {
+    p_record_id: id,
+    p_note: note,
+    p_photos: photoPaths,
+  });
+  return error ? { error: error.message } : {};
 }
 
 // ---- Phone sign-in --------------------------------------------------------

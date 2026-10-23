@@ -4,6 +4,7 @@ export const AUDIT_ACTIONS = [
   "record.created",
   "record.approved",
   "record.rejected",
+  "record.completed",
   "record.updated",
   "record.deleted",
   "account.created",
@@ -20,6 +21,7 @@ const LABELS: Record<string, string> = {
   "record.created": "Record submitted",
   "record.approved": "Record approved",
   "record.rejected": "Record rejected",
+  "record.completed": "Job completed",
   "record.updated": "Record edited",
   "record.deleted": "Record deleted",
   "account.created": "Account created",
@@ -38,6 +40,7 @@ export function auditActionLabel(action: string): string {
 
 // Colour family for the pill, matching the record status colours.
 export function auditTone(action: string): "ok" | "warn" | "danger" | "info" {
+  if (action === "record.completed") return "ok";
   if (action.endsWith(".deleted") || action.endsWith(".declined") || action.endsWith(".deactivated")) {
     return "danger";
   }

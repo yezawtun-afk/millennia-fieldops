@@ -271,6 +271,9 @@ export const zh: Record<string, string> = {
   "Your phone number is how you sign in. An administrator reviews every request before it can be used.":
     "手机号码是你的登录方式。每个申请都需要管理员审核后才能使用。",
   'Your record "{title}" was {status}.': "你的记录“{title}”{status}。",
+  'Your hazard report "{title}" was {status}.': "你的隐患报告“{title}”{status}。",
+  'Your hazard report "{title}" was {status}. The job is ready to finish in To do.':
+    "你的隐患报告“{title}”{status}。工作已可在“待办”中完成。",
   "Zones load when you are online. You can still save offline.":
     "区域信息需要联网加载，离线时仍可保存。",
 
@@ -374,4 +377,36 @@ export const zh: Record<string, string> = {
   "Showing {shown} of {total}": "显示 {shown} / {total} 条",
   "No records match": "没有匹配的记录",
   "Try a different word or clear the filters.": "尝试其他关键词或清除筛选。",
+
+  // Finishing an approved hazard job.
+  "To do": "待办",
+  Work: "工作",
+  "Finish job": "完成工作",
+  Completed: "已完成",
+  "the field worker": "外勤人员",
+  "Completed by {name} on {date}.": "由 {name} 于 {date} 完成。",
+  "The report is approved. Do the work, then mark the job as done.":
+    "报告已获批准。完成工作后，请标记为已完成。",
+  "Waiting for the worker to finish the job.": "等待外勤人员完成工作。",
+  "What did you do?": "你做了什么？",
+  "Add a short note about the work (optional).": "简要说明工作情况（可选）。",
+  "After photos": "完成后照片",
+  "Up to 3 after photos. They are shrunk on the phone before upload.":
+    "最多 3 张完成后照片，上传前会在手机上压缩。",
+  "You need a connection to mark a job done.": "标记工作完成需要网络连接。",
+  "Mark this job as done?": "将此工作标记为已完成？",
+  "The record will show as completed. This cannot be undone.":
+    "记录将显示为已完成，此操作无法撤销。",
+  "Mark as done": "标记完成",
+  "Mark job as done": "标记工作完成",
+  "Could not upload the photos. Try again.": "无法上传照片，请重试。",
+  "Could not mark the job as done. Try again.": "无法标记工作完成，请重试。",
+  "This job is already complete.": "此工作已完成。",
+  "Only the worker who submitted this report can finish the job.":
+    "只有提交此报告的外勤人员才能完成工作。",
+  "Only hazard reports have a job to finish.": "只有隐患报告需要完成后续工作。",
+  "The report must be approved before the job can be finished.":
+    "报告必须获批后才能完成工作。",
+  "The record stays approved and also shows as completed.":
+    "记录仍保持已批准状态，并同时显示为已完成。",
 };

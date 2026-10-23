@@ -297,6 +297,10 @@ export const ms: Record<string, string> = {
   "Your phone number is how you sign in. An administrator reviews every request before it can be used.":
     "Nombor telefon anda ialah cara anda log masuk. Pentadbir menyemak setiap permohonan sebelum ia boleh digunakan.",
   'Your record "{title}" was {status}.': 'Rekod anda "{title}" telah {status}.',
+  'Your hazard report "{title}" was {status}.':
+    'Laporan bahaya anda "{title}" telah {status}.',
+  'Your hazard report "{title}" was {status}. The job is ready to finish in To do.':
+    'Laporan bahaya anda "{title}" telah {status}. Kerja sedia untuk diselesaikan dalam Untuk dibuat.',
   "Zones load when you are online. You can still save offline.":
     "Zon dimuatkan apabila anda dalam talian. Anda masih boleh menyimpan di luar talian.",
 
@@ -406,4 +410,42 @@ export const ms: Record<string, string> = {
   "No records match": "Tiada rekod sepadan",
   "Try a different word or clear the filters.":
     "Cuba perkataan lain atau kosongkan penapis.",
+
+  // Finishing an approved hazard job.
+  "To do": "Untuk dibuat",
+  Work: "Kerja",
+  "Finish job": "Selesaikan kerja",
+  Completed: "Selesai",
+  "the field worker": "petugas lapangan",
+  "Completed by {name} on {date}.": "Diselesaikan oleh {name} pada {date}.",
+  "The report is approved. Do the work, then mark the job as done.":
+    "Laporan telah diluluskan. Lakukan kerja, kemudian tandakan kerja sebagai selesai.",
+  "Waiting for the worker to finish the job.":
+    "Menunggu petugas menyelesaikan kerja.",
+  "What did you do?": "Apa yang anda lakukan?",
+  "Add a short note about the work (optional).":
+    "Tambah nota ringkas tentang kerja (pilihan).",
+  "After photos": "Foto selepas",
+  "Up to 3 after photos. They are shrunk on the phone before upload.":
+    "Sehingga 3 foto selepas. Imej dikecilkan pada telefon sebelum dimuat naik.",
+  "You need a connection to mark a job done.":
+    "Anda memerlukan sambungan untuk menandakan kerja selesai.",
+  "Mark this job as done?": "Tandakan kerja ini sebagai selesai?",
+  "The record will show as completed. This cannot be undone.":
+    "Rekod akan ditunjukkan sebagai selesai. Tindakan ini tidak boleh dibatalkan.",
+  "Mark as done": "Tandakan selesai",
+  "Mark job as done": "Tandakan kerja selesai",
+  "Could not upload the photos. Try again.":
+    "Tidak dapat memuat naik foto. Cuba lagi.",
+  "Could not mark the job as done. Try again.":
+    "Tidak dapat menandakan kerja sebagai selesai. Cuba lagi.",
+  "This job is already complete.": "Kerja ini sudah selesai.",
+  "Only the worker who submitted this report can finish the job.":
+    "Hanya petugas yang menghantar laporan ini boleh menyelesaikan kerja.",
+  "Only hazard reports have a job to finish.":
+    "Hanya laporan bahaya mempunyai kerja untuk diselesaikan.",
+  "The report must be approved before the job can be finished.":
+    "Laporan mesti diluluskan sebelum kerja boleh diselesaikan.",
+  "The record stays approved and also shows as completed.":
+    "Rekod kekal diluluskan dan juga ditunjukkan sebagai selesai.",
 };

@@ -42,17 +42,26 @@ export function translate(locale: Locale, text: string, params?: TranslateParams
   );
 }
 
-// Notification rows are written by a database trigger in English. The two
-// patterns it produces are translated here; anything else is shown as stored.
+// Notification rows are written by a database trigger in English. The patterns
+// it produces are translated here; anything else is shown as stored.
 export function translateNotification(
   t: (text: string, params?: TranslateParams) => string,
   message: string
 ): string {
-  const reviewed = message.match(/^Your record "(.*)" was (approved|rejected)\.$/s);
+  const reviewed = message.match(
+    /^Your (hazard report|record) "(.*)" was (approved|rejected)\.( The job is ready to finish in To do\.)?$/s
+  );
   if (reviewed) {
-    return t("Your record \"{title}\" was {status}.", {
-      title: reviewed[1],
-      status: reviewed[2] === "approved" ? t("approved") : t("rejected"),
+    const [, kind, title, status, jobReady] = reviewed;
+    const key =
+      kind === "hazard report"
+        ? jobReady
+          ? 'Your hazard report "{title}" was {status}. The job is ready to finish in To do.'
+          : 'Your hazard report "{title}" was {status}.'
+        : 'Your record "{title}" was {status}.';
+    return t(key, {
+      title,
+      status: status === "approved" ? t("approved") : t("rejected"),
     });
   }
   return message;

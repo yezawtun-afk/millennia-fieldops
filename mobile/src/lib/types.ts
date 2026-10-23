@@ -59,8 +59,17 @@ export interface FieldRecord {
   reviewed_at: string | null;
   created_at: string;
 
+  // Set when the worker marks an approved hazard as done
+  // (supabase/12_job_completion.sql). Approval and completion are separate:
+  // status stays "approved" after the work is finished.
+  completed_at?: string | null;
+  completed_by?: string | null;
+  completion_note?: string | null;
+  completion_photos?: string[];
+
   zone?: { id: string; name: string } | null;
   submitter?: { id: string; full_name: string } | null;
+  completer?: { id: string; full_name: string } | null;
 }
 
 export interface AppNotification {

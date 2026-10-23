@@ -121,7 +121,10 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
                           compact
                           recordId={record.id}
                           title={record.title}
-                          photos={record.photos ?? []}
+                          photos={[
+                            ...(record.photos ?? []),
+                            ...(record.completion_photos ?? []),
+                          ]}
                         />
                       </td>
                     ) : null}

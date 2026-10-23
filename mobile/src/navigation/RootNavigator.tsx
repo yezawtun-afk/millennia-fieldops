@@ -12,6 +12,7 @@ import { NewRecordScreen } from "../screens/NewRecordScreen";
 import { MyRecordsScreen } from "../screens/MyRecordsScreen";
 import { MapScreen } from "../screens/MapScreen";
 import { RecordDetailsScreen } from "../screens/RecordDetailsScreen";
+import { CompleteJobScreen } from "../screens/CompleteJobScreen";
 import { NotificationsScreen } from "../screens/NotificationsScreen";
 import { ReviewScreen } from "../screens/ReviewScreen";
 import { ReviewRecordScreen } from "../screens/ReviewRecordScreen";
@@ -183,6 +184,16 @@ export function RootNavigator() {
         component={RecordDetailsScreen}
         options={{
           title: t("Record"),
+          headerStyle: { backgroundColor: colors.page },
+          headerTintColor: colors.ink,
+          headerShadowVisible: false,
+        }}
+      />
+      <RootStack.Screen
+        name="CompleteJob"
+        component={CompleteJobScreen}
+        options={{
+          title: t("Finish job"),
           headerStyle: { backgroundColor: colors.page },
           headerTintColor: colors.ink,
           headerShadowVisible: false,

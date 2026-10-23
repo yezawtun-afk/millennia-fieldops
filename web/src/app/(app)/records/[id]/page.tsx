@@ -5,7 +5,7 @@ import { getProfile } from "@/lib/supabase/server";
 import { getRecord } from "@/lib/data";
 import { signPhotoUrls } from "@/lib/photos";
 import { Card, PageHeader } from "@/components/ui";
-import { SeverityBadge, StatusBadge, TypePill } from "@/components/Pills";
+import { SeverityBadge, StatusBadge, TypePill, CompletedBadge } from "@/components/Pills";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { ReviewPanel } from "@/components/ReviewPanel";
 import { DeleteRecordButton } from "@/components/DeleteRecordButton";
@@ -20,6 +20,9 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
   if (!record || !profile) notFound();
 
   const photoUrls = Object.values(await signPhotoUrls(record.photos ?? []));
+  const completionUrls = Object.values(
+    await signPhotoUrls(record.completion_photos ?? [])
+  );
 
   const isReviewer = profile.role === "supervisor" || profile.role === "admin";
   const isAdmin = profile.role === "admin";
@@ -69,6 +72,7 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
           <>
             <TypePill type={record.type} />
             <StatusBadge status={record.status} />
+            {record.completed_at ? <CompletedBadge /> : null}
             {record.type === "hazard" ? (
               <SeverityBadge severity={record.severity as HazardSeverity | null} />
             ) : null}
@@ -76,7 +80,7 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
               <DeleteRecordButton
                 recordId={record.id}
                 title={record.title}
-                photos={record.photos ?? []}
+                photos={[...(record.photos ?? []), ...(record.completion_photos ?? [])]}
                 redirectTo="/records"
               />
             ) : null}
@@ -204,6 +208,56 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
               )}
             </div>
           </Card>
+
+          {record.type === "hazard" && record.status === "approved" ? (
+            <Card>
+              <h2 className="border-b border-rule px-4 py-3 text-[14px] font-semibold text-ink">
+                {t("Work")}
+              </h2>
+              <div className="p-4 text-[13px]">
+                {record.completed_at ? (
+                  <>
+                    <p className="text-ink">
+                      {t("Completed by {name} on {date}.", {
+                        name: record.completer?.full_name ?? t("the field worker"),
+                        date: formatDateTime(record.completed_at),
+                      })}
+                    </p>
+                    {record.completion_note ? (
+                      <p className="mt-3 whitespace-pre-wrap rounded-control border border-rule bg-panel px-3 py-2 text-[13px] text-ink">
+                        {record.completion_note}
+                      </p>
+                    ) : null}
+                    {completionUrls.length > 0 ? (
+                      <div className="mt-3">
+                        <p className="text-[12px] text-muted">{t("After photos")}</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {completionUrls.map((url, index) => (
+                            <a
+                              key={url}
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block overflow-hidden rounded-[6px] border border-line"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={url}
+                                alt={t("After photo {number}", { number: index + 1 })}
+                                className="photo-thumb h-24 w-24 transition-transform hover:scale-[1.02]"
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className="text-muted">{t("Waiting for the worker to finish the job.")}</p>
+                )}
+              </div>
+            </Card>
+          ) : null}
 
           <Card>
             <h2 className="border-b border-rule px-4 py-3 text-[14px] font-semibold text-ink">

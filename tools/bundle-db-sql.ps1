@@ -28,7 +28,8 @@ param(
         "05_seed.sql",
         "06_severity_levels.sql",
         "09_delete_own_pending.sql",
-        "10_audit_logs.sql"
+        "10_audit_logs.sql",
+        "12_job_completion.sql"
     )
 )
 

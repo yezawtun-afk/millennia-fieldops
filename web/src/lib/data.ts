@@ -7,7 +7,8 @@ const RECORD_SELECT = `
   *,
   zone:zones ( id, name ),
   submitter:profiles!records_submitted_by_fkey ( id, full_name ),
-  reviewer:profiles!records_reviewed_by_fkey ( id, full_name )
+  reviewer:profiles!records_reviewed_by_fkey ( id, full_name ),
+  completer:profiles!records_completed_by_fkey ( id, full_name )
 `;
 
 export interface RecordFilters {

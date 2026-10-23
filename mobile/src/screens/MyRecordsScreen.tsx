@@ -65,6 +65,13 @@ function matchesQuery(
   return parts.some((part) => part?.toLowerCase().includes(needle));
 }
 
+// An approved hazard with no completion is a job the worker still has to do.
+// It appears under "To do" and is left out of "Submitted" so it is not listed
+// twice.
+function isOpenJob(record: FieldRecord): boolean {
+  return record.type === "hazard" && record.status === "approved" && !record.completed_at;
+}
+
 export function MyRecordsScreen({ navigation }: Props) {
   const { profile, session } = useAuth();
   const { t } = useI18n();
@@ -106,6 +113,7 @@ export function MyRecordsScreen({ navigation }: Props) {
     () =>
       records.filter(
         (record) =>
+          !isOpenJob(record) &&
           (statusFilter === "all" || record.status === statusFilter) &&
           (typeFilter === "all" || record.type === typeFilter) &&
           matchesQuery(needle, record.title, record.species_name, record.notes)
@@ -113,16 +121,35 @@ export function MyRecordsScreen({ navigation }: Props) {
     [records, statusFilter, typeFilter, needle]
   );
 
+  // The filter row's "All" and "Approved" include the jobs that still need
+  // doing. Pending and Rejected are about review decisions, so open jobs (which
+  // are always approved) would be out of place there.
+  const showToDo = statusFilter === "all" || statusFilter === "approved";
+
+  const openJobs = useMemo(
+    () =>
+      showToDo
+        ? records.filter(
+            (record) =>
+              isOpenJob(record) &&
+              (typeFilter === "all" || record.type === typeFilter) &&
+              matchesQuery(needle, record.title, record.species_name, record.notes)
+          )
+        : [],
+    [records, showToDo, typeFilter, needle]
+  );
+
   const drafts = showLocal ? localRows.filter((row) => row.status === "draft") : [];
   const queued = showLocal ? localRows.filter((row) => row.status !== "draft") : [];
 
-  const anyMatch = drafts.length + queued.length + submitted.length > 0;
+  const anyMatch =
+    drafts.length + queued.length + openJobs.length + submitted.length > 0;
   // What "Showing X of Y" counts. With a status filter the local rows are
   // deliberately out of scope, so they should not inflate the total either.
   const visibleTotal = showLocal
     ? records.length + outbox.length
     : records.length;
-  const visibleShown = drafts.length + queued.length + submitted.length;
+  const visibleShown = drafts.length + queued.length + openJobs.length + submitted.length;
 
   function clearFilters() {
     setQuery("");
@@ -316,6 +343,28 @@ export function MyRecordsScreen({ navigation }: Props) {
         </Card>
       ) : (
         <>
+          {openJobs.length > 0 ? (
+            <>
+              <SectionTitle>{t("To do")}</SectionTitle>
+              <Card>
+                {openJobs.map((record, index) => (
+                  <ListRow
+                    key={record.id}
+                    title={record.title}
+                    meta={`${record.zone?.name ?? t("No zone")} · ${t("Approved")} ${formatDate(
+                      record.reviewed_at ?? record.observed_date
+                    )}`}
+                    last={index === openJobs.length - 1}
+                    onPress={() =>
+                      navigation.navigate("RecordDetails", { id: record.id })
+                    }
+                  />
+                ))}
+              </Card>
+              <View style={{ height: spacing.xl }} />
+            </>
+          ) : null}
+
           {drafts.length > 0 ? (
             <>
               <SectionTitle>{t("Drafts")}</SectionTitle>
@@ -401,7 +450,7 @@ export function MyRecordsScreen({ navigation }: Props) {
             </>
           ) : null}
 
-          {submitted.length > 0 || !filtersActive ? (
+          {submitted.length > 0 || (!filtersActive && records.length === 0) ? (
             <>
               <SectionTitle>{t("Submitted")}</SectionTitle>
               {submitted.length === 0 ? (
@@ -428,7 +477,22 @@ export function MyRecordsScreen({ navigation }: Props) {
                       }
                       right={
                         <View style={styles.rowRight}>
-                          {statusPill(record.status)}
+                          {record.completed_at ? (
+                            <Pill
+                              label={t("Completed")}
+                              color={colors.approvedInk}
+                              background={colors.approvedSoft}
+                              icon={
+                                <Ionicons
+                                  name="checkmark-circle"
+                                  size={12}
+                                  color={colors.approvedInk}
+                                />
+                              }
+                            />
+                          ) : (
+                            statusPill(record.status)
+                          )}
                           {record.status === "pending" ? (
                             <Pressable
                               accessibilityLabel={t("Delete {title}", {
@@ -456,7 +520,7 @@ export function MyRecordsScreen({ navigation }: Props) {
         </>
       )}
 
-      {submitted.some((record) => record.supervisor_feedback) ? (
+      {records.some((record) => record.supervisor_feedback) ? (
         <Text style={styles.footnote}>
           {t("A supervisor left a comment on a record. Open it to read the note.")}
         </Text>

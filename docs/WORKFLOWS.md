@@ -25,6 +25,44 @@ Notes:
   needs the server, so it is disabled offline with a banner telling the worker to save a
   draft instead. Queued records upload automatically when the connection returns.
 
+## Job completion (approved hazards)
+
+An approval is a review decision; finishing the work is a separate event. Only
+hazard records have a job: a flora or soil/water record is an observation and is
+finished as soon as it is reviewed.
+
+```mermaid
+flowchart LR
+    A[Approved hazard] --> B{Completed?}
+    B -- no --> C[To do in My records\nFinish job button]
+    C --> D[Worker adds a note\nand up to 3 after photos]
+    D --> E[complete_record&#40;&#41;]
+    E --> F[Completed\nstatus stays approved]
+    B -- yes --> F
+```
+
+- `supabase/12_job_completion.sql` adds `completed_at`, `completed_by`,
+  `completion_note` and `completion_photos` to `records`. The review `status`
+  is not changed, so filters, exports, badges and notifications keep working.
+- `complete_record(p_record_id, p_note, p_photos)` is a security-definer
+  function. It refuses anonymous or inactive users, anyone who did not submit
+  the record, non-hazard records, records that are not approved, and records
+  that are already complete. It also limits the list to 3 paths and requires
+  every path to live in the caller's own storage folder.
+- The function accepts only the note and the photo paths, so a worker cannot use
+  it to edit the reviewed content (the `protect_columns` trigger also restores
+  status and review fields).
+- A completion writes one `record.completed` audit entry ("completed the job")
+  and does not fire the review notification.
+- The worker uploads the after photos first, then calls the function. If the
+  call fails, the uploaded files are removed so no orphan is left. Completion
+  needs a connection; there is no offline queue for it yet.
+- The mobile app lists open jobs under **To do** in My records and keeps them out
+  of **Submitted** so the same record is not shown twice. The record's own
+  screen shows the **Work** card, a **Completed** pill, the note and the after
+  photos. Supervisors see the same card read-only on the web dashboard.
+
+
 ## Field worker flow (mobile app)
 
 ```mermaid
@@ -97,10 +135,13 @@ sequenceDiagram
 | Create a record | Yes (own) | Yes (own) | Yes (own) |
 | Read all records | Yes | Yes | Yes |
 | Approve / reject a record | No | Yes | Yes |
+| Finish an approved hazard job (note + up to 3 after photos) | Yes (own) | Yes (own) | Yes (own) |
 | Delete a record | Yes (own, while pending) | No | Yes |
 | Manage zones | No | No | Yes |
 | Manage users / roles / deactivation | No | No | Yes |
 | Export CSV / PDF | No | Yes | Yes |
+
+"Own" completion means the submitter of that exact hazard. Reviewers see other people's Work card read-only on the web; the Finish job button only appears for the person who submitted the record.
 
 ## Naming conventions
 

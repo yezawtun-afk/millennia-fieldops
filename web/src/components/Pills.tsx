@@ -34,6 +34,13 @@ export function StatusBadge({ status }: { status: RecordStatus }) {
   return <Pill className={STATUS_STYLES[status]}>{t(STATUS_LABELS[status])}</Pill>;
 }
 
+// Completion is separate from the review status: an approved record can also be
+// a finished job. Shown next to the status badge, never instead of it.
+export function CompletedBadge() {
+  const { t } = useI18n();
+  return <Pill className="bg-positive-soft text-positive-ink">{t("Completed")}</Pill>;
+}
+
 export function SeverityBadge({ severity }: { severity: HazardSeverity | null }) {
   const { t } = useI18n();
   if (!severity) return <span className="text-muted">-</span>;

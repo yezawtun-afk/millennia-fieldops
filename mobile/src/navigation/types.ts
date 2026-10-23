@@ -24,6 +24,8 @@ export type RootStackParamList = {
   Profile: undefined;
   RecordDetails: { id: string };
   ReviewRecord: { id: string };
+  /** Finish an approved hazard: a note and up to 3 after photos. */
+  CompleteJob: { id: string };
 };
 
 // Tab screens can also navigate to screens in the parent stack.

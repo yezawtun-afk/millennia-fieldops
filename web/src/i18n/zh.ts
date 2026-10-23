@@ -589,4 +589,14 @@ export const zh: Record<string, string> = {
   "Delete this zone? Its {count} records will keep their details but have no zone.":
     "删除这个区域？它的 {count} 条记录会保留，但将没有区域。",
   "Your account cannot change zones.": "你的账号无法更改区域。",
+
+  // Job completion on the record page and in the activity log.
+  Work: "工作",
+  Completed: "已完成",
+  "Completed by {name} on {date}.": "由 {name} 于 {date} 完成。",
+  "Waiting for the worker to finish the job.": "等待外勤人员完成工作。",
+  "After photos": "完成后照片",
+  "After photo {number}": "完成后照片 {number}",
+  "the field worker": "外勤人员",
+  "Job completed": "工作已完成",
 };
