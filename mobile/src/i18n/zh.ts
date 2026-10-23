@@ -361,4 +361,17 @@ export const zh: Record<string, string> = {
   "Could not change your password. Try again.": "无法更改密码，请重试。",
   "Ask an administrator to change your phone number or role.":
     "请联系管理员更改电话号码或角色。",
+
+  // Search and filters on My records.
+  "Search title, species, notes": "搜索标题、物种、备注",
+  "Search records": "搜索记录",
+  "Clear search": "清除搜索",
+  "All statuses": "所有状态",
+  Pending: "待审核",
+  "All types": "所有类型",
+  "Soil & water": "水土",
+  "Clear filters": "清除筛选",
+  "Showing {shown} of {total}": "显示 {shown} / {total} 条",
+  "No records match": "没有匹配的记录",
+  "Try a different word or clear the filters.": "尝试其他关键词或清除筛选。",
 };

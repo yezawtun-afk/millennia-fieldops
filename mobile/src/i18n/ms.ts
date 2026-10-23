@@ -392,4 +392,18 @@ export const ms: Record<string, string> = {
     "Tidak dapat menukar kata laluan anda. Cuba lagi.",
   "Ask an administrator to change your phone number or role.":
     "Minta pentadbir menukar nombor telefon atau peranan anda.",
+
+  // Search and filters on My records.
+  "Search title, species, notes": "Cari tajuk, spesies, nota",
+  "Search records": "Cari rekod",
+  "Clear search": "Kosongkan carian",
+  "All statuses": "Semua status",
+  Pending: "Menunggu",
+  "All types": "Semua jenis",
+  "Soil & water": "Tanah & air",
+  "Clear filters": "Kosongkan penapis",
+  "Showing {shown} of {total}": "Menunjukkan {shown} daripada {total}",
+  "No records match": "Tiada rekod sepadan",
+  "Try a different word or clear the filters.":
+    "Cuba perkataan lain atau kosongkan penapis.",
 };

@@ -10,6 +10,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useI18n } from "../i18n";
 import { colors, radius, spacing, type } from "../theme";
 
 // ---- Screen / layout ------------------------------------------------------
@@ -168,6 +169,54 @@ export function Input({
     <View style={styles.inputShell}>
       {field}
       <View style={styles.inputTrailing}>{trailing}</View>
+    </View>
+  );
+}
+
+// A search field: a magnifier inside the left edge and a clear button on the
+// right once something is typed. The text is passed through unchanged; the
+// caller decides how to match it (for example, case-insensitively).
+export function SearchInput({
+  value,
+  onChangeText,
+  placeholder,
+  accessibilityLabel,
+}: {
+  value: string;
+  onChangeText: (value: string) => void;
+  placeholder: string;
+  accessibilityLabel?: string;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <View>
+      <View pointerEvents="none" style={styles.searchIcon}>
+        <Ionicons name="search" size={17} color={colors.faint} />
+      </View>
+      <Input
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        accessibilityLabel={accessibilityLabel ?? placeholder}
+        autoCapitalize="none"
+        autoCorrect={false}
+        returnKeyType="search"
+        style={styles.searchField}
+        trailing={
+          value.length > 0 ? (
+            <Pressable
+              onPress={() => onChangeText("")}
+              accessibilityRole="button"
+              accessibilityLabel={t("Clear search")}
+              hitSlop={4}
+              style={({ pressed }) => [styles.searchClear, pressed ? { opacity: 0.6 } : null]}
+            >
+              <Ionicons name="close-circle" size={18} color={colors.faint} />
+            </Pressable>
+          ) : undefined
+        }
+      />
     </View>
   );
 }
@@ -379,6 +428,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  searchIcon: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 38,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1,
+  },
+  searchField: { paddingLeft: 38 },
+  searchClear: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
   button: {
     borderWidth: 1,
     borderRadius: radius.md,
