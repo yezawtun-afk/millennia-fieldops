@@ -392,8 +392,8 @@ export const zh: Record<string, string> = {
   ", {count} still waiting review": "，其中 {count} 条仍在等待审核",
   "No records match the current filters.": "没有记录符合当前筛选条件。",
   "No records match those filters": "没有记录符合这些筛选条件",
-  "Clear the search box, or pick another type, status, completion or zone.":
-    "清空搜索框，或选择其他类型、状态、完成状态或区域。",
+  "Clear the search box, or pick another type, status, completion, date range or zone.":
+    "清空搜索框，或选择其他类型、状态、完成状态、日期范围或区域。",
   Type: "类型",
   Observed: "观察日期",
   Status: "状态",
@@ -416,6 +416,10 @@ export const zh: Record<string, string> = {
   "All severities": "所有严重程度",
   "Filter by zone": "按区域筛选",
   "All zones": "所有区域",
+  From: "从",
+  To: "至",
+  "From date": "开始日期",
+  "To date": "结束日期",
   "Clear filters": "清除筛选",
   "Export CSV": "导出 CSV",
   "Hazard summary PDF": "隐患摘要 PDF",

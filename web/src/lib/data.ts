@@ -19,6 +19,9 @@ export interface RecordFilters {
   zoneId?: string;
   /** "open" = approved hazard still to do, "done" = finished hazard job. */
   completion?: string;
+  /** ISO timestamps for the first and last moment of the chosen local days. */
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 // PostgREST reads the inside of an `or=` filter as syntax, so commas,
@@ -47,6 +50,8 @@ export async function queryRecords(filters: RecordFilters = {}): Promise<FieldRe
   }
   if (filters.severity) query = query.eq("severity", filters.severity);
   if (filters.zoneId) query = query.eq("zone_id", filters.zoneId);
+  if (filters.dateFrom) query = query.gte("observed_date", filters.dateFrom);
+  if (filters.dateTo) query = query.lte("observed_date", filters.dateTo);
   if (filters.q) {
     const term = quoteFilterValue(`%${filters.q}%`);
     query = query.or(
@@ -82,6 +87,8 @@ export async function countRecords(filters: RecordFilters = {}): Promise<number>
   }
   if (filters.severity) query = query.eq("severity", filters.severity);
   if (filters.zoneId) query = query.eq("zone_id", filters.zoneId);
+  if (filters.dateFrom) query = query.gte("observed_date", filters.dateFrom);
+  if (filters.dateTo) query = query.lte("observed_date", filters.dateTo);
 
   const { count, error } = await query;
   if (error) throw new Error(error.message);

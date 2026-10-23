@@ -20,6 +20,8 @@ export async function GET(request: NextRequest) {
     type: sp.get("type") ?? undefined,
     status: sp.get("status") ?? undefined,
     completion: sp.get("completion") ?? undefined,
+    dateFrom: sp.get("dateFrom") ?? undefined,
+    dateTo: sp.get("dateTo") ?? undefined,
     severity: sp.get("severity") ?? undefined,
     zoneId: sp.get("zone") ?? undefined,
   });

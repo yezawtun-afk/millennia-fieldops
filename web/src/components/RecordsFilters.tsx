@@ -7,6 +7,28 @@ import { btnGhost, selectClass } from "@/components/ui";
 import { useI18n } from "@/i18n";
 import type { Zone } from "@/lib/types";
 
+// The URL stores the exact timestamps the database compares against, while the
+// date inputs show the user's local calendar day.
+function toInputDate(value: string | null): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function dayStart(value: string): string {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day, 0, 0, 0, 0).toISOString();
+}
+
+function dayEnd(value: string): string {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day, 23, 59, 59, 999).toISOString();
+}
+
 export function RecordsFilters({ zones }: { zones: Zone[] }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -14,10 +36,17 @@ export function RecordsFilters({ zones }: { zones: Zone[] }) {
   const { t } = useI18n();
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
+  // Dates start blank and fill after mount: the server timezone can differ from
+  // the browser's, so converting a timestamp during server rendering would
+  // produce a different input value and a hydration mismatch.
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
-  // Keep the text box in sync if the URL changes (e.g. Back button).
+  // Keep the controls in sync if the URL changes (e.g. Back button).
   useEffect(() => {
     setQ(searchParams.get("q") ?? "");
+    setFromDate(toInputDate(searchParams.get("dateFrom")));
+    setToDate(toInputDate(searchParams.get("dateTo")));
   }, [searchParams]);
 
   function apply(next: Record<string, string>) {
@@ -30,9 +59,39 @@ export function RecordsFilters({ zones }: { zones: Zone[] }) {
     router.push(query ? `${pathname}?${query}` : pathname);
   }
 
-  const hasFilters = ["q", "type", "status", "completion", "severity", "zone"].some((key) =>
-    searchParams.get(key)
-  );
+  // Keep the range valid without silently discarding the date the user just
+  // picked: moving one end past the other pulls the other end along.
+  function changeFrom(value: string) {
+    const nextTo = value && toDate && value > toDate ? value : toDate;
+    setFromDate(value);
+    setToDate(nextTo);
+    applyDateRange(value, nextTo);
+  }
+
+  function changeTo(value: string) {
+    const nextFrom = value && fromDate && value < fromDate ? value : fromDate;
+    setFromDate(nextFrom);
+    setToDate(value);
+    applyDateRange(nextFrom, value);
+  }
+
+  function applyDateRange(nextFrom: string, nextTo: string) {
+    apply({
+      dateFrom: nextFrom ? dayStart(nextFrom) : "",
+      dateTo: nextTo ? dayEnd(nextTo) : "",
+    });
+  }
+
+  const hasFilters = [
+    "q",
+    "type",
+    "status",
+    "completion",
+    "dateFrom",
+    "dateTo",
+    "severity",
+    "zone",
+  ].some((key) => searchParams.get(key));
 
   return (
     <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -100,6 +159,30 @@ export function RecordsFilters({ zones }: { zones: Zone[] }) {
         <option value="open">{t("Incomplete")}</option>
         <option value="done">{t("Completed")}</option>
       </select>
+
+      <label className="flex items-center gap-1.5 text-[12px] text-muted">
+        <span className="whitespace-nowrap">{t("From")}</span>
+        <input
+          type="date"
+          value={fromDate}
+          max={toDate || undefined}
+          onChange={(event) => changeFrom(event.target.value)}
+          aria-label={t("From date")}
+          className="h-9 w-[138px] rounded-control border border-control bg-sheet px-2 text-[12px] text-ink focus:border-accent focus:outline-none"
+        />
+      </label>
+
+      <label className="flex items-center gap-1.5 text-[12px] text-muted">
+        <span className="whitespace-nowrap">{t("To")}</span>
+        <input
+          type="date"
+          value={toDate}
+          min={fromDate || undefined}
+          onChange={(event) => changeTo(event.target.value)}
+          aria-label={t("To date")}
+          className="h-9 w-[138px] rounded-control border border-control bg-sheet px-2 text-[12px] text-ink focus:border-accent focus:outline-none"
+        />
+      </label>
 
       <select
         value={searchParams.get("severity") ?? ""}

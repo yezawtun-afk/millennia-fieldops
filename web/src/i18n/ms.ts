@@ -421,8 +421,8 @@ export const ms: Record<string, string> = {
   ", {count} still waiting review": ", {count} masih menunggu semakan",
   "No records match the current filters.": "Tiada rekod sepadan dengan penapis semasa.",
   "No records match those filters": "Tiada rekod sepadan dengan penapis itu",
-  "Clear the search box, or pick another type, status, completion or zone.":
-    "Kosongkan kotak carian, atau pilih jenis, status, status kerja atau zon lain.",
+  "Clear the search box, or pick another type, status, completion, date range or zone.":
+    "Kosongkan kotak carian, atau pilih jenis, status, status kerja, julat tarikh atau zon lain.",
   Type: "Jenis",
   Observed: "Diperhati",
   Status: "Status",
@@ -445,6 +445,10 @@ export const ms: Record<string, string> = {
   "All severities": "Semua tahap keterukan",
   "Filter by zone": "Tapis mengikut zon",
   "All zones": "Semua zon",
+  From: "Dari",
+  To: "Hingga",
+  "From date": "Tarikh mula",
+  "To date": "Tarikh akhir",
   "Clear filters": "Kosongkan penapis",
   "Export CSV": "Eksport CSV",
   "Hazard summary PDF": "PDF ringkasan bahaya",

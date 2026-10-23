@@ -15,6 +15,8 @@ type SearchParams = Promise<{
   type?: string;
   status?: string;
   completion?: string;
+  dateFrom?: string;
+  dateTo?: string;
   severity?: string;
   zone?: string;
 }>;
@@ -27,6 +29,8 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
     type: params.type,
     status: params.status,
     completion: params.completion,
+    dateFrom: params.dateFrom,
+    dateTo: params.dateTo,
     severity: params.severity,
     zoneId: params.zone,
   };
@@ -45,6 +49,8 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
       type: params.type ?? "",
       status: params.status ?? "",
       completion: params.completion ?? "",
+      dateFrom: params.dateFrom ?? "",
+      dateTo: params.dateTo ?? "",
       severity: params.severity ?? "",
       zone: params.zone ?? "",
     }).filter(([, v]) => v)
@@ -68,7 +74,9 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
       {records.length === 0 ? (
         <EmptyState
           title={t("No records match those filters")}
-          hint={t("Clear the search box, or pick another type, status, completion or zone.")}
+          hint={t(
+            "Clear the search box, or pick another type, status, completion, date range or zone."
+          )}
         />
       ) : (
         <div className="overflow-hidden rounded-card border border-line bg-sheet">
