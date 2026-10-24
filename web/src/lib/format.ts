@@ -72,6 +72,13 @@ export const SEVERITY_CHART_COLORS: Record<HazardSeverity, string> = {
   critical: "#991B1B",
 };
 
+// The weekly stacked chart reads bottom to top: approved, pending, rejected.
+export const STATUS_CHART_COLORS: Record<RecordStatus, string> = {
+  approved: "#247B50",
+  pending: "#92400E",
+  rejected: "#C4242A",
+};
+
 // The single chart hue, and the ramp used where severity has to advance.
 export const CHART_HUE = "#1F6B4A";
 

@@ -108,6 +108,23 @@ export async function getPendingQueue(limit = 3): Promise<FieldRecord[]> {
   return (data as unknown as FieldRecord[]) ?? [];
 }
 
+// The records a supervisor should look at before anything else: pending
+// hazards rated critical, oldest first. Severity only exists on hazards, so
+// this list is hazard-only by design.
+export async function getUrgentQueue(limit = 3): Promise<FieldRecord[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("records")
+    .select(RECORD_SELECT)
+    .eq("status", "pending")
+    .eq("type", "hazard")
+    .eq("severity", "critical")
+    .order("created_at", { ascending: true })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data as unknown as FieldRecord[]) ?? [];
+}
+
 export async function getRecord(id: string): Promise<FieldRecord | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.from("records").select(RECORD_SELECT).eq("id", id).single();
