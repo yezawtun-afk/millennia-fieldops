@@ -44,6 +44,7 @@ export type AiFailureCode =
   | "not_signed_in"
   | "too_large"
   | "rate_limited"
+  | "quota_exhausted"
   | "busy"
   | "unclear_photo"
   | "not_configured"
@@ -173,13 +174,21 @@ function failureFromPayload(
       return {
         ok: false,
         code: "rate_limited",
-        message: "Too many AI requests. Try again later.",
+        message: "Too many AI requests. Wait a minute and try again.",
+      };
+    case "quota_exhausted":
+      // The daily quota is gone until Google resets it, so retrying soon is
+      // pointless. Point the worker at the manual form instead.
+      return {
+        ok: false,
+        code: "quota_exhausted",
+        message: "AI has reached today's limit. Enter the record manually, or try again later.",
       };
     case "busy":
       return {
         ok: false,
         code: "busy",
-        message: "AI is busy. Try again later.",
+        message: "AI is busy right now. Wait a minute and try again.",
       };
     case "unclear_photo":
       return {

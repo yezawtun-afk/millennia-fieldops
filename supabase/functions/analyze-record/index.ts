@@ -284,6 +284,14 @@ function parseModelJson(text: string): unknown {
   return JSON.parse(cleaned);
 }
 
+// Google names the exhausted quota in the 429 body, for example
+// "GenerateRequestsPerDayPerProjectPerModel-FreeTier". Anything with "per day"
+// in it only resets at midnight Pacific time, so retrying soon cannot work.
+// Per-minute limits and spend caps look different and do clear on their own.
+function isDailyQuotaExhausted(body: string): boolean {
+  return /per[\s_-]?day/i.test(body);
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
     return new Response("ok", { headers: CORS_HEADERS });
@@ -418,11 +426,31 @@ Deno.serve(async (request) => {
   if (!googleResponse.ok) {
     const googleError = (await googleResponse.text().catch(() => "")).slice(0, 800);
     console.error("Gemini returned", googleResponse.status, googleError);
+
     if (googleResponse.status === 429) {
-      return json({ code: "rate_limited", error: "AI is busy. Try again later." }, 429);
+      // A per-day quota does not clear in a minute: tell the worker to enter the
+      // record by hand instead of retrying. A per-minute or spend limit resets
+      // on its own, so a short wait is enough there.
+      if (isDailyQuotaExhausted(googleError)) {
+        return json(
+          {
+            code: "quota_exhausted",
+            error: "AI has reached today's limit. Enter the record manually, or try again later.",
+          },
+          429
+        );
+      }
+      return json(
+        { code: "rate_limited", error: "Too many AI requests. Wait a minute and try again." },
+        429
+      );
     }
+
     if (googleResponse.status === 503) {
-      return json({ code: "busy", error: "AI is busy. Try again later." }, 503);
+      return json(
+        { code: "busy", error: "AI is busy right now. Wait a minute and try again." },
+        503
+      );
     }
     const debug = request.headers.get("x-debug-ai") === "true";
     return json(

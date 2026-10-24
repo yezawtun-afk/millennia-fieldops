@@ -502,8 +502,12 @@ export const zh: Record<string, string> = {
     "已应用 AI 建议。您已填写的字段已保留。",
   "AI suggestions applied. Check every field before saving.":
     "已应用 AI 建议。保存前请检查每个字段。",
-  "Too many AI requests. Try again later.": "AI 请求过多。请稍后再试。",
-  "AI is busy. Try again later.": "AI 当前繁忙，请稍后再试。",
+  "Too many AI requests. Wait a minute and try again.":
+    "AI 请求过多。请等一分钟后再试。",
+  "AI is busy right now. Wait a minute and try again.":
+    "AI 当前繁忙，请等一分钟后再试。",
+  "AI has reached today's limit. Enter the record manually, or try again later.":
+    "AI 已达到今日上限。请手动填写记录，或稍后再试。",
   "Photo is too large for AI analysis. Try another photo.":
     "照片太大，无法进行 AI 分析。请尝试其他照片。",
   "AI is not set up yet. Ask an administrator.": "AI 尚未配置。请联系管理员。",

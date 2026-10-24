@@ -96,6 +96,20 @@ The mobile app validates the values again and shows a review sheet. Nothing is s
 - Flora growth stages and health conditions are fixed in the function. Anything else is removed before the response.
 - The function returns `422` with `code: "unclear_photo"` when the photo does not support any suggestion.
 
+## Error codes
+
+| Status | `code` | Meaning | What the worker should do |
+| --- | --- | --- | --- |
+| 429 | `rate_limited` | Too many requests in the last minute, or a spend cap was hit. | Wait about a minute and try again. |
+| 429 | `quota_exhausted` | The daily quota for the model is used up. | Enter the record manually; retrying soon will not help. |
+| 503 | `busy` | Google's model is overloaded. | Wait about a minute and try again. |
+| 422 | `unclear_photo` | The photo does not support any suggestion. | Take a clearer photo. |
+| 413 | `image_too_large` | The photo is above the size limit. | Use another photo. |
+| 502 | `analysis_failed` | Google returned an error, or the reply could not be read. | Try once more, then enter manually. |
+| 503 | `not_configured` | The API key or model is missing on the server. | Ask an administrator. |
+
+The function tells a daily quota apart from a per-minute one by reading the quota name in Google's `429` body (`...PerDay...` versus `...PerMinute...`). Daily quotas reset at midnight Pacific time, which is about 3 pm in Malaysia.
+
 ## Notes
 
 - Only JPEG, PNG, and WebP photos are accepted.

@@ -549,8 +549,12 @@ export const ms: Record<string, string> = {
     "Cadangan AI digunakan. Medan yang sudah anda isi dikekalkan.",
   "AI suggestions applied. Check every field before saving.":
     "Cadangan AI digunakan. Semak setiap medan sebelum menyimpan.",
-  "Too many AI requests. Try again later.": "Terlalu banyak permintaan AI. Cuba lagi kemudian.",
-  "AI is busy. Try again later.": "AI sedang sibuk. Cuba lagi kemudian.",
+  "Too many AI requests. Wait a minute and try again.":
+    "Terlalu banyak permintaan AI. Tunggu seminit dan cuba lagi.",
+  "AI is busy right now. Wait a minute and try again.":
+    "AI sedang sibuk sekarang. Tunggu seminit dan cuba lagi.",
+  "AI has reached today's limit. Enter the record manually, or try again later.":
+    "AI telah mencapai had hari ini. Masukkan rekod secara manual, atau cuba lagi kemudian.",
   "Photo is too large for AI analysis. Try another photo.":
     "Foto terlalu besar untuk analisis AI. Cuba foto lain.",
   "AI is not set up yet. Ask an administrator.": "AI belum disediakan. Tanya pentadbir.",
