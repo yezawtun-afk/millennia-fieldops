@@ -475,6 +475,7 @@ export const zh: Record<string, string> = {
     "AI 需要网络连接。请手动填写表单或保存草稿。",
   "Add a photo first.": "请先添加照片。",
   "Analyzing photo...": "正在分析照片……",
+  "Reading the photo...": "正在读取照片……",
   "Auto-fill from photo": "从照片自动填写",
   "AI suggestions": "AI 建议",
   "Review before adding them to the form.": "添加到表单前请先检查。",

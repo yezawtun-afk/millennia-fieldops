@@ -3,10 +3,11 @@
 //
 // Four states, not three: a failed upload is not the same as "still waiting",
 // and hiding it would leave a field worker guessing.
-import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useI18n } from "../i18n";
+import { useReduceMotion } from "../lib/useReduceMotion";
 import { colors, radius, spacing, type } from "../theme";
 import type { SyncStatus } from "../context/SyncContext";
 
@@ -34,6 +35,39 @@ export function SyncBadge({
   variant = "card",
 }: Props) {
   const { t } = useI18n();
+  const reduceMotion = useReduceMotion();
+
+  // A short pop when an upload finishes. The card would otherwise just change
+  // colour, which is easy to miss while the worker is looking at the form.
+  const pop = useRef(new Animated.Value(1)).current;
+  const previousStatus = useRef(status);
+
+  useEffect(() => {
+    const was = previousStatus.current;
+    previousStatus.current = status;
+
+    // Only on the change into "synced", never on a re-render or first mount.
+    if (status !== "synced" || was === "synced" || reduceMotion) return;
+
+    pop.setValue(0.82);
+    const animation = Animated.sequence([
+      Animated.timing(pop, {
+        toValue: 1.16,
+        duration: 150,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(pop, {
+        toValue: 1,
+        duration: 230,
+        easing: Easing.out(Easing.back(2)),
+        useNativeDriver: true,
+      }),
+    ]);
+
+    animation.start();
+    return () => animation.stop();
+  }, [status, reduceMotion, pop]);
 
   const palette =
     status === "synced"
@@ -80,7 +114,9 @@ export function SyncBadge({
         accessibilityLabel={`${title}. ${detail}`}
         style={({ pressed }) => [styles.compact, pressed && online ? { opacity: 0.7 } : null]}
       >
-        <View style={[styles.dot, { backgroundColor: palette.fg }]} />
+        <Animated.View
+          style={[styles.dot, { backgroundColor: palette.fg, transform: [{ scale: pop }] }]}
+        />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.compactTitle, { color: palette.fg }]}>{title}</Text>
           <Text style={styles.compactDetail} numberOfLines={2}>
@@ -98,9 +134,9 @@ export function SyncBadge({
   return (
     <View style={[styles.syncCard, { backgroundColor: palette.bg }]}>
       <View style={styles.syncTop}>
-        <View style={styles.syncIcon}>
+        <Animated.View style={[styles.syncIcon, { transform: [{ scale: pop }] }]}>
           <Ionicons name={palette.icon} size={18} color={palette.fg} />
-        </View>
+        </Animated.View>
         <View style={{ flex: 1 }}>
           <Text style={[styles.syncTitle, { color: palette.fg }]}>{title}</Text>
           <Text style={[styles.syncDetail, { color: palette.fg }]}>{detail}</Text>

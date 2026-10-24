@@ -522,6 +522,7 @@ export const ms: Record<string, string> = {
     "AI memerlukan sambungan. Isi borang secara manual atau simpan draf.",
   "Add a photo first.": "Tambah foto dahulu.",
   "Analyzing photo...": "Menganalisis foto...",
+  "Reading the photo...": "Membaca foto...",
   "Auto-fill from photo": "Isi automatik daripada foto",
   "AI suggestions": "Cadangan AI",
   "Review before adding them to the form.": "Semak sebelum menambahnya ke borang.",
