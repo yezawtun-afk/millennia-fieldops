@@ -2,21 +2,18 @@
 // base64, and sent to our Supabase Edge Function. The Google API key stays on
 // the server; this file never talks to Google directly.
 //
-// The same function handles hazard, flora, and soil/water records. The record
-// type is sent with the request, and every answer is validated against the
-// same option lists the form uses before it reaches the review sheet.
+// The same function handles hazard and flora records. The record type is sent
+// with the request, and every answer is validated against the same option
+// lists the form uses before it reaches the review sheet. Soil/water records
+// have no AI assist: the worker reads the instrument directly.
 import { File } from "expo-file-system";
-import {
-  GROWTH_STAGES,
-  HAZARD_TYPES,
-  HEALTH_CONDITIONS,
-  READING_TYPES,
-} from "./format";
-import { defaultUnitFor, getReadingDefinition, rangeFor } from "./measurements";
+import { GROWTH_STAGES, HAZARD_TYPES, HEALTH_CONDITIONS } from "./format";
 import { preparePhotoForAi } from "./photos";
 import { SPECIES_CATALOG } from "./species";
 import { supabase } from "./supabase";
-import type { HazardSeverity, RecordType } from "./types";
+import type { HazardSeverity } from "./types";
+
+export type AiRecordType = "hazard" | "flora";
 
 const SEVERITIES: HazardSeverity[] = ["low", "medium", "critical"];
 const MAX_BASE64_CHARS = 2_000_000;
@@ -32,6 +29,7 @@ export interface HazardAiSuggestion {
 
 export interface FloraAiSuggestion {
   recordType: "flora";
+  title: string;
   species_name: string | null;
   growth_stage: string | null;
   health_condition: string | null;
@@ -40,16 +38,7 @@ export interface FloraAiSuggestion {
   confidence: number;
 }
 
-export interface SoilWaterAiSuggestion {
-  recordType: "soil_water";
-  reading_type: string | null;
-  reading_value: number | null;
-  reading_unit: string | null;
-  notes: string;
-  confidence: number;
-}
-
-export type AiSuggestion = HazardAiSuggestion | FloraAiSuggestion | SoilWaterAiSuggestion;
+export type AiSuggestion = HazardAiSuggestion | FloraAiSuggestion;
 
 export type AiFailureCode =
   | "not_signed_in"
@@ -78,18 +67,22 @@ function cleanConfidence(value: unknown): number {
   return Number.isFinite(confidence) ? Math.min(1, Math.max(0, confidence)) : 0;
 }
 
-function matchCatalogSpecies(value: string): string | null {
-  const needle = value.trim().toLowerCase();
-  if (!needle) return null;
+function normaliseSpeciesName(value: string): string | null {
+  const cleaned = value.trim().replace(/\s+/g, " ").slice(0, 80);
+  if (!cleaned) return null;
+
+  // Use the catalog's scientific name when the model returns a local alias
+  // (for example "Paku resam"), but keep any other plant name as free text.
+  // The catalog is a shortcut, not a restriction.
   const entry = SPECIES_CATALOG.find((item) =>
     [item.scientific, item.common, item.malay, item.chinese]
       .filter((name): name is string => Boolean(name))
-      .some((name) => name.toLowerCase() === needle)
+      .some((name) => name.toLowerCase() === cleaned.toLowerCase())
   );
-  return entry?.scientific ?? null;
+  return entry?.scientific ?? cleaned;
 }
 
-function normaliseSuggestion(raw: unknown, recordType: RecordType): AiSuggestion | null {
+function normaliseSuggestion(raw: unknown, recordType: AiRecordType): AiSuggestion | null {
   if (!raw || typeof raw !== "object") return null;
 
   const record = raw as Record<string, unknown>;
@@ -111,47 +104,18 @@ function normaliseSuggestion(raw: unknown, recordType: RecordType): AiSuggestion
     };
   }
 
-  if (recordType === "flora") {
-    const growthStage = cleanText(record.growth_stage, 20);
-    const healthCondition = cleanText(record.health_condition, 30);
-    const count = Number(record.estimated_count);
-
-    return {
-      recordType,
-      species_name: matchCatalogSpecies(cleanText(record.species_name, 80)),
-      growth_stage: GROWTH_STAGES.includes(growthStage) ? growthStage : null,
-      health_condition: HEALTH_CONDITIONS.includes(healthCondition) ? healthCondition : null,
-      estimated_count:
-        Number.isFinite(count) && count >= 1 ? Math.min(10_000, Math.round(count)) : null,
-      notes: cleanText(record.notes, 500),
-      confidence,
-    };
-  }
-
-  const readingType = cleanText(record.reading_type, 30);
-  const type = READING_TYPES.includes(readingType) ? readingType : null;
-  const definition = getReadingDefinition(type);
-
-  let unit: string | null = null;
-  if (definition) {
-    const rawUnit = cleanText(record.reading_unit, 10);
-    unit = definition.units.includes(rawUnit) ? rawUnit : defaultUnitFor(type);
-  }
-
-  let value: number | null = null;
-  if (type && unit && typeof record.reading_value === "number") {
-    const numeric = record.reading_value;
-    const range = rangeFor(type, unit);
-    if (Number.isFinite(numeric) && range && numeric >= range.min && numeric <= range.max) {
-      value = numeric;
-    }
-  }
+  const growthStage = cleanText(record.growth_stage, 20);
+  const healthCondition = cleanText(record.health_condition, 30);
+  const count = Number(record.estimated_count);
 
   return {
     recordType,
-    reading_type: type,
-    reading_value: value,
-    reading_unit: unit,
+    title: cleanText(record.title, 70),
+    species_name: normaliseSpeciesName(cleanText(record.species_name, 80)),
+    growth_stage: GROWTH_STAGES.includes(growthStage) ? growthStage : null,
+    health_condition: HEALTH_CONDITIONS.includes(healthCondition) ? healthCondition : null,
+    estimated_count:
+      Number.isFinite(count) && count >= 1 ? Math.min(10_000, Math.round(count)) : null,
     notes: cleanText(record.notes, 500),
     confidence,
   };
@@ -163,23 +127,18 @@ export function hasAnyAiSuggestion(suggestion: AiSuggestion): boolean {
       suggestion.title || suggestion.hazard_type || suggestion.severity || suggestion.notes
     );
   }
-  if (suggestion.recordType === "flora") {
-    return Boolean(
+  return Boolean(
+    suggestion.title ||
       suggestion.species_name ||
-        suggestion.growth_stage ||
-        suggestion.health_condition ||
-        suggestion.estimated_count
-    );
-  }
-  return Boolean(suggestion.reading_type || suggestion.reading_value !== null);
+      suggestion.growth_stage ||
+      suggestion.health_condition ||
+      suggestion.estimated_count
+  );
 }
 
-export function unclearPhotoMessage(recordType: RecordType): string {
+export function unclearPhotoMessage(recordType: AiRecordType): string {
   if (recordType === "flora") {
     return "AI could not identify the plant. Try a clearer photo.";
-  }
-  if (recordType === "soil_water") {
-    return "AI could not read the meter or display. Try a clearer photo.";
   }
   return "AI could not identify the hazard. Try a clearer photo.";
 }
@@ -205,7 +164,7 @@ async function readErrorPayload(
 
 function failureFromPayload(
   payload: { code?: string } | null,
-  recordType: RecordType
+  recordType: AiRecordType
 ): AnalyzePhotoResult | null {
   if (!payload?.code) return null;
 
@@ -247,7 +206,7 @@ function failureFromPayload(
 
 export async function analyzePhoto(
   uri: string,
-  recordType: RecordType
+  recordType: AiRecordType
 ): Promise<AnalyzePhotoResult> {
   let preparedUri: string | null = null;
 

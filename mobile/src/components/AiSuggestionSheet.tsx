@@ -154,6 +154,11 @@ function buildRows(suggestion: AiSuggestion, t: (text: string) => string): Row[]
   } else if (suggestion.recordType === "flora") {
     rows.push(
       {
+        label: t("Suggested title"),
+        value: suggestion.title || undetermined,
+        muted: !suggestion.title,
+      },
+      {
         label: t("Suggested species"),
         value: suggestion.species_name || undetermined,
         muted: !suggestion.species_name,
@@ -172,25 +177,6 @@ function buildRows(suggestion: AiSuggestion, t: (text: string) => string): Row[]
         label: t("Suggested estimated count"),
         value: suggestion.estimated_count ? String(suggestion.estimated_count) : undetermined,
         muted: !suggestion.estimated_count,
-      }
-    );
-  } else {
-    rows.push(
-      {
-        label: t("Suggested reading type"),
-        value: suggestion.reading_type ? t(suggestion.reading_type) : undetermined,
-        muted: !suggestion.reading_type,
-      },
-      {
-        label: t("Suggested value"),
-        value:
-          suggestion.reading_value !== null ? String(suggestion.reading_value) : undetermined,
-        muted: suggestion.reading_value === null,
-      },
-      {
-        label: t("Suggested unit"),
-        value: suggestion.reading_unit || undetermined,
-        muted: !suggestion.reading_unit,
       }
     );
   }

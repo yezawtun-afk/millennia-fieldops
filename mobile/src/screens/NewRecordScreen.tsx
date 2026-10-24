@@ -71,16 +71,6 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-// Water level is the only reading with two units. Convert the AI value when the
-// worker already picked the other one, so a value is never applied under the
-// wrong unit.
-function convertReading(value: number, fromUnit: string, toUnit: string): number | null {
-  if (fromUnit === toUnit) return value;
-  if (fromUnit === "m" && toUnit === "cm") return value * 100;
-  if (fromUnit === "cm" && toUnit === "m") return value / 100;
-  return null;
-}
-
 export function NewRecordScreen({ navigation, route }: Props) {
   const { profile, session } = useAuth();
   const { t } = useI18n();
@@ -291,6 +281,10 @@ export function NewRecordScreen({ navigation, route }: Props) {
   }
 
   async function runPhotoAnalysis() {
+    // Soil and water records have no AI assist: the reading must come from the
+    // instrument, not from a guess about the photo.
+    if (type === "soil_water") return;
+
     const photo = photos[0];
     if (!photo) {
       setMessage({ kind: "warning", text: t("Add a photo first.") });
@@ -358,6 +352,12 @@ export function NewRecordScreen({ navigation, route }: Props) {
         keptExisting = true;
       }
     } else if (suggestion.recordType === "flora") {
+      if (!title.trim() && suggestion.title) {
+        setTitle(suggestion.title);
+      } else if (title.trim() && suggestion.title) {
+        keptExisting = true;
+      }
+
       if (!species.trim() && suggestion.species_name) {
         setSpecies(suggestion.species_name);
       } else if (species.trim() && suggestion.species_name) {
@@ -380,39 +380,6 @@ export function NewRecordScreen({ navigation, route }: Props) {
         setEstimatedCount(String(suggestion.estimated_count));
       } else if (estimatedCount.trim() && suggestion.estimated_count) {
         keptExisting = true;
-      }
-    } else {
-      // A reading only makes sense for the type it was read from. If the worker
-      // already chose a different type, keep their choice untouched.
-      const sameType = !readingType || readingType === suggestion.reading_type;
-
-      if (suggestion.reading_type) {
-        if (!readingType) {
-          setReadingType(suggestion.reading_type);
-          setReadingUnit(suggestion.reading_unit ?? defaultUnitFor(suggestion.reading_type));
-        } else if (readingType !== suggestion.reading_type) {
-          keptExisting = true;
-        }
-      }
-
-      if (sameType && suggestion.reading_value !== null) {
-        const targetUnit = readingUnit || suggestion.reading_unit;
-        const converted =
-          targetUnit && suggestion.reading_unit
-            ? convertReading(suggestion.reading_value, suggestion.reading_unit, targetUnit)
-            : suggestion.reading_value;
-
-        if (converted !== null) {
-          if (!readingValue.trim()) {
-            setReadingValue(String(converted));
-          } else {
-            keptExisting = true;
-          }
-        }
-      }
-
-      if (sameType && suggestion.reading_unit && !readingUnit) {
-        setReadingUnit(suggestion.reading_unit);
       }
     }
 
@@ -599,11 +566,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
         ? t(
             "Sends the first photo for AI analysis. Best when leaves and stems are clear. AI can be wrong - review before saving."
           )
-        : type === "soil_water"
-          ? t(
-              "Sends the first photo for AI analysis. Best when the meter or gauge display is clearly visible. AI can be wrong - review before saving."
-            )
-          : t("Sends the first photo for AI analysis. AI can be wrong - review before saving.");
+        : t("Sends the first photo for AI analysis. AI can be wrong - review before saving.");
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -900,21 +863,23 @@ export function NewRecordScreen({ navigation, route }: Props) {
             />
           </View>
 
-          <View style={styles.aiPanel}>
-            <View style={styles.aiHeading}>
-              <Ionicons name="sparkles-outline" size={17} color={colors.primaryDark} />
-              <Text style={styles.aiTitle}>{t("AI photo assist")}</Text>
+          {type !== "soil_water" ? (
+            <View style={styles.aiPanel}>
+              <View style={styles.aiHeading}>
+                <Ionicons name="sparkles-outline" size={17} color={colors.primaryDark} />
+                <Text style={styles.aiTitle}>{t("AI photo assist")}</Text>
+              </View>
+              <Text style={styles.helper}>{aiHint}</Text>
+              <View style={{ height: 10 }} />
+              <Button
+                title={aiBusy ? t("Analyzing photo...") : t("Auto-fill from photo")}
+                variant="secondary"
+                onPress={runPhotoAnalysis}
+                loading={aiBusy}
+                disabled={!online || photos.length === 0 || aiBusy}
+              />
             </View>
-            <Text style={styles.helper}>{aiHint}</Text>
-            <View style={{ height: 10 }} />
-            <Button
-              title={aiBusy ? t("Analyzing photo...") : t("Auto-fill from photo")}
-              variant="secondary"
-              onPress={runPhotoAnalysis}
-              loading={aiBusy}
-              disabled={!online || photos.length === 0 || aiBusy}
-            />
-          </View>
+          ) : null}
         </Card>
 
         <Button

@@ -1,6 +1,6 @@
 # analyze-record Edge Function
 
-Analyzes one field photo with Google Gemini and returns a small, validated suggestion for the mobile form. It supports hazard, flora, and soil/water records. The Google API key stays in Supabase and is never shipped in the app. The function uses Google's Interactions API (`/v1beta/interactions`).
+Analyzes one field photo with Google Gemini and returns a small, validated suggestion for the mobile form. It supports hazard and flora records. Soil and water records have no AI assist: the reading must come from the instrument. The Google API key stays in Supabase and is never shipped in the app. The function uses Google's Interactions API (`/v1beta/interactions`).
 
 ## One-time setup
 
@@ -14,25 +14,25 @@ Analyzes one field photo with Google Gemini and returns a small, validated sugge
 3. Store the key as a Supabase secret. Replace the value with your real key:
 
    ```powershell
-   npx supabase secrets set GOOGLE_AI_STUDIO_KEY=your-key-here --project-ref bjlyskwoxpkvepbwaxfc
+   npx supabase secrets set GOOGLE_AI_STUDIO_KEY=your-key-here --project-ref bjlyskwoxpepbwaxfc
    ```
 
 4. Deploy the function:
 
    ```powershell
-   npx supabase functions deploy analyze-record --project-ref bjlyskwoxpkvepbwaxfc --use-api
+   npx supabase functions deploy analyze-record --project-ref bjlyskwoxpepbwaxfc --use-api
    ```
 
 The default model is `gemini-3.8-flash`. To use another model, set `GEMINI_MODEL` as an additional secret before deploying:
 
 ```powershell
-npx supabase secrets set GEMINI_MODEL=gemini-3.5-flash-lite --project-ref bjlyskwoxpkvepbwaxfc
+npx supabase secrets set GEMINI_MODEL=gemini-3.5-flash-lite --project-ref bjlyskwoxpepbwaxfc
 ```
 
 This project currently uses `gemini-3.5-flash-lite` because `gemini-3.8-flash` was returning temporary `503` high-demand errors during testing. Remove the secret to fall back to the code default:
 
 ```powershell
-npx supabase secrets unset GEMINI_MODEL --project-ref bjlyskwoxpkvepbwaxfc
+npx supabase secrets unset GEMINI_MODEL --project-ref bjlyskwoxpepbwaxfc
 ```
 
 ## Request
@@ -45,7 +45,7 @@ npx supabase secrets unset GEMINI_MODEL --project-ref bjlyskwoxpkvepbwaxfc
 }
 ```
 
-`recordType` must be `"hazard"`, `"flora"`, or `"soil_water"`. The mobile app only sends the first photo of a record.
+`recordType` must be `"hazard"` or `"flora"`. The mobile app only sends the first photo of a record.
 
 ## Responses
 
@@ -70,38 +70,30 @@ Flora:
 {
   "recordType": "flora",
   "suggestion": {
-    "species_name": "Dicranopteris linearis",
+    "title": "Bird's Nest Fern",
+    "species_name": "Asplenium nidus",
     "growth_stage": "Mature",
     "health_condition": "Healthy",
-    "estimated_count": 12,
-    "notes": "Dense stand of ferns on a sunny slope with no visible damage.",
-    "confidence": 0.72
-  }
-}
-```
-
-Soil/water:
-
-```json
-{
-  "recordType": "soil_water",
-  "suggestion": {
-    "reading_type": "pH",
-    "reading_value": 6.8,
-    "reading_unit": "pH",
-    "notes": "A handheld pH meter display shows 6.8 at the wetland edge.",
-    "confidence": 0.9
+    "estimated_count": 3,
+    "notes": "Large rosette of undivided fronds growing on a shaded tree trunk.",
+    "confidence": 0.82
   }
 }
 ```
 
 The mobile app validates the values again and shows a review sheet. Nothing is saved until the worker taps **Apply suggestions** and then saves the record. Only blank fields are filled.
 
+## Flora identification rules
+
+- The model identifies the plant as precisely as the photo allows.
+- If the exact species is uncertain, it uses the genus (`Ficus sp.`) or the plant family (`Fern family`) instead of returning nothing.
+- The 20-entry species catalog in `mobile/src/lib/species.ts` is only a shortcut for the form. It is not a restriction: a plant outside the catalog is still suggested as free text.
+- If the model returns a local alias such as `Paku resam`, the mobile app maps it to the catalog's scientific name.
+
 ## Validation rules
 
-- Hazard categories, severities, growth stages, health conditions, reading types, units, and ranges are fixed in the function. Anything else is removed before the response.
-- Flora species must match the catalog in `mobile/src/lib/species.ts`. A name outside the catalog is dropped, never passed through.
-- Soil/water values must be inside the range for the chosen unit. An unreadable or impossible value is returned as `null`, so the worker can type it.
+- Hazard categories and severities are fixed in the function. Anything else is removed before the response.
+- Flora growth stages and health conditions are fixed in the function. Anything else is removed before the response.
 - The function returns `422` with `code: "unclear_photo"` when the photo does not support any suggestion.
 
 ## Notes

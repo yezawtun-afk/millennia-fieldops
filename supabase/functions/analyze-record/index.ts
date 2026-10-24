@@ -6,7 +6,7 @@
 // worker still reviews and edits every field before saving.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
-type RecordType = "hazard" | "flora" | "soil_water";
+type RecordType = "hazard" | "flora";
 
 const HAZARD_TYPES = [
   "Fallen debris",
@@ -20,53 +20,6 @@ const SEVERITIES = ["low", "medium", "critical"] as const;
 
 const GROWTH_STAGES = ["Seedling", "Sapling", "Mature"] as const;
 const HEALTH_CONDITIONS = ["Healthy", "Stressed", "Diseased", "Dying", "Dead"] as const;
-
-// Keep this list in sync with mobile/src/lib/species.ts. The mobile app validates
-// the answer against its own copy, so a drift can only remove a suggestion - it
-// can never put an unknown species into a record.
-// [scientific, common, Malay]
-const SPECIES_CATALOG = [
-  ["Dicranopteris linearis", "False staghorn fern", "Paku resam"],
-  ["Imperata cylindrica", "Cogon grass", "Lalang"],
-  ["Macaranga tanarius", "Macaranga", "Mahang"],
-  ["Ficus fistulosa", "Common red stem fig", "Ara"],
-  ["Melastoma malabathricum", "Singapore rhododendron", "Senduduk"],
-  ["Nephrolepis biserrata", "Giant sword fern", "Paku pedang"],
-  ["Lygodium microphyllum", "Climbing fern", "Paku kawat"],
-  ["Mikania micrantha", "Mile-a-minute", "Selaput tunggul"],
-  ["Chromolaena odorata", "Siam weed", "Pokok kapal terbang"],
-  ["Acacia mangium", "Mangium", "Mangium"],
-  ["Hevea brasiliensis", "Rubber tree", "Pokok getah"],
-  ["Elaeis guineensis", "Oil palm", "Kelapa sawit"],
-  ["Musa spp.", "Banana", "Pisang"],
-  ["Bambusa vulgaris", "Common bamboo", "Buluh"],
-  ["Scirpus grossus", "Greater club-rush", "Rumput menderong"],
-  ["Lepironia articulata", "Grey sedge", "Rumput purun"],
-  ["Pandanus amaryllifolius", "Pandan", "Pandan"],
-  ["Alpinia galanga", "Greater galangal", "Lengkuas"],
-  ["Cynodon dactylon", "Bermuda grass", "Rumput Bermuda"],
-  ["Paspalum conjugatum", "Sourgrass", "Rumput kerbau"],
-] as const;
-
-interface ReadingSpec {
-  units: string[];
-  ranges: Record<string, { min: number; max: number }>;
-}
-
-// Keep this table in sync with mobile/src/lib/measurements.ts.
-const READINGS: Record<string, ReadingSpec> = {
-  pH: { units: ["pH"], ranges: { pH: { min: 0, max: 14 } } },
-  Moisture: { units: ["%"], ranges: { "%": { min: 0, max: 100 } } },
-  "Water level": {
-    units: ["m", "cm"],
-    ranges: { m: { min: 0, max: 20 }, cm: { min: 0, max: 2000 } },
-  },
-  Turbidity: { units: ["NTU"], ranges: { NTU: { min: 0, max: 1000 } } },
-  Temperature: { units: ["°C"], ranges: { "°C": { min: -10, max: 60 } } },
-  "Soil depth": { units: ["cm"], ranges: { cm: { min: 0, max: 300 } } },
-};
-
-const READING_TYPES = Object.keys(READINGS);
 
 const MAX_BASE64_CHARS = 2_000_000; // about 1.5 MB of JPEG data
 const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.8-flash";
@@ -96,11 +49,11 @@ Hazard rules:
 - Choose the hazard category and severity from the lists below.
 
 Hazard categories:
-- "Fallen debris": fallen branches, logs, rocks, or other loose material.
-- "Eroded ground": exposed soil, gullies, or ground loss.
-- "Blocked drainage": a drain, culvert, or channel blocked by material.
-- "Silt runoff": muddy water or sediment flowing away from a site.
-- "Rockfall risk": loose rocks or a slope that appears likely to fall.
+- "Fallen debris": fallen branches, logs, rocks, garbage, or other loose material and obstacles.
+- "Eroded ground": exposed soil, gullies, landslides, slope failure, or washed-out ground.
+- "Blocked drainage": a drain, culvert, or channel blocked by leaves, silt, or debris, often with standing water.
+- "Silt runoff": muddy water or sediment flowing onto roads, paths, or nearby ground.
+- "Rockfall risk": loose rocks, boulders, or a slope that appears likely to fall.
 
 Severity:
 - "low": minor issue with no obvious immediate risk.
@@ -111,13 +64,18 @@ Return an empty string for a field when the photo does not support a confident a
 
 const FLORA_PROMPT = `${BASE_PROMPT}
 
-Flora rules:
-- Identify the plant only when it clearly matches one of the catalog species below.
-- species_name must be the exact scientific name from the catalog. If no catalog species is a clear match, return an empty string. Never invent a species.
+You are an expert tropical botanist specializing in Southeast Asian flora, especially Peninsular Malaysia.
+
+Plant rules:
+- Identify the plant as precisely as the photo allows.
+- species_name must be the scientific name (Genus species). If you are not certain of the exact species, use the genus followed by "sp." (for example "Ficus sp.") or the plant family (for example "Fern family"). Do not leave species_name empty when a plant is clearly visible.
+- title must be a short common name (for example "Bird's Nest Fern", "Oil Palm", "Mile-a-minute"). If the common name is unknown, use the genus or family name.
+- Do not invent a species. Only use a name you believe exists.
 - growth_stage must be one of "Seedling", "Sapling", "Mature", or an empty string.
 - health_condition must be one of "Healthy", "Stressed", "Diseased", "Dying", "Dead", or an empty string.
 - estimated_count is the number of individual plants of the identified species visible in the photo. Use 0 if you cannot estimate it.
-- notes may mention visible leaf colour, damage, pests, or the surrounding plants.
+- notes: 1-2 short factual sentences (maximum 60 words) about visible features, native or invasive status if known, or habitat.
+- If the photo is too blurry or does not clearly show a plant, return empty strings, 0 count, and 0 confidence.
 
 Growth stages:
 - "Seedling": small, young, recently established.
@@ -129,30 +87,7 @@ Health conditions:
 - "Stressed": wilting, yellowing, or poor vigour.
 - "Diseased": spots, rot, or other signs of disease.
 - "Dying": mostly dead or collapsing.
-- "Dead": no living tissue visible.
-
-Species catalog:
-${SPECIES_CATALOG.map(
-  ([scientific, common, malay]) => `- ${scientific} (${common}; Malay: ${malay})`
-).join("\n")}`;
-
-const SOIL_WATER_PROMPT = `${BASE_PROMPT}
-
-Soil and water rules:
-- Read the value only from a clearly visible meter, gauge, or display. Do not estimate a value from how the ground or water looks.
-- reading_type must be one of the types listed below, or an empty string.
-- reading_unit must be one of the units allowed for that reading type, or an empty string.
-- reading_value must be the number shown on the display, written as text (for example "6.8" or "1.25"). Return an empty string when no value is readable.
-- If no display is readable, return empty strings and 0 for confidence.
-- notes may say which instrument, gauge, or marker is visible.
-
-Allowed readings:
-- "pH": unit "pH", range 0-14.
-- "Moisture": unit "%", range 0-100.
-- "Water level": unit "m" (0-20) or "cm" (0-2000).
-- "Turbidity": unit "NTU", range 0-1000.
-- "Temperature": unit "°C", range -10 to 60.
-- "Soil depth": unit "cm", range 0-300.`;
+- "Dead": no living tissue visible.`;
 
 const CONFIDENCE_PROPERTY = {
   type: "number",
@@ -189,10 +124,15 @@ const HAZARD_SCHEMA = {
 const FLORA_SCHEMA = {
   type: "object",
   properties: {
+    title: {
+      type: "string",
+      description:
+        "Short common name, maximum 70 characters. Use the genus or family name if the common name is unknown.",
+    },
     species_name: {
       type: "string",
       description:
-        "Exact scientific name from the species catalog, or an empty string if no catalog species is a clear match.",
+        'Scientific name (Genus species). Use "Genus sp." or the plant family when the exact species is uncertain. Empty only when no plant is visible.',
     },
     growth_stage: {
       type: "string",
@@ -212,6 +152,7 @@ const FLORA_SCHEMA = {
     confidence: CONFIDENCE_PROPERTY,
   },
   required: [
+    "title",
     "species_name",
     "growth_stage",
     "health_condition",
@@ -219,31 +160,6 @@ const FLORA_SCHEMA = {
     "notes",
     "confidence",
   ],
-};
-
-const SOIL_WATER_SCHEMA = {
-  type: "object",
-  properties: {
-    reading_type: {
-      type: "string",
-      description: `One of ${READING_TYPES.map((type) => `"${type}"`).join(
-        ", "
-      )}, or an empty string if no meter is readable.`,
-    },
-    reading_value: {
-      type: "string",
-      description:
-        'The number shown on the meter or gauge, written as text (for example "6.8"), or an empty string if no value is readable.',
-    },
-    reading_unit: {
-      type: "string",
-      description:
-        'The unit shown on the display (for example "pH", "%", "m", "cm", "NTU", "°C"), or an empty string.',
-    },
-    notes: NOTES_PROPERTY,
-    confidence: CONFIDENCE_PROPERTY,
-  },
-  required: ["reading_type", "reading_value", "reading_unit", "notes", "confidence"],
 };
 
 interface HazardSuggestion {
@@ -255,6 +171,7 @@ interface HazardSuggestion {
 }
 
 interface FloraSuggestion {
+  title: string;
   species_name: string;
   growth_stage: string;
   health_condition: string;
@@ -263,15 +180,7 @@ interface FloraSuggestion {
   confidence: number;
 }
 
-interface SoilWaterSuggestion {
-  reading_type: string;
-  reading_value: number | null;
-  reading_unit: string;
-  notes: string;
-  confidence: number;
-}
-
-type Suggestion = HazardSuggestion | FloraSuggestion | SoilWaterSuggestion;
+type Suggestion = HazardSuggestion | FloraSuggestion;
 
 interface InteractionContent {
   type?: string;
@@ -306,23 +215,10 @@ function cleanConfidence(value: unknown): number {
   return Number.isFinite(confidence) ? Math.min(1, Math.max(0, confidence)) : 0;
 }
 
-function matchSpecies(value: string): string {
-  const needle = value.trim().toLowerCase();
-  if (!needle) return "";
-  const entry = SPECIES_CATALOG.find((names) =>
-    names.some((name) => name.toLowerCase() === needle)
-  );
-  return entry ? entry[0] : "";
-}
-
-function parseReadingValue(value: string): number | null {
-  // Accept a dot or comma as the decimal separator, and ignore any unit text
-  // the model copied from the display.
-  const normalised = value.replace(/(\d),(\d)/g, "$1.$2");
-  const match = normalised.match(/-?\d+(?:\.\d+)?/);
-  if (!match) return null;
-  const number = Number(match[0]);
-  return Number.isFinite(number) ? number : null;
+function cleanSpecies(value: unknown): string {
+  // Accept genus/family fallbacks and free-text names. The catalog is only a
+  // shortcut in the app, not a restriction on what the model may identify.
+  return cleanText(value, 80).replace(/\s+/g, " ");
 }
 
 function normaliseHazard(record: Record<string, unknown>): HazardSuggestion {
@@ -344,7 +240,8 @@ function normaliseFlora(record: Record<string, unknown>): FloraSuggestion {
   const count = Number(record.estimated_count);
 
   return {
-    species_name: matchSpecies(cleanText(record.species_name, 80)),
+    title: cleanText(record.title, 70),
+    species_name: cleanSpecies(record.species_name),
     growth_stage: (GROWTH_STAGES as readonly string[]).includes(growthStage) ? growthStage : "",
     health_condition: (HEALTH_CONDITIONS as readonly string[]).includes(healthCondition)
       ? healthCondition
@@ -356,59 +253,27 @@ function normaliseFlora(record: Record<string, unknown>): FloraSuggestion {
   };
 }
 
-function normaliseSoilWater(record: Record<string, unknown>): SoilWaterSuggestion {
-  const readingType = cleanText(record.reading_type, 30);
-  const type = READING_TYPES.includes(readingType) ? readingType : "";
-  const spec = type ? READINGS[type] : null;
-
-  let unit = cleanText(record.reading_unit, 10);
-  if (spec && !spec.units.includes(unit)) unit = spec.units[0] ?? "";
-
-  let value = parseReadingValue(cleanText(record.reading_value, 20));
-  if (!spec || value === null) {
-    value = null;
-  } else {
-    const range = spec.ranges[unit];
-    if (!range || value < range.min || value > range.max) value = null;
-  }
-
-  return {
-    reading_type: type,
-    reading_value: value,
-    reading_unit: type ? unit : "",
-    notes: cleanText(record.notes, 500),
-    confidence: cleanConfidence(record.confidence),
-  };
-}
-
 function hasContent(recordType: RecordType, suggestion: Suggestion): boolean {
   if (recordType === "hazard") {
     const hazard = suggestion as HazardSuggestion;
     return Boolean(hazard.title || hazard.hazard_type || hazard.severity || hazard.notes);
   }
-  if (recordType === "flora") {
-    const flora = suggestion as FloraSuggestion;
-    return Boolean(
+  const flora = suggestion as FloraSuggestion;
+  return Boolean(
+    flora.title ||
       flora.species_name ||
-        flora.growth_stage ||
-        flora.health_condition ||
-        flora.estimated_count
-    );
-  }
-  const soil = suggestion as SoilWaterSuggestion;
-  return Boolean(soil.reading_type || soil.reading_value !== null);
+      flora.growth_stage ||
+      flora.health_condition ||
+      flora.estimated_count
+  );
 }
 
 function promptFor(recordType: RecordType): string {
-  if (recordType === "flora") return FLORA_PROMPT;
-  if (recordType === "soil_water") return SOIL_WATER_PROMPT;
-  return HAZARD_PROMPT;
+  return recordType === "flora" ? FLORA_PROMPT : HAZARD_PROMPT;
 }
 
 function schemaFor(recordType: RecordType): unknown {
-  if (recordType === "flora") return FLORA_SCHEMA;
-  if (recordType === "soil_water") return SOIL_WATER_SCHEMA;
-  return HAZARD_SCHEMA;
+  return recordType === "flora" ? FLORA_SCHEMA : HAZARD_SCHEMA;
 }
 
 function parseModelJson(text: string): unknown {
@@ -487,7 +352,7 @@ Deno.serve(async (request) => {
   }
 
   const recordType = body.recordType;
-  if (recordType !== "hazard" && recordType !== "flora" && recordType !== "soil_water") {
+  if (recordType !== "hazard" && recordType !== "flora") {
     return json({ error: "Unknown record type." }, 400);
   }
 
@@ -614,9 +479,7 @@ Deno.serve(async (request) => {
   try {
     const raw = parseModelJson(text);
     const record = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
-    if (recordType === "flora") suggestion = normaliseFlora(record);
-    else if (recordType === "soil_water") suggestion = normaliseSoilWater(record);
-    else suggestion = normaliseHazard(record);
+    suggestion = recordType === "flora" ? normaliseFlora(record) : normaliseHazard(record);
   } catch {
     return json({ code: "analysis_failed", error: "The AI response could not be read." }, 502);
   }
