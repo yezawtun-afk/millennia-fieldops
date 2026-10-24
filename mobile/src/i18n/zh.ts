@@ -469,6 +469,10 @@ export const zh: Record<string, string> = {
   "AI photo assist": "AI 照片辅助",
   "Sends the first photo for AI analysis. AI can be wrong - review before saving.":
     "发送第一张照片进行 AI 分析。AI 可能会出错——保存前请检查。",
+  "Sends the first photo for AI analysis. Best when leaves and stems are clear. AI can be wrong - review before saving.":
+    "发送第一张照片进行 AI 分析。叶片和茎部清晰时效果最好。AI 可能会出错——保存前请检查。",
+  "Sends the first photo for AI analysis. Best when the meter or gauge display is clearly visible. AI can be wrong - review before saving.":
+    "发送第一张照片进行 AI 分析。仪表或水尺显示屏清晰可见时效果最好。AI 可能会出错——保存前请检查。",
   "AI needs a connection. Fill the form manually or save a draft.":
     "AI 需要网络连接。请手动填写表单或保存草稿。",
   "Add a photo first.": "请先添加照片。",
@@ -477,11 +481,18 @@ export const zh: Record<string, string> = {
   "AI suggestions": "AI 建议",
   "Review before adding them to the form.": "添加到表单前请先检查。",
   "Confidence {percent}%": "置信度 {percent}%",
-  "AI is not confident. Please check the category and severity carefully.":
-    "AI 信心不足。请仔细检查类别和严重程度。",
+  "AI is not confident. Please check every suggestion carefully.":
+    "AI 信心不足。请仔细检查每一项建议。",
   "Suggested title": "建议标题",
   "Suggested category": "建议类别",
   "Suggested severity": "建议严重程度",
+  "Suggested species": "建议物种",
+  "Suggested growth stage": "建议生长阶段",
+  "Suggested health condition": "建议健康状况",
+  "Suggested estimated count": "建议估计数量",
+  "Suggested reading type": "建议读数类型",
+  "Suggested value": "建议数值",
+  "Suggested unit": "建议单位",
   "Suggested notes": "建议备注",
   "Not determined": "无法确定",
   "AI can be wrong. Check the photo and every field before saving.":
@@ -490,6 +501,10 @@ export const zh: Record<string, string> = {
   Dismiss: "忽略",
   "AI could not identify the hazard. Try a clearer photo.":
     "AI 无法识别隐患。请尝试更清晰的照片。",
+  "AI could not identify the plant. Try a clearer photo.":
+    "AI 无法识别植物。请尝试更清晰的照片。",
+  "AI could not read the meter or display. Try a clearer photo.":
+    "AI 无法读取仪表或显示屏。请尝试更清晰的照片。",
   "AI suggestions applied. Fields you already filled were kept.":
     "已应用 AI 建议。您已填写的字段已保留。",
   "AI suggestions applied. Check every field before saving.":

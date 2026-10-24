@@ -516,6 +516,10 @@ export const ms: Record<string, string> = {
   "AI photo assist": "Bantuan foto AI",
   "Sends the first photo for AI analysis. AI can be wrong - review before saving.":
     "Menghantar foto pertama untuk analisis AI. AI boleh tersilap - semak sebelum menyimpan.",
+  "Sends the first photo for AI analysis. Best when leaves and stems are clear. AI can be wrong - review before saving.":
+    "Menghantar foto pertama untuk analisis AI. Terbaik apabila daun dan batang jelas. AI boleh tersilap - semak sebelum menyimpan.",
+  "Sends the first photo for AI analysis. Best when the meter or gauge display is clearly visible. AI can be wrong - review before saving.":
+    "Menghantar foto pertama untuk analisis AI. Terbaik apabila paparan meter atau tolok kelihatan jelas. AI boleh tersilap - semak sebelum menyimpan.",
   "AI needs a connection. Fill the form manually or save a draft.":
     "AI memerlukan sambungan. Isi borang secara manual atau simpan draf.",
   "Add a photo first.": "Tambah foto dahulu.",
@@ -524,11 +528,18 @@ export const ms: Record<string, string> = {
   "AI suggestions": "Cadangan AI",
   "Review before adding them to the form.": "Semak sebelum menambahnya ke borang.",
   "Confidence {percent}%": "Keyakinan {percent}%",
-  "AI is not confident. Please check the category and severity carefully.":
-    "AI tidak begitu yakin. Sila semak kategori dan keterukan dengan teliti.",
+  "AI is not confident. Please check every suggestion carefully.":
+    "AI tidak begitu yakin. Sila semak setiap cadangan dengan teliti.",
   "Suggested title": "Tajuk cadangan",
   "Suggested category": "Kategori cadangan",
   "Suggested severity": "Keterukan cadangan",
+  "Suggested species": "Spesies cadangan",
+  "Suggested growth stage": "Peringkat pertumbuhan cadangan",
+  "Suggested health condition": "Keadaan kesihatan cadangan",
+  "Suggested estimated count": "Anggaran bilangan cadangan",
+  "Suggested reading type": "Jenis bacaan cadangan",
+  "Suggested value": "Nilai cadangan",
+  "Suggested unit": "Unit cadangan",
   "Suggested notes": "Nota cadangan",
   "Not determined": "Tidak dapat ditentukan",
   "AI can be wrong. Check the photo and every field before saving.":
@@ -537,6 +548,10 @@ export const ms: Record<string, string> = {
   Dismiss: "Abaikan",
   "AI could not identify the hazard. Try a clearer photo.":
     "AI tidak dapat mengenal pasti bahaya. Cuba foto yang lebih jelas.",
+  "AI could not identify the plant. Try a clearer photo.":
+    "AI tidak dapat mengenal pasti tumbuhan. Cuba foto yang lebih jelas.",
+  "AI could not read the meter or display. Try a clearer photo.":
+    "AI tidak dapat membaca meter atau paparan. Cuba foto yang lebih jelas.",
   "AI suggestions applied. Fields you already filled were kept.":
     "Cadangan AI digunakan. Medan yang sudah anda isi dikekalkan.",
   "AI suggestions applied. Check every field before saving.":

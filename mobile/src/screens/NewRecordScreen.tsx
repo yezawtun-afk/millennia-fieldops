@@ -18,7 +18,12 @@ import { useI18n } from "../i18n";
 import { Banner, Button, Card, ChipGroup, Field, Input, SectionTitle } from "../components/ui";
 import { SpeciesPicker } from "../components/SpeciesPicker";
 import { AiSuggestionSheet } from "../components/AiSuggestionSheet";
-import { analyzeHazardPhoto, type HazardAiSuggestion } from "../lib/ai";
+import {
+  analyzePhoto as analyzeRecordPhoto,
+  hasAnyAiSuggestion,
+  unclearPhotoMessage,
+  type AiSuggestion,
+} from "../lib/ai";
 import { colors, radius, spacing, type } from "../theme";
 import { enqueueRecord, getOutbox, markPending, saveDraft } from "../lib/sqlite";
 import { fetchZones } from "../lib/api";
@@ -66,6 +71,16 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// Water level is the only reading with two units. Convert the AI value when the
+// worker already picked the other one, so a value is never applied under the
+// wrong unit.
+function convertReading(value: number, fromUnit: string, toUnit: string): number | null {
+  if (fromUnit === toUnit) return value;
+  if (fromUnit === "m" && toUnit === "cm") return value * 100;
+  if (fromUnit === "cm" && toUnit === "m") return value / 100;
+  return null;
+}
+
 export function NewRecordScreen({ navigation, route }: Props) {
   const { profile, session } = useAuth();
   const { t } = useI18n();
@@ -87,7 +102,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
 
   // AI photo assist
   const [aiBusy, setAiBusy] = useState(false);
-  const [aiSuggestion, setAiSuggestion] = useState<HazardAiSuggestion | null>(null);
+  const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion | null>(null);
   const [aiPhotoUri, setAiPhotoUri] = useState<string | null>(null);
   const [aiSheetOpen, setAiSheetOpen] = useState(false);
   const aiRequestRef = useRef(0);
@@ -275,7 +290,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
     setReadingValue("");
   }
 
-  async function analyzePhoto() {
+  async function runPhotoAnalysis() {
     const photo = photos[0];
     if (!photo) {
       setMessage({ kind: "warning", text: t("Add a photo first.") });
@@ -296,7 +311,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
     setAiSuggestion(null);
     setMessage(null);
 
-    const result = await analyzeHazardPhoto(photo);
+    const result = await analyzeRecordPhoto(photo, type);
     if (aiRequestRef.current !== requestId) return;
 
     setAiBusy(false);
@@ -308,11 +323,11 @@ export function NewRecordScreen({ navigation, route }: Props) {
     }
 
     const suggestion = result.suggestion;
-    if (!suggestion.title && !suggestion.hazard_type && !suggestion.severity && !suggestion.notes) {
+    if (!hasAnyAiSuggestion(suggestion)) {
       setAiPhotoUri(null);
       setMessage({
         kind: "warning",
-        text: t("AI could not identify the hazard. Try a clearer photo."),
+        text: t(unclearPhotoMessage(type)),
       });
       return;
     }
@@ -321,25 +336,84 @@ export function NewRecordScreen({ navigation, route }: Props) {
     setAiSheetOpen(true);
   }
 
-  function applyAiSuggestion(suggestion: HazardAiSuggestion) {
+  function applyAiSuggestion(suggestion: AiSuggestion) {
     let keptExisting = false;
 
-    if (!title.trim() && suggestion.title) {
-      setTitle(suggestion.title);
-    } else if (title.trim() && suggestion.title) {
-      keptExisting = true;
-    }
+    if (suggestion.recordType === "hazard") {
+      if (!title.trim() && suggestion.title) {
+        setTitle(suggestion.title);
+      } else if (title.trim() && suggestion.title) {
+        keptExisting = true;
+      }
 
-    if (!hazardType && suggestion.hazard_type) {
-      setHazardType(suggestion.hazard_type);
-    } else if (hazardType && suggestion.hazard_type) {
-      keptExisting = true;
-    }
+      if (!hazardType && suggestion.hazard_type) {
+        setHazardType(suggestion.hazard_type);
+      } else if (hazardType && suggestion.hazard_type) {
+        keptExisting = true;
+      }
 
-    if (!severity && suggestion.severity) {
-      setSeverity(suggestion.severity);
-    } else if (severity && suggestion.severity) {
-      keptExisting = true;
+      if (!severity && suggestion.severity) {
+        setSeverity(suggestion.severity);
+      } else if (severity && suggestion.severity) {
+        keptExisting = true;
+      }
+    } else if (suggestion.recordType === "flora") {
+      if (!species.trim() && suggestion.species_name) {
+        setSpecies(suggestion.species_name);
+      } else if (species.trim() && suggestion.species_name) {
+        keptExisting = true;
+      }
+
+      if (!growthStage && suggestion.growth_stage) {
+        setGrowthStage(suggestion.growth_stage);
+      } else if (growthStage && suggestion.growth_stage) {
+        keptExisting = true;
+      }
+
+      if (!healthCondition && suggestion.health_condition) {
+        setHealthCondition(suggestion.health_condition);
+      } else if (healthCondition && suggestion.health_condition) {
+        keptExisting = true;
+      }
+
+      if (!estimatedCount.trim() && suggestion.estimated_count) {
+        setEstimatedCount(String(suggestion.estimated_count));
+      } else if (estimatedCount.trim() && suggestion.estimated_count) {
+        keptExisting = true;
+      }
+    } else {
+      // A reading only makes sense for the type it was read from. If the worker
+      // already chose a different type, keep their choice untouched.
+      const sameType = !readingType || readingType === suggestion.reading_type;
+
+      if (suggestion.reading_type) {
+        if (!readingType) {
+          setReadingType(suggestion.reading_type);
+          setReadingUnit(suggestion.reading_unit ?? defaultUnitFor(suggestion.reading_type));
+        } else if (readingType !== suggestion.reading_type) {
+          keptExisting = true;
+        }
+      }
+
+      if (sameType && suggestion.reading_value !== null) {
+        const targetUnit = readingUnit || suggestion.reading_unit;
+        const converted =
+          targetUnit && suggestion.reading_unit
+            ? convertReading(suggestion.reading_value, suggestion.reading_unit, targetUnit)
+            : suggestion.reading_value;
+
+        if (converted !== null) {
+          if (!readingValue.trim()) {
+            setReadingValue(String(converted));
+          } else {
+            keptExisting = true;
+          }
+        }
+      }
+
+      if (sameType && suggestion.reading_unit && !readingUnit) {
+        setReadingUnit(suggestion.reading_unit);
+      }
     }
 
     if (!notes.trim() && suggestion.notes) {
@@ -521,7 +595,15 @@ export function NewRecordScreen({ navigation, route }: Props) {
     ? t("AI needs a connection. Fill the form manually or save a draft.")
     : photos.length === 0
       ? t("Add a photo first.")
-      : t("Sends the first photo for AI analysis. AI can be wrong - review before saving.");
+      : type === "flora"
+        ? t(
+            "Sends the first photo for AI analysis. Best when leaves and stems are clear. AI can be wrong - review before saving."
+          )
+        : type === "soil_water"
+          ? t(
+              "Sends the first photo for AI analysis. Best when the meter or gauge display is clearly visible. AI can be wrong - review before saving."
+            )
+          : t("Sends the first photo for AI analysis. AI can be wrong - review before saving.");
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -818,23 +900,21 @@ export function NewRecordScreen({ navigation, route }: Props) {
             />
           </View>
 
-          {type === "hazard" ? (
-            <View style={styles.aiPanel}>
-              <View style={styles.aiHeading}>
-                <Ionicons name="sparkles-outline" size={17} color={colors.primaryDark} />
-                <Text style={styles.aiTitle}>{t("AI photo assist")}</Text>
-              </View>
-              <Text style={styles.helper}>{aiHint}</Text>
-              <View style={{ height: 10 }} />
-              <Button
-                title={aiBusy ? t("Analyzing photo...") : t("Auto-fill from photo")}
-                variant="secondary"
-                onPress={analyzePhoto}
-                loading={aiBusy}
-                disabled={!online || photos.length === 0 || aiBusy}
-              />
+          <View style={styles.aiPanel}>
+            <View style={styles.aiHeading}>
+              <Ionicons name="sparkles-outline" size={17} color={colors.primaryDark} />
+              <Text style={styles.aiTitle}>{t("AI photo assist")}</Text>
             </View>
-          ) : null}
+            <Text style={styles.helper}>{aiHint}</Text>
+            <View style={{ height: 10 }} />
+            <Button
+              title={aiBusy ? t("Analyzing photo...") : t("Auto-fill from photo")}
+              variant="secondary"
+              onPress={runPhotoAnalysis}
+              loading={aiBusy}
+              disabled={!online || photos.length === 0 || aiBusy}
+            />
+          </View>
         </Card>
 
         <Button

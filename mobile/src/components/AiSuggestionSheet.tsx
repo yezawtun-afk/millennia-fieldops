@@ -1,15 +1,21 @@
-// Review sheet for the hazard-photo assistant. Nothing is written to the form
+// Review sheet for the AI photo assistant. Nothing is written to the form
 // until the worker taps Apply, and the parent keeps any field they already
-// filled in.
+// filled in. The rows change with the record type.
 import React from "react";
 import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useI18n } from "../i18n";
 import { SEVERITY_LABELS } from "../lib/format";
-import type { HazardAiSuggestion } from "../lib/ai";
+import type { AiSuggestion } from "../lib/ai";
 import { Banner, Button, Card } from "./ui";
 import { colors, radius, spacing, type } from "../theme";
+
+interface Row {
+  label: string;
+  value: string;
+  muted: boolean;
+}
 
 export function AiSuggestionSheet({
   visible,
@@ -20,9 +26,9 @@ export function AiSuggestionSheet({
 }: {
   visible: boolean;
   photoUri: string | null;
-  suggestion: HazardAiSuggestion | null;
+  suggestion: AiSuggestion | null;
   onClose: () => void;
-  onApply: (suggestion: HazardAiSuggestion) => void;
+  onApply: (suggestion: AiSuggestion) => void;
 }) {
   const { t } = useI18n();
 
@@ -30,7 +36,7 @@ export function AiSuggestionSheet({
 
   const percent = Math.round(suggestion.confidence * 100);
   const lowConfidence = suggestion.confidence < 0.65;
-  const severity = suggestion.severity ? t(SEVERITY_LABELS[suggestion.severity]) : null;
+  const rows = buildRows(suggestion, t);
 
   return (
     <Modal
@@ -84,35 +90,20 @@ export function AiSuggestionSheet({
 
           {lowConfidence ? (
             <Banner kind="warning">
-              {t("AI is not confident. Please check the category and severity carefully.")}
+              {t("AI is not confident. Please check every suggestion carefully.")}
             </Banner>
           ) : null}
 
           <Card padded>
-            <SuggestionRow
-              label={t("Suggested title")}
-              value={suggestion.title || t("Not determined")}
-              muted={!suggestion.title}
-              last={false}
-            />
-            <SuggestionRow
-              label={t("Suggested category")}
-              value={suggestion.hazard_type || t("Not determined")}
-              muted={!suggestion.hazard_type}
-              last={false}
-            />
-            <SuggestionRow
-              label={t("Suggested severity")}
-              value={severity || t("Not determined")}
-              muted={!severity}
-              last={false}
-            />
-            <SuggestionRow
-              label={t("Suggested notes")}
-              value={suggestion.notes || t("Not determined")}
-              muted={!suggestion.notes}
-              last
-            />
+            {rows.map((row, index) => (
+              <SuggestionRow
+                key={row.label}
+                label={row.label}
+                value={row.value}
+                muted={row.muted}
+                last={index === rows.length - 1}
+              />
+            ))}
           </Card>
 
           <Text style={styles.helper}>
@@ -136,6 +127,81 @@ export function AiSuggestionSheet({
       </SafeAreaView>
     </Modal>
   );
+}
+
+function buildRows(suggestion: AiSuggestion, t: (text: string) => string): Row[] {
+  const rows: Row[] = [];
+  const undetermined = t("Not determined");
+
+  if (suggestion.recordType === "hazard") {
+    rows.push(
+      {
+        label: t("Suggested title"),
+        value: suggestion.title || undetermined,
+        muted: !suggestion.title,
+      },
+      {
+        label: t("Suggested category"),
+        value: suggestion.hazard_type || undetermined,
+        muted: !suggestion.hazard_type,
+      },
+      {
+        label: t("Suggested severity"),
+        value: suggestion.severity ? t(SEVERITY_LABELS[suggestion.severity]) : undetermined,
+        muted: !suggestion.severity,
+      }
+    );
+  } else if (suggestion.recordType === "flora") {
+    rows.push(
+      {
+        label: t("Suggested species"),
+        value: suggestion.species_name || undetermined,
+        muted: !suggestion.species_name,
+      },
+      {
+        label: t("Suggested growth stage"),
+        value: suggestion.growth_stage ? t(suggestion.growth_stage) : undetermined,
+        muted: !suggestion.growth_stage,
+      },
+      {
+        label: t("Suggested health condition"),
+        value: suggestion.health_condition ? t(suggestion.health_condition) : undetermined,
+        muted: !suggestion.health_condition,
+      },
+      {
+        label: t("Suggested estimated count"),
+        value: suggestion.estimated_count ? String(suggestion.estimated_count) : undetermined,
+        muted: !suggestion.estimated_count,
+      }
+    );
+  } else {
+    rows.push(
+      {
+        label: t("Suggested reading type"),
+        value: suggestion.reading_type ? t(suggestion.reading_type) : undetermined,
+        muted: !suggestion.reading_type,
+      },
+      {
+        label: t("Suggested value"),
+        value:
+          suggestion.reading_value !== null ? String(suggestion.reading_value) : undetermined,
+        muted: suggestion.reading_value === null,
+      },
+      {
+        label: t("Suggested unit"),
+        value: suggestion.reading_unit || undetermined,
+        muted: !suggestion.reading_unit,
+      }
+    );
+  }
+
+  rows.push({
+    label: t("Suggested notes"),
+    value: suggestion.notes || undetermined,
+    muted: !suggestion.notes,
+  });
+
+  return rows;
 }
 
 function SuggestionRow({
