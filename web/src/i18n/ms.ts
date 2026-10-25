@@ -654,4 +654,46 @@ export const ms: Record<string, string> = {
   "After photo {number}": "Foto selepas {number}",
   "the field worker": "petugas lapangan",
   "Job completed": "Kerja selesai",
+
+  // Overview redesign: the health score, the charts and the review dialog.
+  Close: "Tutup",
+  Good: "Baik",
+  Warning: "Amaran",
+  "Not enough data": "Data tidak mencukupi",
+  "Active zones": "Zon aktif",
+  "of {total} zones": "daripada {total} zon",
+  "Village health": "Kesihatan kampung",
+  "Submissions per day": "Penghantaran setiap hari",
+  "Records created in the last 14 days": "Rekod dicipta dalam 14 hari lepas",
+  "Hazard distribution": "Taburan bahaya",
+  hazards: "bahaya",
+  "No category": "Tiada kategori",
+  "Open issues per zone": "Isu terbuka mengikut zon",
+  "Pending reviews plus approved hazards that are not finished yet":
+    "Semakan tertunggak serta bahaya yang diluluskan tetapi belum diselesaikan",
+  "{count} open": "{count} terbuka",
+  "No open issues. Every zone is clear.": "Tiada isu terbuka. Semua zon bersih.",
+  "The latest 10 submissions and the zone outlines":
+    "10 penghantaran terkini dan garis luar zon",
+  "Every open critical hazard, plus the latest submissions":
+    "Setiap bahaya kritikal terbuka, serta penghantaran terkini",
+  Expand: "Besarkan",
+  "1 open critical hazard pulses on the map":
+    "1 bahaya kritikal terbuka berdenyut pada peta",
+  "{count} open critical hazards pulse on the map":
+    "{count} bahaya kritikal terbuka berdenyut pada peta",
+  Open: "Buka",
+  "Review now": "Semak sekarang",
+  "Review {title}": "Semak {title}",
+  "No notes were added.": "Tiada catatan ditambah.",
+  "Not enough data to score the village yet.": "Data belum mencukupi untuk menilai kampung.",
+  "Village health {score} out of 100, {band}.":
+    "Kesihatan kampung {score} daripada 100, {band}.",
+  "Critical hazards still open": "Bahaya kritikal masih terbuka",
+  "Medium hazards still open": "Bahaya sederhana masih terbuka",
+  "Abnormal water tests": "Ujian air tidak normal",
+  "Waiting more than {days} days": "Menunggu lebih daripada {days} hari",
+  "{open} of {total}": "{open} daripada {total}",
+  "Only pH and turbidity can be judged without a local baseline: pH {min}-{max}, turbidity up to {turbidity} NTU. Weights {critical}/{medium}/{water}/{backlog}.":
+    "Hanya pH dan kekeruhan boleh dinilai tanpa garis dasar tempatan: pH {min}-{max}, kekeruhan sehingga {turbidity} NTU. Pemberat {critical}/{medium}/{water}/{backlog}.",
 };

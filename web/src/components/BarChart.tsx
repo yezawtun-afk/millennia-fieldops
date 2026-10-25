@@ -1,6 +1,7 @@
 // Two small chart primitives drawn from the same rules: one hue per chart,
 // straight bars, three shallow gridlines, no axis line, no legend, no library
 // defaults. Built from divs so type stays crisp at every width.
+import Link from "next/link";
 
 export interface BarDatum {
   label: string;
@@ -102,10 +103,13 @@ export function StackedBarChart({
   data,
   height = 180,
   unit = "records",
+  labelStep = 1,
 }: {
   data: StackedDatum[];
   height?: number;
   unit?: string;
+  /** Show every nth axis label, so a 14-day chart stays readable on a phone. */
+  labelStep?: number;
 }) {
   const totals = data.map((datum) => datum.segments.reduce((sum, segment) => sum + segment.value, 0));
   const { top: max, ticks } = axisTop(Math.max(...totals, 0));
@@ -164,9 +168,12 @@ export function StackedBarChart({
       </div>
 
       <div className="mt-2 flex gap-[3%] pl-9">
-        {data.map((datum) => (
-          <span key={datum.label} className="flex-1 truncate text-center text-[10px] text-faint">
-            {datum.label}
+        {data.map((datum, index) => (
+          <span
+            key={datum.label}
+            className="flex-1 truncate text-center text-[10px] text-faint"
+          >
+            {index % labelStep === 0 ? datum.label : ""}
           </span>
         ))}
       </div>
@@ -188,31 +195,68 @@ export function StackedBarChart({
 }
 
 // A ranked list with a thin proportional bar: the label and count carry the
-// reading, the bar only shows the order.
+// reading, the bar only shows the order. A row can link to the filtered records
+// list, which turns a chart into a way in.
+export interface RankBarDatum extends BarDatum {
+  href?: string;
+  /** Extra words after the number, e.g. "open". */
+  suffix?: string;
+}
+
 export function RankBars({
   data,
   emptyLabel = "Nothing recorded yet",
+  unit,
 }: {
-  data: BarDatum[];
+  data: RankBarDatum[];
   emptyLabel?: string;
+  unit?: string;
 }) {
   const max = Math.max(...data.map((d) => d.value), 0);
   if (max === 0) return <p className="px-4 py-6 text-[13px] text-muted">{emptyLabel}</p>;
 
   return (
     <ul className="divide-y divide-rule">
-      {data.map((datum) => (
-        <li key={datum.label} className="flex items-center gap-3 px-4 py-2.5">
-          <span className="w-20 shrink-0 text-[12px] text-muted">{datum.label}</span>
-          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-panel">
-            <span
-              className="block h-full rounded-full bg-accent"
-              style={{ width: `${Math.round((datum.value / max) * 100)}%`, opacity: 0.35 + (0.65 * datum.value) / max }}
-            />
-          </span>
-          <span className="w-7 shrink-0 text-right text-[12px] tabular-nums text-ink">{datum.value}</span>
-        </li>
-      ))}
+      {data.map((datum) => {
+        const content = (
+          <>
+            <span className="w-28 shrink-0 truncate text-[12px] text-muted">{datum.label}</span>
+            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-panel">
+              <span
+                className="block h-full rounded-full bg-accent"
+                style={{
+                  width: `${Math.round((datum.value / max) * 100)}%`,
+                  opacity: 0.35 + (0.65 * datum.value) / max,
+                }}
+              />
+            </span>
+            <span className="w-7 shrink-0 text-right text-[12px] tabular-nums text-ink">
+              {datum.value}
+            </span>
+            {datum.suffix || unit ? (
+              <span className="w-12 shrink-0 text-right text-[11px] text-faint">
+                {datum.suffix ?? unit}
+              </span>
+            ) : null}
+          </>
+        );
+
+        return (
+          <li key={datum.label}>
+            {datum.href ? (
+              <Link
+                href={datum.href}
+                className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-panel"
+                title={`${datum.label}: ${datum.value} ${unit ?? ""}`.trim()}
+              >
+                {content}
+              </Link>
+            ) : (
+              <div className="flex items-center gap-3 px-4 py-2.5">{content}</div>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }

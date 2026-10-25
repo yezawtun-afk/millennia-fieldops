@@ -79,6 +79,25 @@ export const STATUS_CHART_COLORS: Record<RecordStatus, string> = {
   rejected: "#C4242A",
 };
 
+// The five hazard categories, in the order the capture form offers them. Five
+// distinct hues: the donut is the one place where categories are compared.
+export const HAZARD_TYPE_COLORS: Record<string, string> = {
+  "Fallen debris": "#92400E",
+  "Eroded ground": "#A16207",
+  "Blocked drainage": "#2B6CB0",
+  "Silt runoff": "#4D7C0F",
+  "Rockfall risk": "#C4242A",
+};
+
+// The health score's three bands, and the neutral used before there is enough
+// data to judge.
+export const SCORE_BAND_COLORS: Record<string, string> = {
+  good: "#247B50",
+  warning: "#92400E",
+  critical: "#C4242A",
+  unknown: "#6B6F6A",
+};
+
 // The single chart hue, and the ramp used where severity has to advance.
 export const CHART_HUE = "#1F6B4A";
 

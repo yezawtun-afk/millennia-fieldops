@@ -97,14 +97,18 @@ export function Stat({
   value,
   hint,
   tone = "text-ink",
+  className = "",
 }: {
   label: string;
   value: number | string;
   hint?: string;
   tone?: string;
+  className?: string;
 }) {
   return (
-    <div className="rounded-card border border-line bg-sheet p-4 sm:rounded-none sm:border-0 sm:px-5 sm:py-4">
+    <div
+      className={`rounded-card border border-line bg-sheet p-4 sm:rounded-none sm:border-0 sm:px-5 sm:py-4 ${className}`}
+    >
       <p className="text-[12px] font-medium text-muted">{label}</p>
       <p className={`kpi-value mt-1 text-[28px] font-normal leading-8 tracking-[-0.02em] ${tone}`}>
         {value ?? 0}

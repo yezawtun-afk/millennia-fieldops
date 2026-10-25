@@ -15,7 +15,7 @@ function MapLoading() {
   return (
     <div
       className="flex items-center justify-center bg-panel text-[13px] text-muted"
-      style={{ height: MAP_HEIGHT }}
+      style={{ height: "100%" }}
     >
       {t("Loading map...")}
     </div>
@@ -33,19 +33,32 @@ export function MapView({
   zones = [],
   height = MAP_HEIGHT,
   canManageZones = false,
+  scrollWheelZoom = true,
+  zoom,
+  fitZones = false,
 }: {
   markers: MapMarker[];
   zones?: MapZone[];
   height?: number | string;
   canManageZones?: boolean;
+  scrollWheelZoom?: boolean;
+  zoom?: number;
+  fitZones?: boolean;
 }) {
+  // The wrapper owns the height so the loading placeholder and the map agree,
+  // even when a caller asks for a short map inside a card.
   return (
-    <LeafletMap
-      markers={markers}
-      zones={zones}
-      height={height}
-      canManageZones={canManageZones}
-    />
+    <div style={{ height }} className="overflow-hidden">
+      <LeafletMap
+        markers={markers}
+        zones={zones}
+        height="100%"
+        canManageZones={canManageZones}
+        scrollWheelZoom={scrollWheelZoom}
+        zoom={zoom}
+        fitZones={fitZones}
+      />
+    </div>
   );
 }
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Circle, CircleMarker, MapContainer, Popup, TileLayer, useMapEvents } from "react-leaflet";
+import { Fragment, useEffect, useState } from "react";
+import L from "leaflet";
+import { Circle, CircleMarker, MapContainer, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { ZoneDrawTool } from "./ZoneDrawTool";
 import { ZonePopupActions } from "./ZonePopupActions";
@@ -14,6 +15,8 @@ export interface MapMarker {
   label: string;
   sub?: string;
   href?: string;
+  /** Draws a slow halo around the dot: open critical hazards on the overview. */
+  pulse?: boolean;
 }
 
 export interface MapZone {
@@ -32,16 +35,64 @@ export interface MapZone {
 export const SITE_CENTER: [number, number] = [2.752615639977973, 101.90646329852517];
 const SITE_ZOOM = 16;
 
+// The overview map frames the monitoring zones rather than a fixed point: the
+// site has grown eastwards, so the old centre clipped the newest zones.
+function FitZones({ zones }: { zones: MapZone[] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (zones.length === 0) return;
+    const bounds = L.latLngBounds([]);
+    for (const zone of zones) {
+      const latDelta = zone.radius / 111_320;
+      const lngDelta = zone.radius / (111_320 * Math.cos((zone.lat * Math.PI) / 180));
+      bounds.extend([zone.lat - latDelta, zone.lng - lngDelta]);
+      bounds.extend([zone.lat + latDelta, zone.lng + lngDelta]);
+    }
+    // Read the card's final size before framing: the map mounts inside a card.
+    map.invalidateSize();
+    map.fitBounds(bounds, { padding: [28, 28], maxZoom: SITE_ZOOM });
+  }, [map, zones]);
+
+  return null;
+}
+
+// The record page plots a single submission, which can sit well outside the
+// site centre. With no zones to frame, follow the pins instead.
+function FitMarkers({ markers }: { markers: MapMarker[] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (markers.length === 0) return;
+    const bounds = L.latLngBounds(
+      markers.map((marker) => [marker.lat, marker.lng] as [number, number])
+    );
+    map.invalidateSize();
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 17 });
+  }, [map, markers]);
+
+  return null;
+}
+
 export function LeafletMap({
   markers,
   zones,
   height,
   canManageZones = false,
+  scrollWheelZoom = true,
+  zoom = SITE_ZOOM,
+  fitZones = false,
 }: {
   markers: MapMarker[];
   zones: MapZone[];
   height: number | string;
   canManageZones?: boolean;
+  /** The overview map is deliberately quiet: no page-scroll hijacking. */
+  scrollWheelZoom?: boolean;
+  /** The overview map is wider, so it sits one step further out. */
+  zoom?: number;
+  /** The overview map frames all zones; the full map page keeps its fixed view. */
+  fitZones?: boolean;
 }) {
   // The zone tool's own little state. It lives here because the preview circle
   // is drawn on the map, next to the real zones.
@@ -59,14 +110,20 @@ export function LeafletMap({
     <div className="relative overflow-hidden" style={{ height }}>
       <MapContainer
         center={SITE_CENTER}
-        zoom={SITE_ZOOM}
+        zoom={zoom}
         style={{ height: "100%", width: "100%" }}
-        scrollWheelZoom
+        scrollWheelZoom={scrollWheelZoom}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        {fitZones ? (
+          <FitZones zones={zones} />
+        ) : zones.length === 0 && markers.length > 0 ? (
+          <FitMarkers markers={markers} />
+        ) : null}
 
         {zones.map((z) => (
           <Circle
@@ -84,22 +141,43 @@ export function LeafletMap({
         ))}
 
         {markers.map((m) => (
-          <CircleMarker
-            key={m.id}
-            center={[m.lat, m.lng]}
-            radius={8}
-            pathOptions={{ color: "#ffffff", weight: 3, fillColor: m.color, fillOpacity: 0.9 }}
-          >
-            <Popup>
-              <strong>{m.label}</strong>
-              {m.sub ? <div>{m.sub}</div> : null}
-              {m.href ? (
-                <a href={m.href} style={{ color: "#1f6b4a" }}>
-                  Open record
-                </a>
-              ) : null}
-            </Popup>
-          </CircleMarker>
+          <Fragment key={m.id}>
+            {m.pulse ? (
+              <CircleMarker
+                center={[m.lat, m.lng]}
+                radius={18}
+                pathOptions={{
+                  color: m.color,
+                  weight: 0,
+                  fillColor: m.color,
+                  fillOpacity: 0.14,
+                  className: "marker-halo",
+                }}
+                interactive={false}
+              />
+            ) : null}
+            <CircleMarker
+              center={[m.lat, m.lng]}
+              radius={m.pulse ? 9 : 8}
+              pathOptions={{
+                color: "#ffffff",
+                weight: 3,
+                fillColor: m.color,
+                fillOpacity: 0.9,
+                className: m.pulse ? "marker-pulse" : undefined,
+              }}
+            >
+              <Popup>
+                <strong>{m.label}</strong>
+                {m.sub ? <div>{m.sub}</div> : null}
+                {m.href ? (
+                  <a href={m.href} style={{ color: "#1f6b4a" }}>
+                    Open record
+                  </a>
+                ) : null}
+              </Popup>
+            </CircleMarker>
+          </Fragment>
         ))}
 
         {drawing ? <PlacementClicks onPlace={setCentre} /> : null}

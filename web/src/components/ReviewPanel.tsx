@@ -7,7 +7,14 @@ import { createClient } from "@/lib/supabase/client";
 import { textareaClass } from "@/components/ui";
 import { useI18n } from "@/i18n";
 
-export function ReviewPanel({ recordId }: { recordId: string }) {
+export function ReviewPanel({
+  recordId,
+  onDecided,
+}: {
+  recordId: string;
+  /** Called after the database accepts the decision, before the page refreshes. */
+  onDecided?: () => void;
+}) {
   const router = useRouter();
   const { t } = useI18n();
   const [feedback, setFeedback] = useState("");
@@ -43,6 +50,7 @@ export function ReviewPanel({ recordId }: { recordId: string }) {
     }
 
     router.refresh();
+    onDecided?.();
   }
 
   return (
