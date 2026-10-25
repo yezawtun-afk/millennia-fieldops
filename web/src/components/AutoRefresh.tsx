@@ -52,14 +52,15 @@ export function AutoRefresh() {
 
   return (
     <span
-      className="hidden items-center gap-1.5 whitespace-nowrap text-[12px] font-medium text-muted md:inline-flex"
+      className="hidden items-center gap-1.5 rounded-full border border-accent/25 bg-accent-soft py-1 pl-2 pr-2.5 md:inline-flex"
       title={t("This page updates on its own")}
     >
       <span className="relative flex h-1.5 w-1.5 items-center justify-center" aria-hidden="true">
-        <span className="absolute h-1.5 w-1.5 rounded-full bg-accent/40 motion-safe:animate-ping" />
+        <span className="absolute h-1.5 w-1.5 rounded-full bg-accent/50 motion-safe:animate-ping" />
         <span className="relative h-1.5 w-1.5 rounded-full bg-accent" />
       </span>
-      {t("Live")}
+      <span className="text-[11px] font-medium leading-none text-accent">{t("Live")}</span>
+      <span className="font-mono text-[10px] leading-none text-accent/70">{POLL_MS / 1000}s</span>
     </span>
   );
 }

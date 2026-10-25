@@ -107,6 +107,49 @@ table,
 .leaflet-container {
   font-family: var(--font-sans);
   z-index: 0;
+  background: var(--color-ground);
+}
+
+/* The map is drawn on the same light ground as the rest of the sheet. */
+.leaflet-container a.leaflet-popup-close-button {
+  color: var(--color-muted);
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--color-sheet);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
+  box-shadow: 0 10px 24px rgb(20 24 27 / 0.14);
+}
+
+.leaflet-popup-content {
+  margin: 10px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.leaflet-popup-content strong {
+  font-weight: 600;
+}
+
+.leaflet-control-zoom a {
+  background: var(--color-sheet);
+  color: var(--color-ink);
+  border-color: var(--color-line);
+}
+
+.leaflet-control-zoom a:hover {
+  background: var(--color-panel);
+}
+
+.leaflet-control-attribution {
+  background: rgb(255 255 255 / 0.78) !important;
+  color: var(--color-faint) !important;
+}
+
+.leaflet-control-attribution a {
+  color: var(--color-muted) !important;
 }
 
 /* Placing a zone: crosshair everywhere, and clicks reach the map instead of
@@ -149,6 +192,7 @@ dialog.fieldops-dialog {
   border-radius: var(--radius-card);
   background: var(--color-sheet);
   color: var(--color-ink);
+  box-shadow: 0 24px 64px rgb(20 24 27 / 0.2);
   max-width: min(560px, calc(100vw - 2rem));
   max-height: calc(100vh - 2rem);
   width: 100%;

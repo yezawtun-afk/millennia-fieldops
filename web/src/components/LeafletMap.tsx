@@ -6,6 +6,7 @@ import { Circle, CircleMarker, MapContainer, Popup, TileLayer, useMap, useMapEve
 import "leaflet/dist/leaflet.css";
 import { ZoneDrawTool } from "./ZoneDrawTool";
 import { ZonePopupActions } from "./ZonePopupActions";
+import { useI18n } from "@/i18n";
 
 export interface MapMarker {
   id: string;
@@ -96,6 +97,7 @@ export function LeafletMap({
 }) {
   // The zone tool's own little state. It lives here because the preview circle
   // is drawn on the map, next to the real zones.
+  const { t } = useI18n();
   const [drawing, setDrawing] = useState(false);
   const [centre, setCentre] = useState<{ lat: number; lng: number } | null>(null);
   const [radius, setRadius] = useState(150);
@@ -116,7 +118,7 @@ export function LeafletMap({
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
         {fitZones ? (
@@ -171,8 +173,8 @@ export function LeafletMap({
                 <strong>{m.label}</strong>
                 {m.sub ? <div>{m.sub}</div> : null}
                 {m.href ? (
-                  <a href={m.href} style={{ color: "#1f6b4a" }}>
-                    Open record
+                  <a href={m.href} style={{ color: "var(--color-accent)" }}>
+                    {t("Open record")}
                   </a>
                 ) : null}
               </Popup>

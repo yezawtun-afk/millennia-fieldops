@@ -47,12 +47,12 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
-        <h1 className="text-[22px] font-semibold leading-7 tracking-[-0.01em] text-ink">{title}</h1>
-        {subtitle ? <p className="mt-1 max-w-[70ch] text-[14px] text-muted">{subtitle}</p> : null}
+        <h1 className="text-[24px] font-semibold leading-8 tracking-[-0.02em] text-ink">{title}</h1>
+        {subtitle ? <p className="mt-1 max-w-[78ch] text-[13px] leading-relaxed text-muted">{subtitle}</p> : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2 sm:pt-0.5">{actions}</div> : null}
+      {actions ? <div className="flex flex-wrap items-center gap-2 sm:pt-1">{actions}</div> : null}
     </div>
   );
 }
@@ -80,65 +80,77 @@ export function SectionCard({
   return (
     <section className={`rounded-card border border-line bg-sheet ${className}`}>
       <header className="flex items-start justify-between gap-3 border-b border-rule px-4 py-3">
-        <div>
-          <h2 className="text-[14px] font-semibold text-ink">{title}</h2>
-          {hint ? <p className="mt-0.5 text-[12px] text-muted">{hint}</p> : null}
+        <div className="min-w-0">
+          <h2 className="text-[14px] font-semibold leading-5 text-ink">{title}</h2>
+          {hint ? <p className="mt-0.5 text-[12px] leading-snug text-muted">{hint}</p> : null}
         </div>
-        {action}
+        {action ? <div className="shrink-0">{action}</div> : null}
       </header>
       <div className={bodyClassName}>{children}</div>
     </section>
   );
 }
 
-// One readout. No icon, no tinted square: the number is the point.
-export function Stat({
-  label,
-  value,
-  hint,
-  tone = "text-ink",
-  className = "",
-}: {
-  label: string;
-  value: number | string;
-  hint?: string;
-  tone?: string;
-  className?: string;
-}) {
-  return (
-    <div
-      className={`rounded-card border border-line bg-sheet p-4 sm:rounded-none sm:border-0 sm:px-5 sm:py-4 ${className}`}
-    >
-      <p className="text-[12px] font-medium text-muted">{label}</p>
-      <p className={`kpi-value mt-1 text-[28px] font-normal leading-8 tracking-[-0.02em] ${tone}`}>
-        {value ?? 0}
-      </p>
-      {hint ? <p className="mt-0.5 text-[12px] text-faint">{hint}</p> : null}
-    </div>
-  );
-}
+// ---- The KPI strip --------------------------------------------------------
+// One panel split by hairlines, never a row of identical tiles: the label, then
+// the figure set in the mono face so a column of numbers lines up digit for
+// digit, then the one sentence that gives the figure its baseline.
 
-// The KPI row: one container split by hairlines on wide screens, separate
-// tiles on phones where a five-column strip would not fit.
-export function StatStrip({ children }: { children: ReactNode }) {
+export function KpiStrip({ children }: { children: ReactNode }) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-0 sm:divide-x sm:divide-rule sm:overflow-hidden sm:rounded-card sm:border sm:border-line sm:bg-sheet">
+    <div className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-line bg-line sm:grid-cols-4">
       {children}
     </div>
   );
 }
 
-// Kept for the pages that still want a single boxed figure.
-export function StatCard({
+export function Kpi({
   label,
   value,
-  hint,
+  unit,
+  sub,
+  badge,
 }: {
   label: string;
-  value: number | string;
-  hint?: string;
+  value: number | string | null;
+  /** A smaller grey suffix, e.g. "/100". */
+  unit?: string;
+  /** One sentence under the figure, naming what it is measured against. */
+  sub?: string;
+  badge?: ReactNode;
 }) {
-  return <Stat label={label} value={value} hint={hint} />;
+  const missing = value === null || value === undefined;
+
+  return (
+    <div className="bg-sheet px-4 py-3.5 sm:px-5">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[12px] font-medium leading-4 text-muted">{label}</p>
+        {badge}
+      </div>
+      <p className="mt-2 flex items-baseline gap-1">
+        <span className={`font-mono text-[26px] leading-none tracking-[-0.03em] ${missing ? "text-faint" : "text-ink"}`}>
+          {missing ? "—" : value}
+        </span>
+        {unit && !missing ? <span className="text-[12px] text-faint">{unit}</span> : null}
+      </p>
+      {sub ? <p className="mt-1.5 text-[11px] leading-snug text-faint">{sub}</p> : null}
+    </div>
+  );
+}
+
+// A small tinted label inside a row or beside a value. Sentence case, 11px.
+export function KpiBadge({ tone = "neutral", children }: { tone?: "neutral" | "warning" | "negative" | "positive"; children: ReactNode }) {
+  const tones = {
+    neutral: "bg-panel text-muted",
+    warning: "bg-warning-soft text-warning-ink",
+    negative: "bg-negative-soft text-negative-ink",
+    positive: "bg-positive-soft text-positive-ink",
+  };
+  return (
+    <span className={`shrink-0 whitespace-nowrap rounded-[4px] px-1.5 py-0.5 text-[11px] font-medium leading-4 ${tones[tone]}`}>
+      {children}
+    </span>
+  );
 }
 
 // ---- State blocks ---------------------------------------------------------

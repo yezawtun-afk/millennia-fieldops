@@ -79,15 +79,13 @@ export const STATUS_CHART_COLORS: Record<RecordStatus, string> = {
   rejected: "#C4242A",
 };
 
-// The five hazard categories, in the order the capture form offers them. Five
-// distinct hues: the donut is the one place where categories are compared.
-export const HAZARD_TYPE_COLORS: Record<string, string> = {
-  "Fallen debris": "#92400E",
-  "Eroded ground": "#A16207",
-  "Blocked drainage": "#2B6CB0",
-  "Silt runoff": "#4D7C0F",
-  "Rockfall risk": "#C4242A",
-};
+// The hazard categories are a composition, not an alarm: one ink ramp from deep
+// to pale. The mix is sorted biggest-share-first, so the darkest slice is always
+// the one that matters most and the ring never turns into a rainbow. The legend
+// carries the names, so the shades only have to separate.
+export const HAZARD_MIX_RAMP = ["#14181B", "#38463F", "#5A6A61", "#83938A", "#B3C1B8"];
+
+export const UNCATEGORISED_COLOR = "#D3D8D2";
 
 // The health score's three bands, and the neutral used before there is enough
 // data to judge.

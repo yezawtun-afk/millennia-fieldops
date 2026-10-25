@@ -11,35 +11,39 @@ import { getProfile } from "@/lib/supabase/server";
 import { signPhotoUrls, stripBucket } from "@/lib/photos";
 import {
   EmptyState,
+  Kpi,
+  KpiBadge,
+  KpiStrip,
   PageHeader,
   SectionCard,
-  Stat,
-  StatStrip,
-  TypeDot,
   btnPrimary,
-  btnSecondary,
 } from "@/components/ui";
-import { SeverityBadge } from "@/components/Pills";
-import { RankBars, StackedBarChart } from "@/components/BarChart";
 import { DonutChart } from "@/components/DonutChart";
-import { HealthGauge } from "@/components/HealthGauge";
 import { MapView } from "@/components/MapView";
 import { ReviewDialog } from "@/components/ReviewDialog";
 import { RecordRow } from "@/components/RecordRow";
+import { HealthBreakdown } from "@/components/overview/HealthBreakdown";
+import { WeekBars } from "@/components/overview/WeekBars";
+import { ZoneBoard, type ZoneRow } from "@/components/overview/ZoneBoard";
 import {
-  formatDateTime,
-  HAZARD_TYPE_COLORS,
+  HAZARD_MIX_RAMP,
   HAZARD_TYPES,
-  SCORE_BAND_COLORS,
   SEVERITY_CHART_COLORS,
-  STATUS_CHART_COLORS,
+  SEVERITY_LABELS,
+  TYPE_CHART_COLORS,
+  UNCATEGORISED_COLOR,
 } from "@/lib/format";
 import { HEALTH_BAND_LABELS, scoreVillage } from "@/lib/health";
-import { getT, type ServerTranslate } from "@/i18n/server";
-import type { FieldRecord, HazardSeverity } from "@/lib/types";
+import { getLocale, getT, type ServerTranslate } from "@/i18n/server";
+import type { FieldRecord } from "@/lib/types";
 
 const BUCKET = "record-photos";
-const TREND_DAYS = 14;
+const WEEK_DAYS = 7;
+const QUIET_DAYS = 14;
+
+// The weekday labels and the day arithmetic follow the chosen language, not the
+// server's locale, so a Malay reader sees "Is" rather than "Mon".
+const LOCALE_TAGS: Record<string, string> = { en: "en-GB", ms: "ms-MY", zh: "zh-CN" };
 
 function startOfDay(date: Date): Date {
   const start = new Date(date);
@@ -54,6 +58,14 @@ function ageLabel(t: ServerTranslate, iso: string): string {
   return t("{count} days", { count: days });
 }
 
+// "Last report: yesterday" reads better than "Last report: 1 day old".
+function sinceLabel(t: ServerTranslate, iso: string): string {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days <= 0) return t("today");
+  if (days === 1) return t("yesterday");
+  return t("{count} days ago", { count: days });
+}
+
 // An open issue is anything a reviewer still has to act on: a record waiting for
 // a decision, or an approved hazard job that has not been finished in the field.
 function isOpenIssue(record: FieldRecord): boolean {
@@ -61,130 +73,146 @@ function isOpenIssue(record: FieldRecord): boolean {
   return record.type === "hazard" && record.status === "approved" && !record.completed_at;
 }
 
-const BAND_TONES: Record<string, string> = {
-  good: "text-positive-ink",
-  warning: "text-warning-ink",
-  critical: "text-negative-ink",
-  unknown: "text-ink",
+const BAND_BADGE: Record<string, "neutral" | "warning" | "negative" | "positive"> = {
+  good: "positive",
+  warning: "warning",
+  critical: "negative",
+  unknown: "neutral",
 };
 
+// The comparison always names its baseline: "3 more than last week", never a
+// bare "+3". Two empty weeks are not a change.
+function deltaLabel(t: ServerTranslate, current: number, previous: number): string {
+  if (previous === 0) return current === 0 ? t("nothing this week") : t("new this week");
+  if (current === previous) return t("level with last week");
+  if (current > previous) {
+    return t("{count} more than last week", { count: current - previous });
+  }
+  return t("{count} fewer than last week", { count: previous - current });
+}
+
 export default async function DashboardPage() {
-  const t = await getT();
-  const [total, pending, urgentTotal, zones, records, queue, urgent, profile] = await Promise.all([
-    countRecords(),
-    countRecords({ status: "pending" }),
-    countRecords({ status: "pending", severity: "critical" }),
-    getZones(),
-    queryRecords(),
-    getPendingQueue(3),
-    getUrgentQueue(3),
-    getProfile(),
-  ]);
+  const [t, locale, total, pending, urgentTotal, zones, records, queue, urgent, profile] =
+    await Promise.all([
+      getT(),
+      getLocale(),
+      countRecords(),
+      countRecords({ status: "pending" }),
+      countRecords({ status: "pending", severity: "critical" }),
+      getZones(),
+      queryRecords(),
+      getPendingQueue(3),
+      getUrgentQueue(3),
+      getProfile(),
+    ]);
 
   const isReviewer = profile?.role === "supervisor" || profile?.role === "admin";
   const oldestPending = queue[0]?.created_at ? ageLabel(t, queue[0].created_at) : null;
+  const dayTag = LOCALE_TAGS[locale] ?? "en-GB";
 
   // ---- Health -----------------------------------------------------------------
   const health = scoreVillage(records);
 
-  // ---- Activity over the last 14 days, one column per day ----------------------
+  // ---- Seven days of submissions, and the week before for the delta ------------
   const today = startOfDay(new Date());
-  const days = Array.from({ length: TREND_DAYS }, (_, index) => {
+  const days = Array.from({ length: WEEK_DAYS }, (_, index) => {
     const start = new Date(today);
-    start.setDate(start.getDate() - (TREND_DAYS - 1 - index));
+    start.setDate(start.getDate() - (WEEK_DAYS - 1 - index));
     const end = new Date(start);
     end.setDate(end.getDate() + 1);
     return { start, end };
   });
-  const daily = days.map((day) => {
-    const inDay = records.filter((record) => {
+  const countBetween = (from: Date, to: Date) =>
+    records.filter((record) => {
       const created = new Date(record.created_at);
-      return created >= day.start && created < day.end;
-    });
-    return {
-      label: String(day.start.getDate()),
-      segments: [
-        {
-          label: t("Approved"),
-          value: inDay.filter((record) => record.status === "approved").length,
-          color: STATUS_CHART_COLORS.approved,
-        },
-        {
-          label: t("Pending review"),
-          value: inDay.filter((record) => record.status === "pending").length,
-          color: STATUS_CHART_COLORS.pending,
-        },
-        {
-          label: t("Rejected"),
-          value: inDay.filter((record) => record.status === "rejected").length,
-          color: STATUS_CHART_COLORS.rejected,
-        },
-      ],
-    };
-  });
-  const dailyTotal = daily.reduce(
-    (sum, day) => sum + day.segments.reduce((daySum, segment) => daySum + segment.value, 0),
-    0
-  );
-  const trendRange = `${days[0].start.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-  })} - ${days[days.length - 1].start.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-  })}`;
+      return created >= from && created < to;
+    }).length;
 
+  const week = days.map((day, index) => ({
+    label: day.start.toLocaleDateString(dayTag, { weekday: "short" }),
+    value: countBetween(day.start, day.end),
+    today: index === WEEK_DAYS - 1,
+  }));
+  const thisWeek = week.reduce((sum, day) => sum + day.value, 0);
+
+  const priorStart = new Date(today);
+  priorStart.setDate(priorStart.getDate() - WEEK_DAYS * 2);
+  const priorEnd = new Date(today);
+  priorEnd.setDate(priorEnd.getDate() - WEEK_DAYS);
+  const lastWeek = countBetween(priorStart, priorEnd);
+
+  const weekDelta = deltaLabel(t, thisWeek, lastWeek);
   // ---- Zones ------------------------------------------------------------------
-  const activeCutoff = Date.now() - TREND_DAYS * 86_400_000;
-  const activeZones = zones.filter((zone) =>
-    records.some(
-      (record) =>
-        record.zone_id === zone.id && new Date(record.created_at).getTime() >= activeCutoff
-    )
-  ).length;
-  const idleZones = zones.filter(
-    (zone) =>
-      !records.some(
-        (record) =>
-          record.zone_id === zone.id && new Date(record.created_at).getTime() >= activeCutoff
-      )
-  );
+  const quietCutoff = Date.now() - QUIET_DAYS * 86_400_000;
+  const zoneRows: ZoneRow[] = zones
+    .map((zone) => {
+      const zoneRecords = records.filter((record) => record.zone_id === zone.id);
+      const last = zoneRecords[0]?.created_at ?? null;
+      return {
+        id: zone.id,
+        name: zone.name,
+        color: zone.color,
+        open: zoneRecords.filter(isOpenIssue).length,
+        lastLabel: last ? t("Last report {when}", { when: sinceLabel(t, last) }) : t("No report yet"),
+        idle: !last || new Date(last).getTime() < quietCutoff,
+      };
+    })
+    .sort((a, b) => b.open - a.open || a.name.localeCompare(b.name));
 
-  const zoneRisk = zones
-    .map((zone) => ({
-      label: zone.name,
-      value: records.filter((record) => record.zone_id === zone.id && isOpenIssue(record)).length,
-      href: `/records?zone=${zone.id}`,
-    }))
-    .sort((a, b) => b.value - a.value);
-  const unzonedOpen = records.filter((record) => !record.zone_id && isOpenIssue(record)).length;
-  if (unzonedOpen > 0) {
-    zoneRisk.push({ label: t("No zone"), value: unzonedOpen, href: "/records" });
-  }
-  const openIssuesTotal = zoneRisk.reduce((sum, zone) => sum + zone.value, 0);
+  const activeZones = zoneRows.filter((row) => !row.idle).length;
+  const quietZones = zones.length - activeZones;
+  const openIssuesTotal = zoneRows.reduce((sum, zone) => sum + zone.open, 0);
 
   // ---- Hazard mix -------------------------------------------------------------
-  const hazards = records.filter((record) => record.type === "hazard");
-  const byCategory = HAZARD_TYPES.map((name) => ({
+  // A rejected record is not a hazard (the same rule the health score uses), so
+  // the ring, the severity strip and the KPI all count the same 18 records.
+  const hazards = records.filter(
+    (record) => record.type === "hazard" && record.status !== "rejected"
+  );
+  // Ranked biggest-share-first, so the darkest ink is always the category that
+  // dominates the mix; an uncategorised remainder stays pale and last in tone.
+  const categoryCounts = HAZARD_TYPES.map((name) => ({
     label: t(name),
     value: hazards.filter((record) => record.hazard_type === name).length,
-    color: HAZARD_TYPE_COLORS[name] ?? "#9CA3A0",
-  }));
+    uncategorised: false,
+  })).filter((slice) => slice.value > 0);
   const uncategorisedHazards = hazards.filter((record) => !record.hazard_type).length;
   if (uncategorisedHazards > 0) {
-    byCategory.push({
+    categoryCounts.push({
       label: t("No category"),
       value: uncategorisedHazards,
-      color: "#9CA3A0",
+      uncategorised: true,
     });
   }
-  const severityCounts: Record<HazardSeverity | "unrated", number> = {
-    low: 0,
-    medium: 0,
-    critical: 0,
-    unrated: 0,
-  };
-  for (const record of hazards) severityCounts[record.severity ?? "unrated"] += 1;
+  let rampStep = 0;
+  const byCategory = categoryCounts
+    .sort((a, b) => b.value - a.value)
+    .map((slice) => ({
+      label: slice.label,
+      value: slice.value,
+      color: slice.uncategorised
+        ? UNCATEGORISED_COLOR
+        : HAZARD_MIX_RAMP[Math.min(rampStep++, HAZARD_MIX_RAMP.length - 1)],
+    }));
+
+  // The second cut of the same records: how bad they are. A hazard with no
+  // severity yet is shown rather than hidden, so the strip adds up to the ring.
+  const bySeverity = (["critical", "medium", "low"] as const)
+    .map((severity) => ({
+      label: t(SEVERITY_LABELS[severity]),
+      value: hazards.filter((record) => record.severity === severity).length,
+      color: SEVERITY_CHART_COLORS[severity],
+    }))
+    .filter((slice) => slice.value > 0);
+  const unratedHazards = hazards.filter((record) => !record.severity).length;
+  const ratedHazards = hazards.length - unratedHazards;
+  if (unratedHazards > 0) {
+    bySeverity.push({
+      label: t("No severity"),
+      value: unratedHazards,
+      color: UNCATEGORISED_COLOR,
+    });
+  }
 
   // ---- Triage and the map -----------------------------------------------------
   const openCritical = records.filter(
@@ -195,7 +223,29 @@ export default async function DashboardPage() {
       !record.completed_at
   );
   const openCriticalIds = new Set(openCritical.map((record) => record.id));
-  const oldestOpenCritical = openCritical.at(-1)?.created_at ?? null;
+
+  // The panel leads with critical hazards; if there are none it falls back to the
+  // oldest records still waiting, so the block is never empty while work exists.
+  const triage = urgent.length > 0 ? urgent : queue;
+  const triageIsCritical = urgent.length > 0;
+
+  // The list is capped at three rows, so the subtitle says so rather than
+  // implying the three rows are the whole queue.
+  const triageHint = triageIsCritical
+    ? urgentTotal > triage.length
+      ? t("Showing {shown} of {total} critical hazards", {
+          shown: triage.length,
+          total: urgentTotal,
+        })
+      : t("{count} critical hazards need a decision", { count: urgentTotal })
+    : pending > triage.length
+      ? t("Showing {shown} of {total} records waiting", {
+          shown: triage.length,
+          total: pending,
+        })
+      : pending > 0
+        ? t("{count} records need a decision", { count: pending })
+        : t("Nothing is waiting for review");
 
   // Every open critical hazard earns a pin; recent submissions fill the rest, so
   // the pulse count on the map is always the whole truth.
@@ -206,17 +256,18 @@ export default async function DashboardPage() {
     ...geotagged.filter((record) => openCriticalIds.has(record.id)),
     ...geotagged.filter((record) => !openCriticalIds.has(record.id)),
   ].slice(0, 12);
-  const mapMarkers = markerRecords
-    .map((record) => ({
-      id: record.id,
-      lat: record.latitude as number,
-      lng: record.longitude as number,
-      color: record.type === "hazard" ? "#C4242A" : "#1F6B4A",
-      label: record.title,
-      sub: `${record.zone?.name ?? t("No zone")} · ${ageLabel(t, record.created_at)}`,
-      href: `/records/${record.id}`,
-      pulse: openCriticalIds.has(record.id),
-    }));
+  const mapMarkers = markerRecords.map((record) => ({
+    id: record.id,
+    lat: record.latitude as number,
+    lng: record.longitude as number,
+    // The same three type hues as the Site map page; severity is carried by the
+    // pulse and the legend, so the two maps never disagree.
+    color: TYPE_CHART_COLORS[record.type],
+    label: record.title,
+    sub: `${record.zone?.name ?? t("No zone")} · ${ageLabel(t, record.created_at)}`,
+    href: `/records/${record.id}`,
+    pulse: openCriticalIds.has(record.id),
+  }));
   const pulsingOnMap = mapMarkers.filter((marker) => marker.pulse).length;
   const mapZones = zones.map((zone) => ({
     id: zone.id,
@@ -241,9 +292,7 @@ export default async function DashboardPage() {
 
   const recent = records.slice(0, 5);
   const signed = await signPhotoUrls(
-    [...recent, ...urgent].flatMap((record) =>
-      record.photos?.[0] ? [record.photos[0]] : []
-    )
+    [...recent, ...triage].flatMap((record) => (record.photos?.[0] ? [record.photos[0]] : []))
   );
   const photoUrl = (path: string | undefined) => {
     if (!path) return null;
@@ -258,323 +307,293 @@ export default async function DashboardPage() {
         }.`
       : t("Nothing is waiting for review. Everything captured has a decision.");
 
+  const lastRecord = records[0]?.created_at ?? null;
+
   return (
     <div>
       <PageHeader
         title={t("Overview")}
         subtitle={finding}
         actions={
-          pending > 0 ? (
-            <Link href="/records?status=pending" className={btnPrimary}>
-              {isReviewer ? t("Review pending") : t("View pending")}
-              <ArrowRight className="h-4 w-4" strokeWidth={1.8} />
-            </Link>
-          ) : null
+          <>
+            <span className="hidden items-center gap-1.5 font-mono text-[11px] text-faint sm:inline-flex">
+              {lastRecord ? t("Last record {when}", { when: sinceLabel(t, lastRecord) }) : t("No records yet")}
+            </span>
+            {pending > 0 ? (
+              <Link href="/records?status=pending" className={btnPrimary}>
+                {isReviewer ? t("Review pending") : t("View pending")}
+                <ArrowRight className="h-4 w-4" strokeWidth={1.8} />
+              </Link>
+            ) : null}
+          </>
         }
       />
 
-      {urgentTotal > 0 ? (
+      <KpiStrip>
+        <Kpi label={t("Records")} value={total.toLocaleString("en-GB")} sub={weekDelta} />
+        <Kpi
+          label={t("Waiting review")}
+          value={pending}
+          sub={oldestPending ? t("oldest waiting {age}", { age: oldestPending }) : t("Nothing waiting")}
+        />
+        <Kpi
+          label={t("Zones reporting")}
+          value={activeZones}
+          unit={t("of {total} zones", { total: zones.length })}
+          sub={
+            quietZones > 0
+              ? t("{count} quiet for {days} days", { count: quietZones, days: QUIET_DAYS })
+              : t("Every zone reported this week")
+          }
+        />
+        <Kpi
+          label={t("Village health")}
+          value={health.score}
+          unit="/100"
+          badge={
+            <KpiBadge tone={BAND_BADGE[health.band] ?? "neutral"}>
+              {t(HEALTH_BAND_LABELS[health.band])}
+            </KpiBadge>
+          }
+          sub={t("{open} critical of {total} rated", {
+            open: health.inputs.openCritical,
+            total: health.inputs.hazards,
+          })}
+        />
+      </KpiStrip>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
         <SectionCard
-          className="mb-4 border-negative/25"
-          title={t("Needs attention now")}
-          hint={t("{count} critical hazards are waiting for a decision.", { count: urgentTotal })}
-          bodyClassName="p-0"
+          title={t("Submissions")}
+          hint={t("Records received in the last {days} days", { days: WEEK_DAYS })}
           action={
-            <Link href="/records?status=pending&severity=critical" className={btnSecondary}>
-              {t("Open the queue")}
-            </Link>
+            <span className="whitespace-nowrap font-mono text-[12px] text-muted">
+              {thisWeek}
+              <span className="ml-1.5 font-sans text-[11px] text-faint">{t("this week")}</span>
+            </span>
           }
         >
-          <ul className="divide-y divide-rule">
-            {urgent.map((record) => (
-              <li key={record.id} className="flex items-center gap-3 px-4 py-3">
-                <Link
-                  href={`/records/${record.id}`}
-                  className="flex min-w-0 flex-1 items-center gap-3"
-                >
-                  {photoUrl(record.photos?.[0]) ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={photoUrl(record.photos?.[0]) as string}
-                      alt=""
-                      className="h-11 w-11 shrink-0 rounded-[8px] object-cover"
-                    />
-                  ) : (
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] bg-hazard-soft text-hazard">
-                      <TriangleAlert className="h-5 w-5" strokeWidth={1.7} />
-                    </span>
-                  )}
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] font-medium text-ink">
-                      {record.title}
-                    </span>
-                    <span className="mt-0.5 block truncate text-[12px] text-muted">
-                      {record.zone?.name ?? t("No zone")} ·{" "}
-                      {t("{age} old", { age: ageLabel(t, record.created_at) })}
-                    </span>
-                  </span>
-                </Link>
-                {/* The list is critical-only, so the badge adds nothing on a phone. */}
-                <span className="hidden sm:block">
-                  <SeverityBadge severity={record.severity} />
-                </span>
-                {isReviewer ? (
-                  <ReviewDialog
-                    record={{
-                      id: record.id,
-                      title: record.title,
-                      zoneName: record.zone?.name ?? null,
-                      severity: record.severity,
-                      notes: record.notes,
-                      photoUrl: photoUrl(record.photos?.[0]),
-                      ageLabel: t("{age} old", { age: ageLabel(t, record.created_at) }),
-                    }}
-                  />
-                ) : (
-                  <Link
-                    href={`/records/${record.id}`}
-                    className="shrink-0 text-[12px] font-medium text-accent hover:underline"
-                  >
-                    {t("Open")}
-                  </Link>
-                )}
-              </li>
-            ))}
-          </ul>
+          <WeekBars
+            data={week}
+            height={168}
+            unit={t("records")}
+            emptyLabel={t("Nothing has been submitted in the last seven days.")}
+          />
         </SectionCard>
-      ) : null}
 
-      <StatStrip>
-        <Stat label={t("Records")} value={total.toLocaleString("en-GB")} />
-        <Stat
-          label={t("Waiting review")}
-          value={pending.toLocaleString("en-GB")}
-          hint={oldestPending ? t("oldest {age}", { age: oldestPending }) : undefined}
-          tone={pending > 0 ? "text-warning-ink" : "text-ink"}
-        />
-        <Stat
-          label={t("Active zones")}
-          value={activeZones}
-          hint={t("of {total} zones", { total: zones.length })}
-        />
-        <Stat
-          label={t("Village health")}
-          value={health.score === null ? "-" : `${health.score}/100`}
-          hint={t(HEALTH_BAND_LABELS[health.band])}
-          tone={BAND_TONES[health.band]}
-        />
-        <Stat
-          label={t("Open critical hazards")}
-          value={openCritical.length}
-          hint={oldestOpenCritical ? t("oldest {age}", { age: ageLabel(t, oldestOpenCritical) }) : t("None open")}
-          tone={openCritical.length > 0 ? "text-negative-ink" : "text-ink"}
-          className="col-span-2 sm:col-span-1"
-        />
-      </StatStrip>
-
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="space-y-4">
-          <SectionCard
-            title={t("Submissions per day")}
-            hint={t("Records created in the last 14 days")}
-            action={<span className="text-[12px] text-muted">{t("{count} total", { count: dailyTotal })}</span>}
-          >
-            <StackedBarChart data={daily} height={180} unit={t("records")} labelStep={2} />
-            <p className="mt-1 text-[11px] text-faint">{trendRange}</p>
-          </SectionCard>
-
-          <SectionCard
-            title={t("Hazard distribution")}
-            hint={t("The five hazard types recorded")}
-            bodyClassName=""
-          >
-            <DonutChart
-              data={byCategory}
-              centerValue={hazards.length}
-              centerLabel={t("hazards")}
-              unit={t("hazards")}
-              emptyLabel={t("No hazards recorded yet.")}
-            />
-            <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-rule px-4 py-2.5">
-              {(["critical", "medium", "low"] as HazardSeverity[]).map((severity) => (
-                <li
-                  key={severity}
-                  className="flex items-center gap-1.5 text-[11px] text-muted"
-                  title={`${t(severity[0].toUpperCase() + severity.slice(1))}: ${severityCounts[severity]}`}
-                >
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ background: SEVERITY_CHART_COLORS[severity] }}
-                    aria-hidden="true"
-                  />
-                  {t(severity[0].toUpperCase() + severity.slice(1))}
-                  <span className="tabular-nums text-ink">{severityCounts[severity]}</span>
-                </li>
-              ))}
-              {severityCounts.unrated > 0 ? (
-                <li className="text-[11px] text-muted">
-                  {t("{count} hazards without a severity", { count: severityCounts.unrated })}
-                </li>
-              ) : null}
-            </ul>
-          </SectionCard>
-
-          <SectionCard
-            title={t("Site map")}
-            hint={t("Every open critical hazard, plus the latest submissions")}
-            bodyClassName="p-0"
-            action={
+        {/* The one block with a job in it: its rows stretch to close the row. */}
+        <section className="flex h-full flex-col rounded-card border border-line bg-sheet">
+          <header className="flex items-start justify-between gap-3 border-b border-rule px-4 py-3">
+            <div className="min-w-0">
+              <h2 className="text-[14px] font-semibold leading-5 text-ink">{t("Waiting on you")}</h2>
+              <p className="mt-0.5 text-[12px] leading-snug text-muted">{triageHint}</p>
+            </div>
+            {pending > 0 ? (
               <Link
-                href="/map"
-                className="inline-flex items-center gap-1 text-[12px] font-medium text-accent hover:underline"
+                href="/records?status=pending"
+                className="shrink-0 whitespace-nowrap text-[12px] font-medium text-accent hover:underline"
               >
-                {t("Expand")}
-                <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.8} />
+                {t("View all")}
               </Link>
-            }
-          >
-            <div className="h-[280px] overflow-hidden">
+            ) : null}
+          </header>
+
+          {triage.length === 0 ? (
+            <div className="flex flex-1 items-center px-4 py-6">
+              <p className="text-[13px] text-muted">
+                {t("Nothing is waiting for review. Everything captured has a decision.")}
+              </p>
+            </div>
+          ) : (
+            <ul className="flex flex-1 flex-col divide-y divide-rule">
+              {triage.map((record) => {
+                const photo = photoUrl(record.photos?.[0]);
+                return (
+                  <li key={record.id} className="flex flex-1 items-center gap-3 px-4 py-3">
+                    <Link
+                      href={`/records/${record.id}`}
+                      className="flex min-w-0 flex-1 items-center gap-3"
+                    >
+                      {photo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={photo}
+                          alt=""
+                          className="h-10 w-10 shrink-0 rounded-[6px] border border-line object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] bg-negative-soft text-negative-ink">
+                          <TriangleAlert className="h-[18px] w-[18px]" strokeWidth={1.7} />
+                        </span>
+                      )}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13px] font-medium leading-5 text-ink">
+                          {record.title}
+                        </span>
+                        <span className="mt-0.5 block truncate text-[11px] leading-4 text-faint">
+                          {record.zone?.name ?? t("No zone")} ·{" "}
+                          {t("{age} old", { age: ageLabel(t, record.created_at) })}
+                        </span>
+                      </span>
+                    </Link>
+                    {isReviewer ? (
+                      <ReviewDialog
+                        tone={triageIsCritical ? "critical" : "neutral"}
+                        record={{
+                          id: record.id,
+                          title: record.title,
+                          zoneName: record.zone?.name ?? null,
+                          severity: record.severity,
+                          notes: record.notes,
+                          photoUrl: photo,
+                          ageLabel: t("{age} old", { age: ageLabel(t, record.created_at) }),
+                        }}
+                      />
+                    ) : (
+                      <Link
+                        href={`/records/${record.id}`}
+                        className="shrink-0 text-[12px] font-medium text-accent hover:underline"
+                      >
+                        {t("Open")}
+                      </Link>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <section className="flex h-full flex-col rounded-card border border-line bg-sheet">
+          <header className="flex items-start justify-between gap-3 border-b border-rule px-4 py-3">
+            <div className="min-w-0">
+              <h2 className="text-[14px] font-semibold leading-5 text-ink">{t("Site map")}</h2>
+              <p className="mt-0.5 text-[12px] leading-snug text-muted">
+                {t("{zones} zones and {pins} pins", { zones: mapZones.length, pins: mapMarkers.length })}
+              </p>
+            </div>
+            <Link
+              href="/map"
+              className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[12px] font-medium text-accent hover:underline"
+            >
+              {t("Open map")}
+              <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.8} />
+            </Link>
+          </header>
+          <div className="relative min-h-[240px] flex-1 overflow-hidden">
+            <div className="absolute inset-0">
               <MapView
                 markers={mapMarkers}
                 zones={mapZones}
-                height={280}
+                height="100%"
                 fitZones
                 scrollWheelZoom={false}
               />
             </div>
-            {pulsingOnMap > 0 ? (
-              <p className="flex items-center gap-1.5 border-t border-rule px-4 py-2 text-[11px] text-muted">
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{ background: SCORE_BAND_COLORS.critical }}
-                  aria-hidden="true"
-                />
-                {pulsingOnMap === 1
-                  ? t("1 open critical hazard pulses on the map")
-                  : t("{count} open critical hazards pulse on the map", {
-                      count: pulsingOnMap,
-                    })}
-              </p>
-            ) : null}
-          </SectionCard>
-        </div>
+          </div>
+          <p className="flex items-center gap-2 border-t border-rule px-4 py-2 text-[11px] text-muted">
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ background: SEVERITY_CHART_COLORS.critical }}
+              aria-hidden="true"
+            />
+            {pulsingOnMap === 1
+              ? t("1 open critical hazard pulses on the map")
+              : t("{count} open critical hazards pulse on the map", { count: pulsingOnMap })}
+          </p>
+        </section>
 
-        <div className="space-y-4">
-          <SectionCard title={t("Village health")}>
-            <HealthGauge result={health} t={t} />
-          </SectionCard>
-
-          <SectionCard
-            title={t("Review queue")}
-            hint={pending > 0 ? t("Oldest first") : t("Up to date")}
-            bodyClassName="p-0"
-          >
-            {queue.length === 0 ? (
-              <p className="px-4 py-5 text-[13px] text-muted">
-                {t("No records are waiting for review.")}
-              </p>
-            ) : (
-              <ul className="divide-y divide-rule">
-                {queue.map((record) => (
-                  <li key={record.id}>
-                    <Link href={`/records/${record.id}`} className="block px-4 py-3 hover:bg-panel">
-                      <span className="flex items-start justify-between gap-2">
-                        <span className="min-w-0">
-                          <span className="block truncate text-[13px] font-medium text-ink">
-                            {record.title}
-                          </span>
-                          <span className="mt-0.5 block truncate text-[12px] text-muted">
-                            {record.zone?.name ?? t("No zone")} ·{" "}
-                            {t("{age} old", { age: ageLabel(t, record.created_at) })}
-                          </span>
-                        </span>
-                        <TypeDot type={record.type} />
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="border-t border-rule p-3">
-              <Link href="/records?status=pending" className={`${btnSecondary} w-full`}>
-                {isReviewer ? t("Open the queue") : t("View pending records")}
-              </Link>
-            </div>
-          </SectionCard>
-
-          <SectionCard title={t("Operational health")} bodyClassName="p-0">
-            <ul className="divide-y divide-rule">
-              <li className="flex items-start justify-between gap-3 px-4 py-3">
-                <span className="text-[13px] text-muted">{t("Open critical hazards")}</span>
-                <span className="text-right">
-                  <span
-                    className={`block text-[15px] font-medium tabular-nums ${
-                      openCritical.length > 0 ? "text-negative-ink" : "text-ink"
-                    }`}
-                  >
-                    {openCritical.length}
-                  </span>
-                  <span className="block text-[11px] text-faint">
-                    {oldestOpenCritical
-                      ? t("oldest {age}", { age: ageLabel(t, oldestOpenCritical) })
-                      : t("None open")}
-                  </span>
-                </span>
-              </li>
-              <li className="flex items-start justify-between gap-3 px-4 py-3">
-                <span className="text-[13px] text-muted">{t("Reviewed within 24 hours")}</span>
-                <span className="text-right">
-                  <span className="block text-[15px] font-medium tabular-nums text-ink">
-                    {decidedWithinDayPercent === null ? "-" : `${decidedWithinDayPercent}%`}
-                  </span>
-                  <span className="block text-[11px] text-faint">
-                    {t("Based on {count} decided records", { count: decided.length })}
-                  </span>
-                </span>
-              </li>
-              <li className="flex items-start justify-between gap-3 px-4 py-3">
-                <span className="text-[13px] text-muted">
-                  {t("Zones with no submission in 14 days")}
-                </span>
-                <span className="text-right">
-                  <span
-                    className={`block text-[15px] font-medium tabular-nums ${
-                      idleZones.length > 0 ? "text-warning-ink" : "text-ink"
-                    }`}
-                  >
-                    {idleZones.length}
-                  </span>
-                  <span className="block max-w-[150px] truncate text-[11px] text-faint">
-                    {idleZones.length > 0
-                      ? idleZones
-                          .slice(0, 2)
-                          .map((zone) => zone.name)
-                          .join(", ")
-                      : t("Every zone reported recently")}
-                  </span>
-                </span>
-              </li>
-            </ul>
-          </SectionCard>
-        </div>
+        <SectionCard title={t("How the score reads")} hint={t("What takes points away")} bodyClassName="p-0">
+          <HealthBreakdown
+            result={health}
+            review={{ percent: decidedWithinDayPercent, decided: decided.length }}
+            t={t}
+          />
+        </SectionCard>
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SectionCard
-          title={t("Open issues per zone")}
-          hint={t("Pending reviews plus approved hazards that are not finished yet")}
-          bodyClassName="pt-1"
+          title={t("Zones")}
+          hint={t("Open issues and the last report from each zone")}
+          bodyClassName="p-0"
           action={
-            <span className="text-[12px] text-muted">
-              {t("{count} open", { count: openIssuesTotal })}
+            <span className="whitespace-nowrap font-mono text-[12px] text-muted">
+              {openIssuesTotal}
+              <span className="ml-1.5 font-sans text-[11px] text-faint">{t("open")}</span>
             </span>
           }
         >
-          <RankBars data={zoneRisk} emptyLabel={t("No open issues. Every zone is clear.")} />
+          <ZoneBoard rows={zoneRows} t={t} emptyLabel={t("No zones are drawn on the map yet.")} />
         </SectionCard>
 
         <SectionCard
+          title={t("Hazard mix")}
+          hint={t("By category, most common first")}
+          bodyClassName="p-0"
+          action={
+            <span className="whitespace-nowrap font-mono text-[12px] text-muted">
+              {hazards.length}
+              <span className="ml-1.5 font-sans text-[11px] text-faint">{t("hazards")}</span>
+            </span>
+          }
+        >
+          <DonutChart
+            data={byCategory}
+            centerValue={hazards.length}
+            centerLabel={t("hazards")}
+            unit={t("hazards")}
+            emptyLabel={t("No hazards recorded yet.")}
+            size={160}
+          />
+
+          {hazards.length > 0 ? (
+            <div className="border-t border-rule px-4 py-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="text-[12px] text-muted">{t("How bad they are")}</p>
+                <p className="font-mono text-[11px] text-faint">
+                  {ratedHazards} / {hazards.length} {t("rated")}
+                </p>
+              </div>
+
+              <div className="mt-2 flex h-[6px] gap-[2px] overflow-hidden rounded-full bg-panel">
+                {bySeverity.map((slice) => (
+                  <span
+                    key={slice.label}
+                    style={{
+                      background: slice.color,
+                      width: `${(slice.value / hazards.length) * 100}%`,
+                    }}
+                    title={`${slice.label}: ${slice.value}`}
+                    aria-hidden="true"
+                  />
+                ))}
+              </div>
+
+              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] leading-4">
+                {bySeverity.map((slice) => (
+                  <li key={slice.label} className="flex items-center gap-1.5">
+                    <span
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ background: slice.color }}
+                      aria-hidden="true"
+                    />
+                    <span className="text-muted">{slice.label}</span>
+                    <span className="font-mono text-ink">{slice.value}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </SectionCard>
+      </div>
+
+      <div className="mt-4">
+        <SectionCard
           title={t("Recent submissions")}
+          bodyClassName="p-0"
           action={
             <Link href="/records" className="text-[12px] font-medium text-accent hover:underline">
               {t("All records")}
@@ -601,12 +620,6 @@ export default async function DashboardPage() {
           )}
         </SectionCard>
       </div>
-
-      <p className="mt-3 px-1 text-[12px] leading-relaxed text-muted">
-        {t("Last record received {when}.", {
-          when: records[0] ? formatDateTime(records[0].created_at) : t("never"),
-        })}
-      </p>
     </div>
   );
 }

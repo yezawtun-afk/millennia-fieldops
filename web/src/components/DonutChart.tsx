@@ -1,6 +1,6 @@
-// A donut built from one SVG circle per slice, so it renders on the server and
-// ships no charting library. Colours come from the caller; the legend carries
-// the numbers, so the ring only has to show proportion.
+// A share ring built from one SVG circle per slice, so it renders on the server
+// and ships no charting library. The stroke is thin and the legend carries the
+// numbers: the ring shows proportion, the table carries the truth.
 
 export interface DonutSlice {
   label: string;
@@ -10,6 +10,7 @@ export interface DonutSlice {
 
 const RADIUS = 40;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+const SEAM = 2;
 
 export function DonutChart({
   data,
@@ -17,7 +18,7 @@ export function DonutChart({
   centerLabel,
   unit = "records",
   emptyLabel = "Nothing recorded yet.",
-  size = 148,
+  size = 132,
 }: {
   data: DonutSlice[];
   centerValue?: number | string;
@@ -33,15 +34,13 @@ export function DonutChart({
     .join(", ");
 
   if (total === 0) {
-    return (
-      <p className="px-4 py-6 text-[13px] text-muted">{emptyLabel}</p>
-    );
+    return <p className="px-4 py-6 text-[13px] text-muted">{emptyLabel}</p>;
   }
 
   let offset = 0;
 
   return (
-    <div className="flex flex-col items-center gap-4 p-4 sm:flex-row sm:items-center">
+    <div className="flex flex-col items-center gap-4 px-4 py-4 sm:flex-row sm:items-center">
       <div className="relative shrink-0" style={{ width: size, height: size }}>
         <svg
           viewBox="0 0 100 100"
@@ -52,18 +51,11 @@ export function DonutChart({
           className="-rotate-90"
         >
           <title>{summary}</title>
-          <circle
-            cx="50"
-            cy="50"
-            r={RADIUS}
-            fill="none"
-            stroke="var(--color-panel)"
-            strokeWidth="14"
-          />
+          <circle cx="50" cy="50" r={RADIUS} fill="none" stroke="var(--color-panel)" strokeWidth="9" />
           {data.map((slice) => {
             if (slice.value <= 0) return null;
             const length = (slice.value / total) * CIRCUMFERENCE;
-            const dash = `${length} ${CIRCUMFERENCE - length}`;
+            const visible = Math.max(length - SEAM, 1);
             const element = (
               <circle
                 key={slice.label}
@@ -72,8 +64,8 @@ export function DonutChart({
                 r={RADIUS}
                 fill="none"
                 stroke={slice.color}
-                strokeWidth="14"
-                strokeDasharray={dash}
+                strokeWidth="9"
+                strokeDasharray={`${visible} ${CIRCUMFERENCE - visible}`}
                 strokeDashoffset={-offset}
               />
             );
@@ -83,22 +75,22 @@ export function DonutChart({
         </svg>
 
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="kpi-value text-[24px] font-normal leading-7 text-ink">
+          <span className="kpi-value font-mono text-[22px] leading-none text-ink">
             {centerValue ?? total}
           </span>
           {centerLabel ? (
-            <span className="mt-0.5 text-[11px] text-muted">{centerLabel}</span>
+            <span className="mt-1 text-[11px] leading-none text-faint">{centerLabel}</span>
           ) : null}
         </div>
       </div>
 
-      <ul className="w-full min-w-0 space-y-1.5">
+      <ul className="w-full min-w-0 space-y-1">
         {data.map((slice) => {
           const percent = Math.round((slice.value / total) * 100);
           return (
             <li
               key={slice.label}
-              className="flex items-center gap-2 text-[12px]"
+              className="flex items-center gap-2 py-0.5 text-[12px]"
               title={`${slice.label}: ${slice.value} ${unit} (${percent}%)`}
             >
               <span
@@ -107,8 +99,8 @@ export function DonutChart({
                 aria-hidden="true"
               />
               <span className="min-w-0 flex-1 truncate text-muted">{slice.label}</span>
-              <span className="shrink-0 tabular-nums text-ink">{slice.value}</span>
-              <span className="w-8 shrink-0 text-right tabular-nums text-faint">
+              <span className="shrink-0 font-mono text-[12px] text-ink">{slice.value}</span>
+              <span className="w-8 shrink-0 text-right font-mono text-[11px] text-faint">
                 {percent}%
               </span>
             </li>

@@ -28,7 +28,14 @@ export interface ReviewDialogRecord {
   ageLabel: string;
 }
 
-export function ReviewDialog({ record }: { record: ReviewDialogRecord }) {
+export function ReviewDialog({
+  record,
+  tone = "neutral",
+}: {
+  record: ReviewDialogRecord;
+  /** A critical row leads with the alarm colour; anything else stays quiet. */
+  tone?: "critical" | "neutral";
+}) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement | null>(null);
@@ -45,9 +52,13 @@ export function ReviewDialog({ record }: { record: ReviewDialogRecord }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex h-8 shrink-0 items-center justify-center rounded-control border border-control bg-sheet px-2.5 text-[12px] font-medium text-accent transition-colors hover:border-accent hover:bg-accent-soft"
+        className={`inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap rounded-control border px-2.5 text-[12px] font-medium transition-colors ${
+          tone === "critical"
+            ? "border-negative/35 bg-negative-soft text-negative-ink hover:border-negative/70"
+            : "border-control bg-sheet text-ink hover:border-accent hover:text-accent"
+        }`}
       >
-        {t("Review now")}
+        {t("Review")}
       </button>
 
       <dialog

@@ -136,11 +136,14 @@ function SidebarContent({ profile, onNavigate }: { profile: Profile; onNavigate?
                         aria-current={active ? "page" : undefined}
                         className={`flex h-[34px] items-center gap-2.5 rounded-md px-3 text-[14px] transition-colors ${
                           active
-                            ? "bg-frame-soft font-medium text-ink"
-                            : "text-muted hover:bg-frame-soft/60 hover:text-ink"
+                            ? "bg-sheet font-medium text-ink"
+                            : "text-muted hover:bg-frame-soft hover:text-ink"
                         }`}
                       >
-                        <Icon className="h-4 w-4 shrink-0" strokeWidth={1.7} />
+                        <Icon
+                          className={`h-4 w-4 shrink-0 ${active ? "text-accent" : ""}`}
+                          strokeWidth={1.7}
+                        />
                         {t(item.label)}
                       </Link>
                     </li>
@@ -152,9 +155,9 @@ function SidebarContent({ profile, onNavigate }: { profile: Profile; onNavigate?
         })}
       </nav>
 
-      <div className="border-t border-line/80 px-3 py-3">
+      <div className="border-t border-line px-3 py-3">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-frame-soft text-[12px] font-semibold text-ink">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sheet text-[12px] font-semibold text-ink">
             {profile.full_name.slice(0, 1).toUpperCase()}
           </span>
           <div className="min-w-0 flex-1">
@@ -245,13 +248,14 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-frame">
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:block lg:w-[228px]">
+      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:block lg:w-[228px] lg:border-r lg:border-line">
         <SidebarContent profile={profile} />
       </aside>
 
       <div className="lg:pl-[228px]">
-        {/* Shared by the sidebar and the top bar: one tinted L, no rule between. */}
-        <header className="sticky top-0 z-20 flex h-12 items-center gap-3 bg-frame px-4 sm:px-6">
+        {/* The top bar: scope on the left, the live signal and the utilities on
+            the right. No rule between it and the sheet. */}
+        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 bg-frame px-4 sm:px-6">
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
@@ -261,28 +265,28 @@ export function AppShell({
             <Menu className="h-5 w-5" strokeWidth={1.7} />
           </button>
 
-          <span className="text-[13px] font-medium text-muted lg:hidden">{pageTitle(t, pathname)}</span>
-          <span className="hidden text-[13px] text-muted lg:block">
-            {t("Field data review · Millennia Village")}
+          <span className="truncate text-[13px] font-medium text-ink lg:hidden">
+            {pageTitle(t, pathname)}
+          </span>
+          <span className="hidden min-w-0 items-center gap-2 text-[12px] text-muted lg:flex">
+            <span className="truncate font-medium text-ink">{t("Millennia Village")}</span>
+            <span className="text-control" aria-hidden="true">
+              /
+            </span>
+            <span className="truncate">{t("Field data review")}</span>
           </span>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <AutoRefresh />
             <TopSearch />
             <LanguageSwitcher compact />
-            <Link
-              href="/records?status=pending"
-              className="hidden whitespace-nowrap rounded-md px-2 py-1 text-[13px] font-medium text-accent hover:bg-frame-soft sm:block"
-            >
-              {t("Pending review")}
-            </Link>
             <NewsBell profile={profile} news={news} seenAt={seenAt} />
           </div>
         </header>
 
-        {/* The white sheet: inset 8px from the window's right and bottom edges. */}
+        {/* The sheet: inset 8px from the window's right and bottom edges. */}
         <main className="px-2 pb-2">
-          <div className="min-h-[calc(100vh-4rem)] rounded-[16px] border border-line bg-sheet p-5 sm:p-6">
+          <div className="min-h-[calc(100vh-4rem)] rounded-[16px] border border-line bg-sheet p-4 sm:p-6">
             <div className="mx-auto w-full max-w-[1240px]">{children}</div>
           </div>
         </main>
