@@ -125,11 +125,14 @@ Full step-by-step instructions are in [`docs/SETUP.md`](docs/SETUP.md). In short
 
 1. Create a free project at https://supabase.com.
 2. In the Supabase **SQL Editor**, run `supabase/setup_all.sql` — a generated
-   one-paste bundle of every numbered file (`01_schema` through `10_audit_logs`;
-   regenerate it with `tools/bundle-db-sql.ps1`, or
-   paste the numbered files in order). 07/08 are optional extras documented in
-   `docs/DEPLOY.md`. Upgrading a live database instead? Run `02_policies.sql`,
-   `09_delete_own_pending.sql` and `10_audit_logs.sql` again — all are safe to re-run.
+   one-paste bundle of the numbered setup files, `01_schema` through
+   `12_job_completion` (regenerate it with `tools/bundle-db-sql.ps1`, or
+   paste the numbered files in order). `07_demo_data` and `08_backfill_profiles`
+   are left out because they change data; `11_zone_control` is superseded and
+   repeats rules already in `01` and `02`. The two data-changing extras are
+   documented in `docs/DEPLOY.md`. Upgrading a live database instead? Run `02_policies.sql`,
+   `09_delete_own_pending.sql`, `10_audit_logs.sql` and `12_job_completion.sql`
+   again — all are safe to re-run.
 3. Copy your project URL and publishable/anon key into `web/.env.local` and
    `mobile/.env`. For cloud builds **and over-the-air updates**, also store them on
    EAS (the `env` block in `mobile/eas.json` covers builds; `eas env:set` covers

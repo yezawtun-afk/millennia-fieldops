@@ -260,18 +260,22 @@ The quick way is one paste. Build the combined script:
 powershell -ExecutionPolicy Bypass -File tools\bundle-db-sql.ps1
 ```
 
-That writes `supabase\setup_all.sql` (every numbered setup file - `01`..`06` plus
-`09_delete_own_pending` - in the right order). Open it in VS Code, select all, copy,
-then in Supabase go to **SQL Editor -> New query**, paste and click **Run**. It takes a
-few seconds and should say "Success. No rows returned".
+That writes `supabase\setup_all.sql` (every numbered setup file, `01`..`06` plus
+`09_delete_own_pending`, `10_audit_logs` and `12_job_completion`, in the right order).
+Open it in VS Code, select all, copy, then in Supabase go to **SQL Editor -> New query**,
+paste and click **Run**. It takes a few seconds and should say "Success. No rows returned".
 
 > `setup_all.sql` is generated, so it is git-ignored - re-run the script if the numbered
 > files change. Prefer doing it by hand? Run `01_schema.sql`, `02_policies.sql`,
-> `03_storage.sql`, `04_triggers.sql`, `05_seed.sql`, `09_delete_own_pending.sql` in
+> `03_storage.sql`, `04_triggers.sql`, `05_seed.sql`, `09_delete_own_pending.sql`,
+> `10_audit_logs.sql` and `12_job_completion.sql` in
 > that order, then the optional `06_severity_levels.sql`. See [SETUP.md](SETUP.md)
-> step 2 for details. **On a live database, re-run `01_schema.sql`,
-> `02_policies.sql`, `04_triggers.sql` and `09_delete_own_pending.sql`** - all four are
-> idempotent and add the phone / approval columns and rules without touching data.
+> step 2 for details. `07_demo_data.sql` and `08_backfill_profiles.sql` are separate
+> because they change data, and `11_zone_control.sql` is superseded (its rules are
+> already in `01` and `02`). **On a live database, re-run `01_schema.sql`,
+> `02_policies.sql`, `04_triggers.sql`, `09_delete_own_pending.sql`,
+> `10_audit_logs.sql` and `12_job_completion.sql`** - all six are
+> idempotent and add the phone / approval / job-completion rules without touching data.
 
 Then create your first admin account:
 
@@ -303,6 +307,28 @@ Setup done but the apps still fail after login? If accounts were created **befor
 the schema existed, they have no `profiles` row. Run `08_backfill_profiles.sql`
 (then the two `update` lines inside it, with the `--` removed, to promote your admin
 and supervisor).
+
+---
+
+## 4. AI photo assist (optional)
+
+The **AI photo assist** in the mobile app (hazard and flora records) runs in a Supabase
+Edge Function, `supabase/functions/analyze-record/`. Nothing needs to be added to
+`web/.env.local` or `mobile/.env`: the Google key is a **Supabase secret**, never a
+front-end variable.
+
+```powershell
+npx supabase secrets set GOOGLE_AI_STUDIO_KEY=your-key-here --project-ref bjlyskwoxpepbwaxfc
+npx supabase functions deploy analyze-record --project-ref bjlyskwoxpepbwaxfc --use-api
+```
+
+Get the key from [Google AI Studio](https://aistudio.google.com/app/apikey). The optional
+`GEMINI_MODEL` secret overrides the model; without it the code default is used. Full
+details, model notes and the error-code table are in
+[`supabase/functions/analyze-record/README.md`](../supabase/functions/analyze-record/README.md).
+
+If the function is not deployed or the secret is missing, the app is unaffected: the
+photo assist reports "AI is not set up yet" and workers fill the form by hand.
 
 ---
 

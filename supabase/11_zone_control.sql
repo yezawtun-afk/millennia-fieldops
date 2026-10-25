@@ -1,11 +1,20 @@
 -- ============================================================================
 -- Millennia FieldOps - 11_zone_control.sql
--- Two small database changes so zones can be managed from the site map:
+--
+-- SUPERSEDED - DO NOT RUN ON A NEW DATABASE. Both rules below now live in the
+-- main files, so this script only repeats them:
 --   1. Supervisors can add and delete zones, not only administrators.
---   2. A zone can be deleted even when field records point at it. The records
---      keep everything they hold (photos, readings, status) and simply end up
---      with no zone.
--- Run this once in the Supabase SQL Editor. Safe to run again.
+--      -> already in 02_policies.sql (zones_insert_admin / zones_update_admin /
+--         zones_delete_admin all use public.is_reviewer(), which is true for
+--         supervisors as well as administrators).
+--   2. A zone can be deleted even when field records point at it, and the
+--      records are kept with no zone.
+--      -> already in 01_schema.sql:100,
+--         `zone_id uuid references public.zones (id) on delete set null`.
+--
+-- This is why tools/bundle-db-sql.ps1 does not include it in setup_all.sql.
+-- It is kept only so projects set up before the change have a record of what
+-- was applied. Safe to run again if you do run it: every statement is idempotent.
 -- ============================================================================
 
 -- ---------------------------------------------------------------------------
