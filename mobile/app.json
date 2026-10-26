@@ -20,6 +20,7 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "my.millennia.fieldops",
       "infoPlist": {
         "NSCameraUsageDescription": "Millennia FieldOps uses the camera to photograph field observations.",
         "NSLocationWhenInUseUsageDescription": "Millennia FieldOps records the GPS location of each observation.",
