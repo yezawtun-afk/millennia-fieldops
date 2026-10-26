@@ -63,7 +63,9 @@
           "imageWidth": 280,
           "resizeMode": "contain"
         }
-      ]
+      ],
+      "expo-sqlite",
+      "expo-status-bar"
     ],
     "extra": {
       "eas": {
