@@ -75,7 +75,7 @@ export function DonutChart({
         </svg>
 
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="kpi-value font-mono text-[22px] leading-none text-ink">
+          <span className="kpi-value num text-[22px] leading-none text-ink">
             {centerValue ?? total}
           </span>
           {centerLabel ? (
@@ -99,8 +99,8 @@ export function DonutChart({
                 aria-hidden="true"
               />
               <span className="min-w-0 flex-1 truncate text-muted">{slice.label}</span>
-              <span className="shrink-0 font-mono text-[12px] text-ink">{slice.value}</span>
-              <span className="w-8 shrink-0 text-right font-mono text-[11px] text-faint">
+              <span className="num shrink-0 text-[12px] font-medium text-ink">{slice.value}</span>
+              <span className="num w-8 shrink-0 text-right text-[11px] text-faint">
                 {percent}%
               </span>
             </li>

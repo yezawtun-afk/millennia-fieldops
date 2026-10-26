@@ -128,7 +128,7 @@ export function Kpi({
         {badge}
       </div>
       <p className="mt-2 flex items-baseline gap-1">
-        <span className={`font-mono text-[26px] leading-none tracking-[-0.03em] ${missing ? "text-faint" : "text-ink"}`}>
+        <span className={`num text-[26px] leading-none tracking-[-0.02em] ${missing ? "text-faint" : "text-ink"}`}>
           {missing ? "—" : value}
         </span>
         {unit && !missing ? <span className="text-[12px] text-faint">{unit}</span> : null}

@@ -79,13 +79,13 @@ export const STATUS_CHART_COLORS: Record<RecordStatus, string> = {
   rejected: "#C4242A",
 };
 
-// The hazard categories are a composition, not an alarm: one ink ramp from deep
-// to pale. The mix is sorted biggest-share-first, so the darkest slice is always
-// the one that matters most and the ring never turns into a rainbow. The legend
-// carries the names, so the shades only have to separate.
-export const HAZARD_MIX_RAMP = ["#14181B", "#38463F", "#5A6A61", "#83938A", "#B3C1B8"];
+// The hazard categories are a composition, not an alarm: one green ramp from
+// deep forest to a soft sage. The mix is sorted biggest-share-first, so the
+// darkest slice is always the one that matters most and the ring never turns
+// into a rainbow. The legend carries the names; the shades only separate.
+export const HAZARD_MIX_RAMP = ["#0E3A2A", "#1F6B4A", "#3C8A63", "#69A585", "#9BC7B1"];
 
-export const UNCATEGORISED_COLOR = "#D3D8D2";
+export const UNCATEGORISED_COLOR = "#A6B4AA";
 
 // The health score's three bands, and the neutral used before there is enough
 // data to judge.

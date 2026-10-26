@@ -60,7 +60,7 @@ export function AutoRefresh() {
         <span className="relative h-1.5 w-1.5 rounded-full bg-accent" />
       </span>
       <span className="text-[11px] font-medium leading-none text-accent">{t("Live")}</span>
-      <span className="font-mono text-[10px] leading-none text-accent/70">{POLL_MS / 1000}s</span>
+      <span className="num text-[10px] leading-none text-accent/70">{POLL_MS / 1000}s</span>
     </span>
   );
 }

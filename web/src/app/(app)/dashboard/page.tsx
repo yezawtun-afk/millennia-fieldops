@@ -32,6 +32,7 @@ import {
   SEVERITY_LABELS,
   TYPE_CHART_COLORS,
   UNCATEGORISED_COLOR,
+  formatDateTime,
 } from "@/lib/format";
 import { HEALTH_BAND_LABELS, scoreVillage } from "@/lib/health";
 import { getLocale, getT, type ServerTranslate } from "@/i18n/server";
@@ -51,19 +52,36 @@ function startOfDay(date: Date): Date {
   return start;
 }
 
-function ageLabel(t: ServerTranslate, iso: string): string {
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days <= 0) return t("today");
-  if (days === 1) return t("1 day");
-  return t("{count} days", { count: days });
+// Compact elapsed time: "12m", "3h 12m", "2d 5h", "83d". Minutes are dropped
+// after the first hour, but hours are kept for the first week so "when was the
+// last report?" is never rounded away to a bare day.
+function elapsedLabel(t: ServerTranslate, iso: string): string {
+  const minutes = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
+  if (minutes < 1) return t("Just now");
+  if (minutes < 60) return t("{count}m", { count: minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    const rest = minutes % 60;
+    return rest > 0
+      ? t("{hours}h {minutes}m", { hours, minutes: rest })
+      : t("{count}h", { count: hours });
+  }
+  const days = Math.floor(hours / 24);
+  const restHours = hours % 24;
+  if (days < 7 && restHours > 0) {
+    return t("{days}d {hours}h", { days, hours: restHours });
+  }
+  return t("{count}d", { count: days });
 }
 
-// "Last report: yesterday" reads better than "Last report: 1 day old".
-function sinceLabel(t: ServerTranslate, iso: string): string {
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days <= 0) return t("today");
-  if (days === 1) return t("yesterday");
-  return t("{count} days ago", { count: days });
+function agoLabel(t: ServerTranslate, iso: string): string {
+  const elapsed = elapsedLabel(t, iso);
+  return elapsed === t("Just now") ? elapsed : t("{age} ago", { age: elapsed });
+}
+
+function ageLabel(t: ServerTranslate, iso: string): string {
+  const elapsed = elapsedLabel(t, iso);
+  return elapsed === t("Just now") ? elapsed : t("{age} old", { age: elapsed });
 }
 
 // An open issue is anything a reviewer still has to act on: a record waiting for
@@ -107,7 +125,7 @@ export default async function DashboardPage() {
     ]);
 
   const isReviewer = profile?.role === "supervisor" || profile?.role === "admin";
-  const oldestPending = queue[0]?.created_at ? ageLabel(t, queue[0].created_at) : null;
+  const oldestPending = queue[0]?.created_at ? elapsedLabel(t, queue[0].created_at) : null;
   const dayTag = LOCALE_TAGS[locale] ?? "en-GB";
 
   // ---- Health -----------------------------------------------------------------
@@ -153,7 +171,7 @@ export default async function DashboardPage() {
         name: zone.name,
         color: zone.color,
         open: zoneRecords.filter(isOpenIssue).length,
-        lastLabel: last ? t("Last report {when}", { when: sinceLabel(t, last) }) : t("No report yet"),
+        lastLabel: last ? t("Last report {when}", { when: agoLabel(t, last) }) : t("No report yet"),
         idle: !last || new Date(last).getTime() < quietCutoff,
       };
     })
@@ -264,7 +282,7 @@ export default async function DashboardPage() {
     // pulse and the legend, so the two maps never disagree.
     color: TYPE_CHART_COLORS[record.type],
     label: record.title,
-    sub: `${record.zone?.name ?? t("No zone")} · ${ageLabel(t, record.created_at)}`,
+    sub: `${record.zone?.name ?? t("No zone")} · ${elapsedLabel(t, record.created_at)}`,
     href: `/records/${record.id}`,
     pulse: openCriticalIds.has(record.id),
   }));
@@ -316,8 +334,11 @@ export default async function DashboardPage() {
         subtitle={finding}
         actions={
           <>
-            <span className="hidden items-center gap-1.5 font-mono text-[11px] text-faint sm:inline-flex">
-              {lastRecord ? t("Last record {when}", { when: sinceLabel(t, lastRecord) }) : t("No records yet")}
+            <span
+              className="hidden items-center gap-1.5 text-[11px] text-faint tabular-nums sm:inline-flex"
+              title={lastRecord ? formatDateTime(lastRecord) : undefined}
+            >
+              {lastRecord ? t("Last record {when}", { when: agoLabel(t, lastRecord) }) : t("No records yet")}
             </span>
             {pending > 0 ? (
               <Link href="/records?status=pending" className={btnPrimary}>
@@ -367,7 +388,7 @@ export default async function DashboardPage() {
           title={t("Submissions")}
           hint={t("Records received in the last {days} days", { days: WEEK_DAYS })}
           action={
-            <span className="whitespace-nowrap font-mono text-[12px] text-muted">
+            <span className="whitespace-nowrap num text-[12px] text-muted">
               {thisWeek}
               <span className="ml-1.5 font-sans text-[11px] text-faint">{t("this week")}</span>
             </span>
@@ -432,7 +453,7 @@ export default async function DashboardPage() {
                         </span>
                         <span className="mt-0.5 block truncate text-[11px] leading-4 text-faint">
                           {record.zone?.name ?? t("No zone")} ·{" "}
-                          {t("{age} old", { age: ageLabel(t, record.created_at) })}
+                          {ageLabel(t, record.created_at)}
                         </span>
                       </span>
                     </Link>
@@ -446,7 +467,7 @@ export default async function DashboardPage() {
                           severity: record.severity,
                           notes: record.notes,
                           photoUrl: photo,
-                          ageLabel: t("{age} old", { age: ageLabel(t, record.created_at) }),
+                          ageLabel: ageLabel(t, record.created_at),
                         }}
                       />
                     ) : (
@@ -520,7 +541,7 @@ export default async function DashboardPage() {
           hint={t("Open issues and the last report from each zone")}
           bodyClassName="p-0"
           action={
-            <span className="whitespace-nowrap font-mono text-[12px] text-muted">
+            <span className="whitespace-nowrap num text-[12px] text-muted">
               {openIssuesTotal}
               <span className="ml-1.5 font-sans text-[11px] text-faint">{t("open")}</span>
             </span>
@@ -534,7 +555,7 @@ export default async function DashboardPage() {
           hint={t("By category, most common first")}
           bodyClassName="p-0"
           action={
-            <span className="whitespace-nowrap font-mono text-[12px] text-muted">
+            <span className="whitespace-nowrap num text-[12px] text-muted">
               {hazards.length}
               <span className="ml-1.5 font-sans text-[11px] text-faint">{t("hazards")}</span>
             </span>
@@ -553,7 +574,7 @@ export default async function DashboardPage() {
             <div className="border-t border-rule px-4 py-3">
               <div className="flex items-baseline justify-between gap-3">
                 <p className="text-[12px] text-muted">{t("How bad they are")}</p>
-                <p className="font-mono text-[11px] text-faint">
+                <p className="num text-[11px] text-faint">
                   {ratedHazards} / {hazards.length} {t("rated")}
                 </p>
               </div>
@@ -581,7 +602,7 @@ export default async function DashboardPage() {
                       aria-hidden="true"
                     />
                     <span className="text-muted">{slice.label}</span>
-                    <span className="font-mono text-ink">{slice.value}</span>
+                    <span className="num text-ink">{slice.value}</span>
                   </li>
                 ))}
               </ul>

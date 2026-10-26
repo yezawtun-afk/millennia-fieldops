@@ -60,7 +60,7 @@ export function HealthBreakdown({
               <span className="block text-[11px] leading-4 text-faint">{row.detail}</span>
             </span>
             <span
-              className={`shrink-0 font-mono text-[12px] leading-5 ${
+              className={`num shrink-0 text-[12px] leading-5 ${
                 row.points >= 0.05 ? "text-negative-ink" : "text-faint"
               }`}
             >
@@ -72,7 +72,7 @@ export function HealthBreakdown({
 
       <p className="mt-2 flex items-baseline justify-between gap-3 border-t border-rule pt-2.5 text-[12px]">
         <span className="text-muted">{t("100 minus these points")}</span>
-        <span className="font-mono text-[12px] text-ink">
+        <span className="num text-[12px] text-ink">
           {score === null ? "—" : `100 − ${removed} = ${score}`}
           {score === null ? null : (
             <span className="ml-2 text-[11px]" style={{ color: colour }}>
@@ -84,7 +84,7 @@ export function HealthBreakdown({
 
       <p className="mt-3 flex items-baseline justify-between gap-3 border-t border-rule pt-2.5 text-[12px]">
         <span className="text-muted">{t("Reviewed within 24 hours")}</span>
-        <span className="font-mono text-[12px] text-ink">
+        <span className="num text-[12px] text-ink">
           {review.percent === null ? "—" : `${review.percent}%`}
           <span className="ml-2 font-sans text-[11px] text-faint">
             {review.decided === 0

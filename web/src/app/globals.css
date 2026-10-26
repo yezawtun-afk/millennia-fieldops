@@ -67,8 +67,9 @@
   --radius-card: 8px;
   --radius-control: 6px;
 
-  --font-sans: var(--font-plex), "Segoe UI", system-ui, -apple-system, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: var(--font-inter), "Segoe UI", system-ui, -apple-system, sans-serif;
+  /* Monospace survives only for code and error digests, never for readouts. */
+  --font-mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace;
 }
 
 html,
@@ -86,11 +87,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Numbers line up wherever they are compared. */
+/* Numbers line up wherever they are compared. The UI face carries tabular
+   figures, so a count never needs a monospace with a dotted zero. */
 .num,
 table,
 .kpi-value {
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 /* Touch targets at least 44px tall on phones. */

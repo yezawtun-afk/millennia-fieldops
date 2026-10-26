@@ -51,7 +51,7 @@ export function ZoneBoard({
                   {t("Quiet")}
                 </span>
               ) : null}
-              <span className="ml-auto shrink-0 font-mono text-[13px] leading-5 text-ink">
+              <span className="num ml-auto shrink-0 text-[13px] leading-5 text-ink">
                 {row.open}
               </span>
             </span>

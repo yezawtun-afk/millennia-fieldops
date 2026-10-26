@@ -290,7 +290,7 @@ function DetailRow({
   return (
     <div className="border-b border-rule py-2.5 last:border-b-0">
       <dt className="text-[12px] text-muted">{label}</dt>
-      <dd className={`mt-0.5 text-[14px] text-ink ${mono ? "font-mono text-[13px]" : ""}`}>
+      <dd className={`mt-0.5 text-[14px] text-ink ${mono ? "num text-[13px]" : ""}`}>
         {value || <span className="text-faint">-</span>}
       </dd>
     </div>

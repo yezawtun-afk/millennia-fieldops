@@ -40,7 +40,7 @@ export function WeekBars({
         <div className="absolute inset-0 flex flex-col justify-between" aria-hidden="true">
           {ticks.map((tick) => (
             <div key={tick} className="flex items-center gap-2.5">
-              <span className="w-5 shrink-0 text-right font-mono text-[10px] leading-none text-faint">
+              <span className="num w-5 shrink-0 text-right text-[10px] leading-none text-faint">
                 {tick}
               </span>
               <span className={`h-px flex-1 ${tick === 0 ? "bg-control" : "bg-rule"}`} />
