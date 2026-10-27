@@ -111,9 +111,8 @@ export function AiSuggestionSheet({
           <Text style={styles.helper}>
             {t("AI can be wrong. Check the photo and every field before saving.")}
           </Text>
-        </ScrollView>
+          </ScrollView>
         </FadeInCard>
-      </SafeAreaView>
         <View style={styles.footer}>
           <Button
             title={t("Apply suggestions")}
