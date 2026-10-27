@@ -122,7 +122,7 @@ export function Kpi({
   const missing = value === null || value === undefined;
 
   return (
-    <div className="bg-sheet px-4 py-3.5 sm:px-5">
+    <div className="bg-sheet px-4 py-3.5 sm:px-5 rounded-xl border border-line transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-md hover:border-accent cursor-pointer">
       <div className="flex items-start justify-between gap-2">
         <p className="text-[12px] font-medium leading-4 text-muted">{label}</p>
         {badge}

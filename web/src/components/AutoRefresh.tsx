@@ -12,6 +12,7 @@
 // it comes back, so a forgotten tab costs nothing.
 import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { RefreshCw } from "lucide-react";
 import { useI18n } from "@/i18n";
 
 const POLL_MS = 10_000;
@@ -52,7 +53,7 @@ export function AutoRefresh() {
 
   return (
     <span
-      className="hidden items-center gap-1.5 rounded-full border border-accent/25 bg-accent-soft py-1 pl-2 pr-2.5 md:inline-flex"
+      className="hidden items-center gap-1.5 rounded-full border border-accent/25 bg-accent-soft py-1 pl-2 pr-2.5 md:inline-flex group"
       title={t("This page updates on its own")}
     >
       <span className="relative flex h-1.5 w-1.5 items-center justify-center" aria-hidden="true">
@@ -61,6 +62,10 @@ export function AutoRefresh() {
       </span>
       <span className="text-[11px] font-medium leading-none text-accent">{t("Live")}</span>
       <span className="num text-[10px] leading-none text-accent/70">{POLL_MS / 1000}s</span>
+      <RefreshCw
+        className="w-3 h-3 ml-1 text-accent transition-transform duration-500 group-hover:rotate-180"
+        aria-hidden="true"
+      />
     </span>
   );
 }

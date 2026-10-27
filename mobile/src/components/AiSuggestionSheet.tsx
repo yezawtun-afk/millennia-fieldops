@@ -10,6 +10,7 @@ import { SEVERITY_LABELS } from "../lib/format";
 import type { AiSuggestion } from "../lib/ai";
 import { Banner, Button, Card } from "./ui";
 import { colors, radius, spacing, type } from "../theme";
+import { FadeInCard } from "./FadeInCard";
 
 interface Row {
   label: string;
@@ -41,7 +42,7 @@ export function AiSuggestionSheet({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="none"
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
@@ -62,7 +63,8 @@ export function AiSuggestionSheet({
           </Pressable>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <FadeInCard style={styles.sheetBody}>
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {photoUri ? <Image source={{ uri: photoUri }} style={styles.photo} /> : null}
 
           <View style={styles.confidenceRow}>
@@ -110,7 +112,8 @@ export function AiSuggestionSheet({
             {t("AI can be wrong. Check the photo and every field before saving.")}
           </Text>
         </ScrollView>
-
+        </FadeInCard>
+      </SafeAreaView>
         <View style={styles.footer}>
           <Button
             title={t("Apply suggestions")}
@@ -233,6 +236,7 @@ const styles = StyleSheet.create({
     borderColor: colors.control,
   },
   content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
+  sheetBody: { marginTop: 6 },
   photo: {
     width: "100%",
     height: 190,

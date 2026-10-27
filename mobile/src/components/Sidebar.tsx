@@ -35,6 +35,7 @@ import { ROLE_LABELS } from "../lib/format";
 import { colors, radius, shadow, spacing, type } from "../theme";
 import { StatCell } from "./ui";
 import { SyncBadge } from "./SyncBadge";
+import { BouncyCard } from "./BouncyCard";
 
 export function Sidebar({
   open,
@@ -471,9 +472,10 @@ function MenuRow({
   }
 
   return (
-    <Pressable
+    <BouncyCard
       onPress={onPress}
       accessibilityRole="button"
+      accessibilityLabel={label}
       style={({ pressed }) => [
         styles.row,
         !last && styles.rowLine,
@@ -481,7 +483,7 @@ function MenuRow({
       ]}
     >
       {content}
-    </Pressable>
+    </BouncyCard>
   );
 }
 

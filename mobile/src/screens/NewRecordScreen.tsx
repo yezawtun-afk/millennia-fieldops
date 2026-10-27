@@ -17,7 +17,7 @@ import { useSync } from "../context/SyncContext";
 import { useI18n } from "../i18n";
 import { Banner, Button, Card, ChipGroup, Field, Input, SectionTitle } from "../components/ui";
 import { SpeciesPicker } from "../components/SpeciesPicker";
-import { AiSkeleton } from "../components/AiSkeleton";
+import { AIAnalyzingPulse } from "../components/AIAnalyzingPulse";
 import { AiSuggestionSheet } from "../components/AiSuggestionSheet";
 import {
   analyzePhoto as analyzeRecordPhoto,
@@ -879,7 +879,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
                 loading={aiBusy}
                 disabled={!online || photos.length === 0 || aiBusy}
               />
-              {aiBusy ? <AiSkeleton /> : null}
+              {aiBusy ? <AIAnalyzingPulse /> : null}
             </View>
           ) : null}
         </Card>
