@@ -10,6 +10,7 @@ import {
   STATUS_STYLES,
   TYPE_LABELS,
   TYPE_STYLES,
+  type WorkStage,
 } from "@/lib/format";
 import { useI18n } from "@/i18n";
 import type { HazardSeverity, RecordStatus, RecordType, UserRole } from "@/lib/types";
@@ -39,6 +40,33 @@ export function StatusBadge({ status }: { status: RecordStatus }) {
 export function CompletedBadge() {
   const { t } = useI18n();
   return <Pill className="bg-positive-soft text-positive-ink">{t("Completed")}</Pill>;
+}
+
+// The repair loop, shown beside the review status. "Closed" is the only state
+// that removes the hazard from the health score.
+export function WorkPill({ stage }: { stage: WorkStage }) {
+  const { t } = useI18n();
+  if (stage === "none") return null;
+
+  const label =
+    stage === "unassigned"
+      ? "To assign"
+      : stage === "assigned"
+        ? "Assigned"
+        : stage === "verify"
+          ? "Awaiting verification"
+          : "Closed";
+
+  const style =
+    stage === "unassigned"
+      ? "bg-panel text-muted"
+      : stage === "assigned"
+        ? "bg-water-soft text-water"
+        : stage === "verify"
+          ? "bg-warning-soft text-warning-ink"
+          : "bg-positive-soft text-positive-ink";
+
+  return <Pill className={style}>{t(label)}</Pill>;
 }
 
 export function SeverityBadge({ severity }: { severity: HazardSeverity | null }) {

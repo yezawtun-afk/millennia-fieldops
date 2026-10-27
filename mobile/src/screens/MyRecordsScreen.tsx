@@ -33,7 +33,15 @@ import {
   type TypeFilter,
 } from "../components/RecordFilterSheet";
 import { colors, radius, spacing, type } from "../theme";
-import { STATUS_LABELS, formatDate } from "../lib/format";
+import {
+  PRIORITY_COLORS,
+  PRIORITY_LABELS,
+  STATUS_LABELS,
+  daysUntilDue,
+  formatDate,
+  formatDueDate,
+  isOverdue,
+} from "../lib/format";
 import type { FieldRecord, OutboxRow } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
 
@@ -48,11 +56,15 @@ function matchesQuery(
   return parts.some((part) => part?.toLowerCase().includes(needle));
 }
 
-// An approved hazard with no completion is a job the worker still has to do.
-// It appears under "To do" and is left out of "Submitted" so it is not listed
-// twice.
-function isOpenJob(record: FieldRecord): boolean {
-  return record.type === "hazard" && record.status === "approved" && !record.completed_at;
+// A job the worker still has to do: an approved hazard that is not fixed and is
+// theirs to fix. The assignee holds it; when nobody was assigned, the reporter
+// does. A hazard a supervisor gave to someone else is not this worker's problem
+// even though they reported it.
+function holdsJob(record: FieldRecord, userId: string | null): boolean {
+  if (!userId) return false;
+  if (record.type !== "hazard" || record.status !== "approved") return false;
+  if (record.completed_at || record.closed_at) return false;
+  return (record.assigned_to ?? record.submitted_by) === userId;
 }
 
 export function MyRecordsScreen({ navigation }: Props) {
@@ -119,12 +131,12 @@ export function MyRecordsScreen({ navigation }: Props) {
   const submitted = useMemo(() => {
     if (completionFilter === "open") return [];
     return base.filter((record) => {
-      if (isOpenJob(record)) return false;
+      if (holdsJob(record, userId)) return false;
       if (completionFilter === "done")
         return record.type === "hazard" && Boolean(record.completed_at);
       return statusFilter === "all" || record.status === statusFilter;
     });
-  }, [base, completionFilter, statusFilter]);
+  }, [base, completionFilter, statusFilter, userId]);
 
   // All and Approved include jobs that still need doing. Pending and Rejected
   // are about review decisions, so open jobs (which are always approved) would
@@ -138,8 +150,32 @@ export function MyRecordsScreen({ navigation }: Props) {
     ) {
       return [];
     }
-    return base.filter(isOpenJob);
-  }, [base, completionFilter, statusFilter]);
+    return base.filter((record) => holdsJob(record, userId));
+  }, [base, completionFilter, statusFilter, userId]);
+
+  // Work a supervisor handed over is listed separately: it is not the worker's
+  // own report, so it reads better under its own heading.
+  const assignedJobs = openJobs.filter((record) => record.assigned_to === userId);
+  const ownJobs = openJobs.filter((record) => !record.assigned_to);
+
+  // A job line carries the facts the worker needs before walking out there.
+  function jobMeta(record: FieldRecord): string {
+    const parts = [record.zone?.name ?? t("No zone")];
+    if (record.priority) parts.push(t(PRIORITY_LABELS[record.priority]));
+    if (record.due_on) {
+      const days = daysUntilDue(record.due_on);
+      parts.push(
+        isOverdue(record)
+          ? t("{count}d overdue", { count: Math.abs(days ?? 0) })
+          : days === 0
+            ? t("Due today")
+            : days === 1
+              ? t("Due tomorrow")
+              : t("Due {date}", { date: formatDueDate(record.due_on) })
+      );
+    }
+    return parts.join(" · ");
+  }
 
   const drafts = showLocal ? localRows.filter((row) => row.status === "draft") : [];
   const queued = showLocal ? localRows.filter((row) => row.status !== "draft") : [];
@@ -152,7 +188,7 @@ export function MyRecordsScreen({ navigation }: Props) {
     const inTypeScope = records.filter(
       (record) => typeFilter === "all" || record.type === typeFilter
     );
-    if (completionFilter === "open") return inTypeScope.filter(isOpenJob).length;
+    if (completionFilter === "open") return inTypeScope.filter((record) => holdsJob(record, userId)).length;
     if (completionFilter === "done")
       return inTypeScope.filter(
         (record) => record.type === "hazard" && Boolean(record.completed_at)
@@ -162,7 +198,7 @@ export function MyRecordsScreen({ navigation }: Props) {
       (row) => typeFilter === "all" || row.payload.type === typeFilter
     );
     return inTypeScope.length + localInTypeScope.length;
-  }, [records, outbox, typeFilter, completionFilter, showLocal]);
+  }, [records, outbox, typeFilter, completionFilter, showLocal, userId]);
   const visibleShown = drafts.length + queued.length + openJobs.length + submitted.length;
 
   function clearFilters() {
@@ -399,21 +435,46 @@ export function MyRecordsScreen({ navigation }: Props) {
         </Card>
       ) : (
         <>
-          {openJobs.length > 0 ? (
+          {assignedJobs.length > 0 ? (
+            <>
+              <SectionTitle>{t("Assigned tasks")}</SectionTitle>
+              <Card>
+                {assignedJobs.map((record, index) => (
+                  <ListRow
+                    key={record.id}
+                    title={record.title}
+                    meta={jobMeta(record)}
+                    right={
+                      record.priority ? (
+                        <Pill
+                          label={t(PRIORITY_LABELS[record.priority])}
+                          color={PRIORITY_COLORS[record.priority].fg}
+                          background={PRIORITY_COLORS[record.priority].bg}
+                        />
+                      ) : undefined
+                    }
+                    last={index === assignedJobs.length - 1}
+                    onPress={() => navigation.navigate("RecordDetails", { id: record.id })}
+                  />
+                ))}
+              </Card>
+              <View style={{ height: spacing.xl }} />
+            </>
+          ) : null}
+
+          {ownJobs.length > 0 ? (
             <>
               <SectionTitle>{t("To do")}</SectionTitle>
               <Card>
-                {openJobs.map((record, index) => (
+                {ownJobs.map((record, index) => (
                   <ListRow
                     key={record.id}
                     title={record.title}
                     meta={`${record.zone?.name ?? t("No zone")} · ${t("Approved")} ${formatDate(
                       record.reviewed_at ?? record.observed_date
                     )}`}
-                    last={index === openJobs.length - 1}
-                    onPress={() =>
-                      navigation.navigate("RecordDetails", { id: record.id })
-                    }
+                    last={index === ownJobs.length - 1}
+                    onPress={() => navigation.navigate("RecordDetails", { id: record.id })}
                   />
                 ))}
               </Card>

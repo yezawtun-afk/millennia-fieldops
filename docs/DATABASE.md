@@ -58,6 +58,21 @@ erDiagram
         uuid submitted_by FK
         uuid reviewed_by FK
         timestamptz reviewed_at
+        timestamptz completed_at "fixed by the worker"
+        uuid completed_by FK
+        text completion_note
+        jsonb completion_photos
+        uuid assigned_to FK "the worker who holds the job"
+        uuid assigned_by FK
+        timestamptz assigned_at
+        text priority "low|medium|high"
+        date due_on
+        timestamptz closed_at "verified by a supervisor"
+        uuid closed_by FK
+        text close_note
+        timestamptz reopened_at
+        text reopen_reason
+        jsonb previous_attempts
         timestamptz created_at
     }
 
@@ -81,6 +96,10 @@ erDiagram
 | `record_status` | `pending`, `approved`, `rejected` |
 | `hazard_severity` | `low`, `medium`, `critical` |
 
+`records.priority` is a plain `text` column with a check constraint
+(`low`/`medium`/`high`) rather than an enum: it is a work-order detail that may
+gain values, and a check constraint can be widened without a type migration.
+
 ## Tables
 
 - **profiles** - one row per account, created automatically by the
@@ -99,7 +118,23 @@ erDiagram
 ## Indexes
 
 `records` is indexed on `zone_id`, `status`, `type`, `observed_date`, `submitted_by`
-and `severity` so the dashboard filters stay fast.
+and `severity` so the dashboard filters stay fast. Two partial indexes cover the
+repair loop: `records_assigned_open_idx` (`assigned_to` where the job is not
+closed) for "my assigned work", and `records_awaiting_verification_idx`
+(`completed_at` where the job is not closed) for the supervisor's queue.
+
+## Functions that enforce the rules
+
+Policies alone cannot express these rules (a reviewer is allowed to update any
+record, so the policy cannot tell an assignment from an edit), so each action is a
+`security definer` function with the checks inside it:
+
+| Function | File | Who may call it |
+| --- | --- | --- |
+| `assign_remediation(record, worker, priority, due_on)` | `13_remediation.sql` | supervisors and admins |
+| `complete_record(record, note, photos)` | `13_remediation.sql` (rewrites `12_job_completion.sql`) | the assignee, or the submitter when nobody was assigned |
+| `verify_close(record, note)` | `13_remediation.sql` | supervisors and admins |
+| `reopen_remediation(record, reason)` | `13_remediation.sql` | supervisors and admins |
 
 ## Row Level Security rules that matter
 

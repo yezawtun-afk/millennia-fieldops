@@ -9,7 +9,20 @@ import { useI18n } from "../i18n";
 import { openInOpenStreetMap } from "../lib/location";
 import { Button, Card, Pill, SectionTitle } from "../components/ui";
 import { colors, radius, spacing, type } from "../theme";
-import { STATUS_COLORS, STATUS_LABELS, TYPE_COLORS, TYPE_LABELS, formatDate, formatDateTime, SEVERITY_COLORS } from "../lib/format";
+import {
+  PRIORITY_COLORS,
+  PRIORITY_LABELS,
+  STATUS_COLORS,
+  STATUS_LABELS,
+  TYPE_COLORS,
+  TYPE_LABELS,
+  daysUntilDue,
+  formatDate,
+  formatDateTime,
+  formatDueDate,
+  isOverdue,
+  SEVERITY_COLORS,
+} from "../lib/format";
 import type { FieldRecord } from "../lib/types";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -72,6 +85,15 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
 
   const isOwnRecord = Boolean(userId && record.submitted_by === userId);
   const isCompleted = Boolean(record.completed_at);
+  // The worker holds the job: the assignee, or the reporter when nobody was
+  // assigned. Nobody else may mark it fixed.
+  const holdsJob =
+    record.type === "hazard" &&
+    record.status === "approved" &&
+    !record.completed_at &&
+    !record.closed_at &&
+    Boolean(userId) &&
+    (record.assigned_to ?? record.submitted_by) === userId;
   // Your own record, not reviewed yet: you may take it back.
   const canDelete = isOwnRecord && record.status === "pending";
 
@@ -260,19 +282,72 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
       {record.type === "hazard" && record.status === "approved" ? (
         <Card padded style={styles.cardSpacing}>
           <SectionTitle>{t("Work")}</SectionTitle>
+
+          {/* Who has the job, how urgent it is and when it is due. */}
+          {record.assigned_to ? (
+            <View style={styles.assignment}>
+              <Text style={styles.body}>
+                {t("Assigned to {name}", {
+                  name: record.assignee?.full_name ?? t("a field worker"),
+                })}
+              </Text>
+              <View style={styles.assignmentPills}>
+                {record.priority ? (
+                  <Pill
+                    label={t(PRIORITY_LABELS[record.priority])}
+                    color={PRIORITY_COLORS[record.priority].fg}
+                    background={PRIORITY_COLORS[record.priority].bg}
+                  />
+                ) : null}
+                {record.due_on ? (
+                  <Pill
+                    label={
+                      isOverdue(record)
+                        ? t("{count}d overdue", {
+                            count: Math.abs(daysUntilDue(record.due_on) ?? 0),
+                          })
+                        : t("Due {date}", { date: formatDueDate(record.due_on) })
+                    }
+                    color={isOverdue(record) ? colors.rejectedInk : colors.muted}
+                    background={isOverdue(record) ? colors.rejectedSoft : colors.panel}
+                  />
+                ) : null}
+              </View>
+            </View>
+          ) : null}
+
+          {record.reopen_reason && !record.completed_at ? (
+            <Text style={styles.feedback}>
+              {t("Sent back: {reason}", { reason: record.reopen_reason })}
+            </Text>
+          ) : null}
+
           {isCompleted ? (
             <View style={styles.reviewText}>
               <Text style={styles.body}>
-                {t("Completed by {name} on {date}.", {
-                  name:
-                    record.completer?.full_name ??
-                    record.submitter?.full_name ??
-                    t("the field worker"),
-                  date: formatDateTime(record.completed_at),
-                })}
+                {record.closed_at
+                  ? t("Closed by {name} on {date}.", {
+                      name: record.closer?.full_name ?? t("a supervisor"),
+                      date: formatDateTime(record.closed_at),
+                    })
+                  : t("Fixed by {name} on {date}.", {
+                      name:
+                        record.completer?.full_name ??
+                        record.submitter?.full_name ??
+                        t("a field worker"),
+                      date: formatDateTime(record.completed_at),
+                    })}
               </Text>
+              {record.closed_at ? null : (
+                <Text style={styles.muted}>
+                  {t("Waiting for a supervisor to verify the fix.")}
+                </Text>
+              )}
               {record.completion_note ? (
                 <Text style={styles.feedback}>{record.completion_note}</Text>
+              ) : null}
+              {record.close_note ? (
+                <Text style={styles.feedback}>{record.close_note}</Text>
               ) : null}
               {completionPhotos.length > 0 ? (
                 <View style={{ marginTop: spacing.md }}>
@@ -288,11 +363,11 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
           ) : (
             <>
               <Text style={styles.muted}>
-                {isOwnRecord
+                {holdsJob
                   ? t("The report is approved. Do the work, then mark the job as done.")
                   : t("Waiting for the worker to finish the job.")}
               </Text>
-              {isOwnRecord ? (
+              {holdsJob ? (
                 <Button
                   title={t("Finish job")}
                   onPress={() => navigation.navigate("CompleteJob", { id: record.id })}
@@ -359,4 +434,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   reviewText: { gap: 6 },
+  assignment: { gap: 6, marginBottom: spacing.sm },
+  assignmentPills: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
 });

@@ -149,6 +149,7 @@ export function RecordsFilters({ zones }: { zones: Zone[] }) {
   ];
   const completionOptions = [
     { value: "open", label: t("Incomplete") },
+    { value: "verify", label: t("Awaiting verification") },
     { value: "done", label: t("Completed") },
   ];
   const severityOptions = [

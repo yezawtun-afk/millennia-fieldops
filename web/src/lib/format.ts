@@ -3,6 +3,7 @@ import type {
   HazardSeverity,
   RecordStatus,
   RecordType,
+  RemediationPriority,
   UserRole,
 } from "./types";
 
@@ -58,6 +59,26 @@ export const SEVERITY_STYLES: Record<HazardSeverity, string> = {
   low: "bg-sev-low/10 text-sev-low",
   medium: "bg-sev-medium/10 text-sev-medium",
   critical: "bg-sev-critical/10 text-sev-critical",
+};
+
+// Remediation is a work-order priority, not a hazard severity: the supervisor
+// can raise it ("this culvert floods the path") or lower it.
+export const PRIORITY_LABELS: Record<RemediationPriority, string> = {
+  low: "Low priority",
+  medium: "Medium priority",
+  high: "High priority",
+};
+
+export const PRIORITY_STYLES: Record<RemediationPriority, string> = {
+  low: "bg-panel text-muted",
+  medium: "bg-warning-soft text-warning-ink",
+  high: "bg-negative-soft text-negative-ink",
+};
+
+export const PRIORITY_ORDER: Record<RemediationPriority, number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
 };
 
 export const TYPE_CHART_COLORS: Record<RecordType, string> = {
@@ -144,4 +165,62 @@ export function recordSubtitle(record: {
   const value = record.reading_value == null ? "" : ` ${record.reading_value}`;
   const unit = record.reading_unit ? ` ${record.reading_unit}` : "";
   return `${record.reading_type || "Soil & water"}${value}${unit}`.trim();
+}
+
+// ---------------------------------------------------------------------------
+// The repair loop
+//
+// A hazard is reported, approved, assigned, fixed, verified and closed. These
+// helpers name each stage once so the record page, the list and the dashboard
+// cannot disagree about what "waiting" means.
+// ---------------------------------------------------------------------------
+
+export type WorkStage = "unassigned" | "assigned" | "verify" | "closed" | "none";
+
+export function workStage(record: {
+  type: RecordType;
+  status: RecordStatus;
+  assigned_to?: string | null;
+  completed_at?: string | null;
+  closed_at?: string | null;
+}): WorkStage {
+  if (record.type !== "hazard" || record.status !== "approved") return "none";
+  if (record.closed_at) return "closed";
+  if (record.completed_at) return "verify";
+  if (record.assigned_to) return "assigned";
+  return "unassigned";
+}
+
+// `due_on` is a calendar date, not a timestamp. Reading it as local noon keeps
+// the day the same in every timezone, which a bare `new Date("2026-10-30")`
+// does not (it is parsed as UTC midnight and can show as the 29th).
+function parseDueOn(value: string): Date {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day, 12, 0, 0, 0);
+}
+
+export function formatDueDate(value: string | null | undefined): string {
+  if (!value) return "-";
+  const date = parseDueOn(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
+// Days until the due date: negative means overdue, 0 means today.
+export function daysUntilDue(value: string | null | undefined, now = Date.now()): number | null {
+  if (!value) return null;
+  const due = parseDueOn(value);
+  if (Number.isNaN(due.getTime())) return null;
+  const today = new Date(now);
+  today.setHours(12, 0, 0, 0);
+  return Math.round((due.getTime() - today.getTime()) / 86_400_000);
+}
+
+export function isOverdue(
+  record: { due_on?: string | null; closed_at?: string | null },
+  now = Date.now()
+): boolean {
+  if (!record.due_on || record.closed_at) return false;
+  const days = daysUntilDue(record.due_on, now);
+  return days !== null && days < 0;
 }

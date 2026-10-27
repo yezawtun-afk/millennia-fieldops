@@ -407,31 +407,33 @@ export const zh: Record<string, string> = {
   "Finish job": "完成工作",
   Completed: "已完成",
   "the field worker": "外勤人员",
-  "Completed by {name} on {date}.": "由 {name} 于 {date} 完成。",
+  "a field worker": "外勤人员",
+  "a supervisor": "主管",
+  "Fixed by {name} on {date}.": "{name} 已于 {date} 完成修复。",
+  "Closed by {name} on {date}.": "{name} 已于 {date} 关闭。",
   "The report is approved. Do the work, then mark the job as done.":
     "报告已获批准。完成工作后，请标记为已完成。",
   "Waiting for the worker to finish the job.": "等待外勤人员完成工作。",
   "What did you do?": "你做了什么？",
   "Add a short note about the work (optional).": "简要说明工作情况（可选）。",
   "After photos": "完成后照片",
-  "Up to 3 after photos. They are shrunk on the phone before upload.":
-    "最多 3 张完成后照片，上传前会在手机上压缩。",
+  "At least one photo of the finished work, up to 3. They are shrunk on the phone before upload.":
+    "至少一张完工照片，最多 3 张。上传前会在手机上压缩。",
   "You need a connection to mark a job done.": "标记工作完成需要网络连接。",
-  "Mark this job as done?": "将此工作标记为已完成？",
-  "The record will show as completed. This cannot be undone.":
-    "记录将显示为已完成，此操作无法撤销。",
-  "Mark as done": "标记完成",
-  "Mark job as done": "标记工作完成",
+  "Mark this job as fixed?": "将此工作标记为已修复？",
+  "Your supervisor will check your photo, then close the job.":
+    "主管会查看你的照片，然后关闭任务。",
+  "Mark as fixed": "标记为已修复",
   "Could not upload the photos. Try again.": "无法上传照片，请重试。",
   "Could not mark the job as done. Try again.": "无法标记工作完成，请重试。",
   "This job is already complete.": "此工作已完成。",
-  "Only the worker who submitted this report can finish the job.":
-    "只有提交此报告的外勤人员才能完成工作。",
+  "Only the worker assigned to this job can finish it.":
+    "只有被指派的现场人员才能完成此任务。",
   "Only hazard reports have a job to finish.": "只有隐患报告需要完成后续工作。",
   "The report must be approved before the job can be finished.":
     "报告必须获批后才能完成工作。",
-  "The record stays approved and also shows as completed.":
-    "记录仍保持已批准状态，并同时显示为已完成。",
+  "The job stays open until a supervisor verifies your photo.":
+    "主管核实你的照片后，任务才会关闭。",
   "Capture a GPS location before submitting.": "提交前请先获取 GPS 位置。",
   "GPS accuracy is unknown. Capture the location again before submitting.":
     "GPS 精度未知。提交前请重新获取位置。",
@@ -518,4 +520,31 @@ export const zh: Record<string, string> = {
   "AI could not analyze this photo. You can still save the record manually.":
     "AI 无法分析此照片。您仍可手动保存记录。",
   "The AI result could not be read. Try again.": "无法读取 AI 结果。请重试。",
+
+  // The repair loop (13_remediation.sql): assign, fix, verify, close.
+  "Assigned tasks": "指派的任务",
+  "Assigned to {name}": "已指派给 {name}",
+  "Waiting for a supervisor to verify the fix.": "等待主管核实修复。",
+  "Sent back: {reason}": "已退回：{reason}",
+  "This job is already closed.": "此任务已关闭。",
+  "This job is already finished. Your supervisor will verify it.":
+    "此任务已完成，主管将会核实。",
+  "No photo was attached to the report.": "报告没有附上照片。",
+  Before: "修复前",
+  "Low priority": "低优先级",
+  "Medium priority": "中优先级",
+  "High priority": "高优先级",
+  "Due today": "今天到期",
+  "Due tomorrow": "明天到期",
+  "Due {date}": "{date} 到期",
+  "{count}d overdue": "逾期 {count} 天",
+  Assigned: "已指派",
+  Verified: "已核实",
+  "Sent back": "已退回",
+  'You were assigned "{title}". Open To do to finish it.':
+    '你被指派了“{title}”。打开待办完成任务。',
+  'Your fix for "{title}" was verified. The job is closed.':
+    '你对“{title}”的修复已核实，任务已关闭。',
+  'Your fix for "{title}" was sent back: {reason}':
+    '你对“{title}”的修复已被退回：{reason}',
 };

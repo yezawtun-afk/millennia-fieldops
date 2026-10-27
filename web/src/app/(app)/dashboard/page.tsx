@@ -2,8 +2,10 @@ import Link from "next/link";
 import { ArrowRight, TriangleAlert } from "lucide-react";
 import {
   countRecords,
+  countRemediation,
   getPendingQueue,
   getUrgentQueue,
+  getVerificationQueue,
   getZones,
   queryRecords,
 } from "@/lib/data";
@@ -23,6 +25,7 @@ import { MapView } from "@/components/MapView";
 import { ReviewDialog } from "@/components/ReviewDialog";
 import { RecordRow } from "@/components/RecordRow";
 import { HealthBreakdown } from "@/components/overview/HealthBreakdown";
+import { RemediationQueue, type RepairRow } from "@/components/overview/RemediationQueue";
 import { WeekBars } from "@/components/overview/WeekBars";
 import { ZoneBoard, type ZoneRow } from "@/components/overview/ZoneBoard";
 import {
@@ -85,10 +88,11 @@ function ageLabel(t: ServerTranslate, iso: string): string {
 }
 
 // An open issue is anything a reviewer still has to act on: a record waiting for
-// a decision, or an approved hazard job that has not been finished in the field.
+// a decision, or an approved hazard job that has not been closed. A fixed but
+// unverified job is still open: the score does not move until it is closed.
 function isOpenIssue(record: FieldRecord): boolean {
   if (record.status === "pending") return true;
-  return record.type === "hazard" && record.status === "approved" && !record.completed_at;
+  return record.type === "hazard" && record.status === "approved" && !record.closed_at;
 }
 
 const BAND_BADGE: Record<string, "neutral" | "warning" | "negative" | "positive"> = {
@@ -110,19 +114,33 @@ function deltaLabel(t: ServerTranslate, current: number, previous: number): stri
 }
 
 export default async function DashboardPage() {
-  const [t, locale, total, pending, urgentTotal, zones, records, queue, urgent, profile] =
-    await Promise.all([
-      getT(),
-      getLocale(),
-      countRecords(),
-      countRecords({ status: "pending" }),
-      countRecords({ status: "pending", severity: "critical" }),
-      getZones(),
-      queryRecords(),
-      getPendingQueue(3),
-      getUrgentQueue(3),
-      getProfile(),
-    ]);
+  const [
+    t,
+    locale,
+    total,
+    pending,
+    urgentTotal,
+    zones,
+    records,
+    queue,
+    urgent,
+    profile,
+    repairs,
+    verification,
+  ] = await Promise.all([
+    getT(),
+    getLocale(),
+    countRecords(),
+    countRecords({ status: "pending" }),
+    countRecords({ status: "pending", severity: "critical" }),
+    getZones(),
+    queryRecords(),
+    getPendingQueue(3),
+    getUrgentQueue(3),
+    getProfile(),
+    countRemediation(),
+    getVerificationQueue(3),
+  ]);
 
   const isReviewer = profile?.role === "supervisor" || profile?.role === "admin";
   const oldestPending = queue[0]?.created_at ? elapsedLabel(t, queue[0].created_at) : null;
@@ -327,6 +345,15 @@ export default async function DashboardPage() {
 
   const lastRecord = records[0]?.created_at ?? null;
 
+  // What is fixed and waiting for a decision. The row says who did the work and
+  // how long ago, so an ageing fix is visible without opening the record.
+  const repairRows: RepairRow[] = verification.map((record) => ({
+    id: record.id,
+    title: record.title,
+    worker: record.completer?.full_name ?? null,
+    finishedLabel: record.completed_at ? agoLabel(t, record.completed_at) : "",
+  }));
+
   return (
     <div>
       <PageHeader
@@ -485,6 +512,34 @@ export default async function DashboardPage() {
           )}
         </section>
       </div>
+
+      {isReviewer ? (
+        <div className="mt-4">
+          <SectionCard
+            title={t("Remediation")}
+            hint={t("Work in the field, and fixes waiting for your decision")}
+            bodyClassName="p-0"
+            action={
+              <Link
+                href="/records?completion=verify"
+                className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[12px] font-medium text-accent hover:underline"
+              >
+                {t("Review fixes")}
+                <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.8} />
+              </Link>
+            }
+          >
+            <RemediationQueue
+              toAssign={repairs.unassigned}
+              inProgress={repairs.assigned}
+              awaiting={repairs.awaiting}
+              overdue={repairs.overdue}
+              rows={repairRows}
+              t={t}
+            />
+          </SectionCard>
+        </div>
+      ) : null}
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <section className="flex h-full flex-col rounded-card border border-line bg-sheet">

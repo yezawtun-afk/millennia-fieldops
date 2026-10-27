@@ -29,7 +29,8 @@ param(
         "06_severity_levels.sql",
         "09_delete_own_pending.sql",
         "10_audit_logs.sql",
-        "12_job_completion.sql"
+        "12_job_completion.sql",
+        "13_remediation.sql"
     )
 )
 

@@ -22,13 +22,22 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../i18n";
-import { completeRecord, fetchRecord } from "../lib/api";
+import { completeRecord, fetchRecord, signPhotoUrls } from "../lib/api";
 import { captureFromCamera, deletePhoto, pickFromLibrary } from "../lib/photos";
 import { removeRecordPhotos, uploadRecordPhoto } from "../lib/upload";
 import { useOnlineStatus } from "../lib/network";
 import { Banner, Button, Card, Input, Pill, SectionTitle } from "../components/ui";
 import { colors, radius, spacing, type } from "../theme";
-import { formatDate, SEVERITY_COLORS, SEVERITY_LABELS } from "../lib/format";
+import {
+  PRIORITY_COLORS,
+  PRIORITY_LABELS,
+  SEVERITY_COLORS,
+  SEVERITY_LABELS,
+  daysUntilDue,
+  formatDate,
+  formatDueDate,
+  isOverdue,
+} from "../lib/format";
 import type { FieldRecord } from "../lib/types";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -45,6 +54,7 @@ export function CompleteJobScreen({ route, navigation }: Props) {
   const userId = session?.user.id ?? profile?.id ?? null;
 
   const [record, setRecord] = useState<FieldRecord | null>(null);
+  const [beforePhotos, setBeforePhotos] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
@@ -76,6 +86,12 @@ export function CompleteJobScreen({ route, navigation }: Props) {
       const data = await fetchRecord(id);
       if (!active) return;
       setRecord(data);
+      // The "before" photo is stored as a private path; sign it so the worker
+      // can see what the problem looked like before walking out there.
+      if (data?.photos?.length) {
+        const urls = await signPhotoUrls(data.photos).catch(() => []);
+        if (active) setBeforePhotos(urls);
+      }
       setLoading(false);
     })();
     return () => {
@@ -104,11 +120,11 @@ export function CompleteJobScreen({ route, navigation }: Props) {
 
   function confirmSubmit() {
     Alert.alert(
-      t("Mark this job as done?"),
-      t("The record will show as completed. This cannot be undone."),
+      t("Mark this job as fixed?"),
+      t("Your supervisor will check your photo, then close the job."),
       [
         { text: t("Cancel"), style: "cancel" },
-        { text: t("Mark as done"), onPress: () => void submit() },
+        { text: t("Mark as fixed"), onPress: () => void submit() },
       ]
     );
   }
@@ -117,6 +133,10 @@ export function CompleteJobScreen({ route, navigation }: Props) {
     if (!record || !userId || busy) return;
     if (!online) {
       setError(t("You need a connection to mark a job done."));
+      return;
+    }
+    if (photos.length === 0) {
+      setError(t("Add at least one photo of the finished work."));
       return;
     }
 
@@ -158,7 +178,7 @@ export function CompleteJobScreen({ route, navigation }: Props) {
       await removeRecordPhotos(uploaded);
       setBusy(false);
       setError(
-        /already complete/i.test(result.error)
+        /already (complete|closed)/i.test(result.error)
           ? t("This job is already complete.")
           : t("Could not mark the job as done. Try again.")
       );
@@ -191,32 +211,37 @@ export function CompleteJobScreen({ route, navigation }: Props) {
     );
   }
 
-  const isOwnRecord = Boolean(userId && record.submitted_by === userId);
+  const holder = record.assigned_to ?? record.submitted_by;
+  const isHolder = Boolean(userId && holder === userId);
   const isCompleted = Boolean(record.completed_at);
+  const isClosed = Boolean(record.closed_at);
   const canFinish =
-    isOwnRecord &&
+    isHolder &&
     record.type === "hazard" &&
     record.status === "approved" &&
-    !isCompleted;
+    !isCompleted &&
+    !isClosed;
 
   // The details screen only offers this button for an open job, but a record
   // can change (or a link can be reused), so explain instead of showing a form
   // that the database would refuse.
   if (!canFinish) {
-    const reason = isCompleted
-      ? t("This job is already complete.")
-      : !isOwnRecord
-        ? t("Only the worker who submitted this report can finish the job.")
-        : record.type !== "hazard"
-          ? t("Only hazard reports have a job to finish.")
-          : t("The report must be approved before the job can be finished.");
+    const reason = isClosed
+      ? t("This job is already closed.")
+      : isCompleted
+        ? t("This job is already finished. Your supervisor will verify it.")
+        : !isHolder
+          ? t("Only the worker assigned to this job can finish it.")
+          : record.type !== "hazard"
+            ? t("Only hazard reports have a job to finish.")
+            : t("The report must be approved before the job can be finished.");
 
     return (
       <View style={styles.centered}>
         <Ionicons
-          name={isCompleted ? "checkmark-circle-outline" : "lock-closed-outline"}
+          name={isCompleted || isClosed ? "checkmark-circle-outline" : "lock-closed-outline"}
           size={28}
-          color={isCompleted ? colors.approvedInk : colors.muted}
+          color={isCompleted || isClosed ? colors.approvedInk : colors.muted}
         />
         <Text style={styles.centeredText}>{reason}</Text>
       </View>
@@ -255,6 +280,42 @@ export function CompleteJobScreen({ route, navigation }: Props) {
           {record.reviewed_at ? formatDate(record.reviewed_at) : ""}
         </Text>
 
+        {record.assigned_to ? (
+          <View style={styles.assignment}>
+            <Text style={styles.assignmentLine}>
+              {t("Assigned to {name}", {
+                name: record.assignee?.full_name ?? t("a field worker"),
+              })}
+            </Text>
+            <View style={styles.rowLeft}>
+              {record.priority ? (
+                <Pill
+                  label={t(PRIORITY_LABELS[record.priority])}
+                  color={PRIORITY_COLORS[record.priority].fg}
+                  background={PRIORITY_COLORS[record.priority].bg}
+                />
+              ) : null}
+              {record.due_on ? (
+                <Pill
+                  label={
+                    isOverdue(record)
+                      ? t("{count}d overdue", { count: Math.abs(daysUntilDue(record.due_on) ?? 0) })
+                      : t("Due {date}", { date: formatDueDate(record.due_on) })
+                  }
+                  color={isOverdue(record) ? colors.rejectedInk : colors.muted}
+                  background={isOverdue(record) ? colors.rejectedSoft : colors.panel}
+                />
+              ) : null}
+            </View>
+          </View>
+        ) : null}
+
+        {record.reopen_reason ? (
+          <Text style={styles.feedback}>
+            {t("Sent back: {reason}", { reason: record.reopen_reason })}
+          </Text>
+        ) : null}
+
         {record.supervisor_feedback ? (
           <Text style={styles.feedback}>
             {t("Comment: {comment}", { comment: record.supervisor_feedback })}
@@ -269,6 +330,19 @@ export function CompleteJobScreen({ route, navigation }: Props) {
             {error ? <Banner kind="error">{error}</Banner> : null}
           </View>
         ) : null}
+
+        <Card padded style={styles.cardSpacing}>
+          <SectionTitle>{t("Before")}</SectionTitle>
+          {beforePhotos.length > 0 ? (
+            <View style={styles.photoRow}>
+              {beforePhotos.map((uri) => (
+                <Image key={uri} source={{ uri }} style={styles.photo} />
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.helper}>{t("No photo was attached to the report.")}</Text>
+          )}
+        </Card>
 
         <Card padded style={styles.cardSpacing}>
           <SectionTitle>{t("What did you do?")}</SectionTitle>
@@ -290,7 +364,7 @@ export function CompleteJobScreen({ route, navigation }: Props) {
         <Card padded style={styles.cardSpacing}>
           <SectionTitle>{t("After photos")}</SectionTitle>
           <Text style={styles.helper}>
-            {t("Up to 3 after photos. They are shrunk on the phone before upload.")}
+            {t("At least one photo of the finished work, up to 3. They are shrunk on the phone before upload.")}
           </Text>
 
           {photos.length > 0 ? (
@@ -333,13 +407,13 @@ export function CompleteJobScreen({ route, navigation }: Props) {
 
         <View style={styles.submit}>
           <Button
-            title={t("Mark job as done")}
+            title={t("Mark as fixed")}
             onPress={confirmSubmit}
             loading={busy}
-            disabled={!online || busy}
+            disabled={!online || busy || photos.length === 0}
           />
           <Text style={styles.footerHint}>
-            {t("The record stays approved and also shows as completed.")}
+            {t("The job stays open until a supervisor verifies your photo.")}
           </Text>
         </View>
       </ScrollView>
@@ -372,6 +446,8 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   cardSpacing: { marginTop: spacing.lg },
+  assignment: { marginTop: spacing.md, gap: spacing.sm },
+  assignmentLine: { fontSize: 14, color: colors.ink },
   noteInput: { minHeight: 96 },
   helper: { ...type.caption, lineHeight: 17 },
   photoRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: spacing.md },

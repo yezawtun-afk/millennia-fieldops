@@ -64,6 +64,35 @@ export function translateNotification(
       status: status === "approved" ? t("approved") : t("rejected"),
     });
   }
+
+  // The repair loop. A supervisor assigns work, then either verifies the fix or
+  // sends it back with a reason.
+  const assigned = message.match(
+    /^You were assigned "(.*)"\. Open To do to finish it\.$/s
+  );
+  if (assigned) {
+    return t('You were assigned "{title}". Open To do to finish it.', {
+      title: assigned[1],
+    });
+  }
+
+  const verified = message.match(
+    /^Your fix for "(.*)" was verified\. The job is closed\.$/s
+  );
+  if (verified) {
+    return t('Your fix for "{title}" was verified. The job is closed.', {
+      title: verified[1],
+    });
+  }
+
+  const sentBack = message.match(/^Your fix for "(.*)" was sent back: ([\s\S]*)$/);
+  if (sentBack) {
+    return t('Your fix for "{title}" was sent back: {reason}', {
+      title: sentBack[1],
+      reason: sentBack[2],
+    });
+  }
+
   return message;
 }
 

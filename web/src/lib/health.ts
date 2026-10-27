@@ -41,7 +41,7 @@ export const HEALTH_BAND_LABELS: Record<HealthBand, string> = {
 export interface HealthInputs {
   /** Hazards that still exist (rejected ones are not hazards). */
   hazards: number;
-  /** Of those, hazards rated critical that have not been completed. */
+  /** Of those, hazards rated critical that have not been closed. */
   openCritical: number;
   openMedium: number;
   /** Measured pH or turbidity readings. */
@@ -106,10 +106,10 @@ export function scoreVillage(records: FieldRecord[], now = Date.now()): HealthSc
   // that carry a severity.
   const rated = hazards.filter((record) => record.severity != null);
   const openCritical = rated.filter(
-    (record) => record.severity === "critical" && !record.completed_at
+    (record) => record.severity === "critical" && !record.closed_at
   ).length;
   const openMedium = rated.filter(
-    (record) => record.severity === "medium" && !record.completed_at
+    (record) => record.severity === "medium" && !record.closed_at
   ).length;
 
   const waterTests = live.filter(

@@ -45,15 +45,30 @@ function accentForMessage(msg: string): {
   bg: string;
   fg: string;
   icon: "checkmark-circle" | "close-circle" | "notifications";
+  /** English key for the small pill above the message; translated at render. */
+  label: string;
 } {
   const lower = msg.toLowerCase();
-  if (lower.includes("approved")) {
-    return { bg: colors.approvedSoft ?? "#D1FAE5", fg: colors.approved ?? "#047857", icon: "checkmark-circle" };
+  if (lower.includes("approved") || lower.includes("verified")) {
+    return {
+      bg: colors.approvedSoft ?? "#D1FAE5",
+      fg: colors.approved ?? "#047857",
+      icon: "checkmark-circle",
+      label: lower.includes("verified") ? "Verified" : "Approved",
+    };
   }
-  if (lower.includes("rejected")) {
-    return { bg: colors.rejectedSoft ?? "#FDECEA", fg: colors.rejected ?? "#B91C1C", icon: "close-circle" };
+  if (lower.includes("rejected") || lower.includes("sent back")) {
+    return {
+      bg: colors.rejectedSoft ?? "#FDECEA",
+      fg: colors.rejected ?? "#B91C1C",
+      icon: "close-circle",
+      label: lower.includes("sent back") ? "Sent back" : "Rejected",
+    };
   }
-  return { bg: colors.primarySoft, fg: colors.primary, icon: "notifications" };
+  if (lower.includes("assigned")) {
+    return { bg: colors.primarySoft, fg: colors.primary, icon: "notifications", label: "Assigned" };
+  }
+  return { bg: colors.primarySoft, fg: colors.primary, icon: "notifications", label: "Update" };
 }
 
 export function NotificationsScreen({ navigation }: Props) {
@@ -207,19 +222,13 @@ export function NotificationsScreen({ navigation }: Props) {
             <SectionTitle>{title}</SectionTitle>
             <View style={{ gap: spacing.sm }}>
               {rows.map((item) => {
-                const { bg, fg, icon } = accentForMessage(item.message);
+                const { bg, fg, icon, label } = accentForMessage(item.message);
                 return (
                   <Card key={item.id} padded>
                     <View style={styles.itemHeader}>
                       <View style={[styles.leftBadge, { backgroundColor: bg, borderRadius: radius.full }]}>
                         <Ionicons name={icon} size={14} color={fg} />
-                        <Text style={[styles.statusText, { color: fg }]}>
-                          {icon === "checkmark-circle"
-                            ? t("Approved")
-                            : icon === "close-circle"
-                              ? t("Rejected")
-                              : t("Update")}
-                        </Text>
+                        <Text style={[styles.statusText, { color: fg }]}>{t(label)}</Text>
                       </View>
                       <View style={styles.itemHeadRight}>
                         {!item.read_at ? <View style={styles.dot} /> : null}

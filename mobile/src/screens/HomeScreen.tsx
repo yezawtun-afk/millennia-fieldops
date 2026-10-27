@@ -10,7 +10,7 @@ import { useI18n } from "../i18n";
 import { Banner, Button, Card, ListRow, Pill, SectionTitle, StatCell } from "../components/ui";
 import { SyncBadge } from "../components/SyncBadge";
 import { colors, radius, spacing, type } from "../theme";
-import { ROLE_LABELS, STATUS_LABELS, TYPE_COLORS, formatDate } from "../lib/format";
+import { ROLE_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, STATUS_LABELS, TYPE_COLORS, formatDate } from "../lib/format";
 import type { FieldRecord, RecordType } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
 
@@ -101,6 +101,20 @@ export function HomeScreen({ navigation }: Props) {
   );
 
   const recent = records.slice(0, 5);
+
+  // Jobs a supervisor handed over that are still open. They come first on this
+  // screen: someone else is waiting on this worker, which outranks their own
+  // paperwork.
+  const assignedJobs = profile
+    ? records.filter(
+        (record) =>
+          record.assigned_to === profile.id &&
+          record.type === "hazard" &&
+          record.status === "approved" &&
+          !record.completed_at &&
+          !record.closed_at
+      )
+    : [];
 
   const refresh = useCallback(async () => {
     await refreshSync();
@@ -212,6 +226,37 @@ export function HomeScreen({ navigation }: Props) {
         <StatCell label={t("Rejected")} value={summary.rejected} />
         <StatCell label={t("Drafts")} value={drafts} last />
       </View>
+
+      {assignedJobs.length > 0 ? (
+        <>
+          <SectionTitle>{t("Assigned tasks")}</SectionTitle>
+          <Card>
+            {assignedJobs.map((record, index) => (
+              <ListRow
+                key={record.id}
+                title={record.title}
+                meta={record.zone?.name ?? t("No zone")}
+                last={index === assignedJobs.length - 1}
+                right={
+                  record.priority ? (
+                    <Pill
+                      label={t(PRIORITY_LABELS[record.priority])}
+                      color={PRIORITY_COLORS[record.priority].fg}
+                      background={PRIORITY_COLORS[record.priority].bg}
+                    />
+                  ) : undefined
+                }
+                icon={
+                  <View style={[styles.captureIcon, { backgroundColor: colors.hazardSoft }]}>
+                    <Ionicons name="construct-outline" size={18} color={colors.hazard} />
+                  </View>
+                }
+                onPress={() => navigation.navigate("RecordDetails", { id: record.id })}
+              />
+            ))}
+          </Card>
+        </>
+      ) : null}
 
       {drafts > 0 ? (
         <View style={styles.draftNote}>

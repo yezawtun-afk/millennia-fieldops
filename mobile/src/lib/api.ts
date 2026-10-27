@@ -3,7 +3,7 @@ import { supabase, PHOTO_BUCKET } from "./supabase";
 import type { AppNotification, FieldRecord, Zone } from "./types";
 
 const RECORD_SELECT =
-  "*, zone:zones ( id, name ), submitter:profiles!records_submitted_by_fkey ( id, full_name ), completer:profiles!records_completed_by_fkey ( id, full_name )";
+  "*, zone:zones ( id, name ), submitter:profiles!records_submitted_by_fkey ( id, full_name ), completer:profiles!records_completed_by_fkey ( id, full_name ), assignee:profiles!records_assigned_to_fkey ( id, full_name ), closer:profiles!records_closed_by_fkey ( id, full_name )";
 
 export async function fetchZones(): Promise<Zone[]> {
   const { data, error } = await supabase.from("zones").select("*").order("name");
@@ -11,11 +11,14 @@ export async function fetchZones(): Promise<Zone[]> {
   return (data as Zone[]) ?? [];
 }
 
+// A field worker's own reports plus the jobs a supervisor has assigned to them.
+// The two sets are disjoint in practice (you are rarely assigned your own
+// hazard), but the query does not assume that.
 export async function fetchMyRecords(userId: string): Promise<FieldRecord[]> {
   const { data, error } = await supabase
     .from("records")
     .select(RECORD_SELECT)
-    .eq("submitted_by", userId)
+    .or(`submitted_by.eq.${userId},assigned_to.eq.${userId}`)
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data as unknown as FieldRecord[]) ?? [];

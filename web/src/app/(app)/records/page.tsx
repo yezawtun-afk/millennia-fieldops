@@ -2,8 +2,15 @@ import Link from "next/link";
 import { getProfile } from "@/lib/supabase/server";
 import { getZones, queryRecords } from "@/lib/data";
 import { EmptyState, PageHeader, tdClass, thClass } from "@/components/ui";
-import { CompletedBadge, SeverityBadge, StatusBadge, TypePill } from "@/components/Pills";
-import { formatDate, recordSubtitle } from "@/lib/format";
+import { SeverityBadge, StatusBadge, TypePill, WorkPill } from "@/components/Pills";
+import {
+  daysUntilDue,
+  formatDate,
+  formatDueDate,
+  isOverdue,
+  recordSubtitle,
+  workStage,
+} from "@/lib/format";
 import { RecordsFilters } from "@/components/RecordsFilters";
 import { ExportButtons } from "@/components/ExportButtons";
 import { DeleteRecordButton } from "@/components/DeleteRecordButton";
@@ -94,7 +101,12 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
                 </tr>
               </thead>
               <tbody>
-                {records.map((record) => (
+                {records.map((record) => {
+                  const stage = workStage(record);
+                  const overdue = isOverdue(record);
+                  const days = daysUntilDue(record.due_on);
+
+                  return (
                   <tr
                     key={record.id}
                     className="border-b border-rule transition-colors last:border-b-0 hover:bg-panel"
@@ -112,6 +124,21 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
                           <SeverityBadge severity={record.severity as HazardSeverity | null} />
                         ) : null}
                       </span>
+                      {record.type === "hazard" && (stage === "assigned" || stage === "verify") ? (
+                        <span className="mt-0.5 block truncate text-[11px] leading-4 text-faint">
+                          {t("Assigned to {name}", {
+                            name: record.assignee?.full_name ?? t("a field worker"),
+                          })}
+                          {stage === "assigned" && record.due_on ? (
+                            <span className={overdue ? " text-negative-ink" : ""}>
+                              {" · "}
+                              {overdue
+                                ? t("{count}d overdue", { count: Math.abs(days ?? 0) })
+                                : t("Due {date}", { date: formatDueDate(record.due_on) })}
+                            </span>
+                          ) : null}
+                        </span>
+                      ) : null}
                     </td>
                     <td className={tdClass}>
                       <TypePill type={record.type} />
@@ -123,7 +150,7 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
                     <td className={tdClass}>
                       <div className="flex flex-wrap items-center gap-1.5">
                         <StatusBadge status={record.status} />
-                        {record.completed_at ? <CompletedBadge /> : null}
+                        {record.type === "hazard" ? <WorkPill stage={stage} /> : null}
                       </div>
                     </td>
                     <td className={`${tdClass} hidden whitespace-nowrap text-muted 2xl:table-cell`}>
@@ -138,12 +165,16 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
                           photos={[
                             ...(record.photos ?? []),
                             ...(record.completion_photos ?? []),
+                            ...(record.previous_attempts ?? []).flatMap(
+                              (attempt) => attempt.photos ?? []
+                            ),
                           ]}
                         />
                       </td>
                     ) : null}
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

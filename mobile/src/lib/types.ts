@@ -67,9 +67,37 @@ export interface FieldRecord {
   completion_note?: string | null;
   completion_photos?: string[];
 
+  // The repair loop (supabase/13_remediation.sql). A supervisor assigns the
+  // work, the worker fixes it, then a supervisor verifies and closes it.
+  assigned_to?: string | null;
+  assigned_by?: string | null;
+  assigned_at?: string | null;
+  priority?: RemediationPriority | null;
+  due_on?: string | null;
+  closed_at?: string | null;
+  closed_by?: string | null;
+  close_note?: string | null;
+  reopened_at?: string | null;
+  reopen_reason?: string | null;
+  previous_attempts?: PreviousAttempt[];
+
   zone?: { id: string; name: string } | null;
   submitter?: { id: string; full_name: string } | null;
   completer?: { id: string; full_name: string } | null;
+  assignee?: { id: string; full_name: string } | null;
+  closer?: { id: string; full_name: string } | null;
+}
+
+export type RemediationPriority = "low" | "medium" | "high";
+
+export interface PreviousAttempt {
+  note: string | null;
+  photos: string[];
+  completed_at: string | null;
+  completed_by: string | null;
+  close_note: string | null;
+  closed_at: string | null;
+  reason: string | null;
 }
 
 export interface AppNotification {

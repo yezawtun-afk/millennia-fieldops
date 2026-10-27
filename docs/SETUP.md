@@ -48,18 +48,20 @@ In the Supabase dashboard, open **SQL Editor -> New query**. Run these files fro
     administrators), so it is not part of `setup_all.sql`. Safe to run again if
     you are following an older copy of this guide.
 
-The generated `setup_all.sql` bundles `01`-`06`, `09`, `10` and `12` in one paste;
-the two optional files are kept separate because they change data, and `11` is
+The generated `setup_all.sql` bundles `01`-`06`, `09`, `10`, `12` and `13` in one
+paste; the two optional files are kept separate because they change data, and `11` is
 superseded as described above.
 
 > **Already have a live database?** Re-run `01_schema.sql`, `02_policies.sql`,
-> `04_triggers.sql`, `09_delete_own_pending.sql`, `10_audit_logs.sql` and
-> `12_job_completion.sql`. All six are safe to run again.
+> `04_triggers.sql`, `09_delete_own_pending.sql`, `10_audit_logs.sql`,
+> `12_job_completion.sql` and `13_remediation.sql`. All seven are safe to run again.
 > `01` adds the new `profiles` columns (`phone`, `status`, the approval fields) to an
 > existing table; `02` makes every policy require an **approved and active** account
 > and gives supervisors the zone controls; `04` makes new sign-ups start as
 > **pending** and stores the phone number; `12` adds the job-completion fields and
-> trigger. Existing accounts stay approved, so nobody is locked out.
+> trigger; `13` adds the assignment / verification loop and marks jobs that were
+> already finished as closed, so the health score does not drop. Existing accounts
+> stay approved, so nobody is locked out.
 
 ### Create your first admin
 

@@ -261,21 +261,23 @@ powershell -ExecutionPolicy Bypass -File tools\bundle-db-sql.ps1
 ```
 
 That writes `supabase\setup_all.sql` (every numbered setup file, `01`..`06` plus
-`09_delete_own_pending`, `10_audit_logs` and `12_job_completion`, in the right order).
+`09_delete_own_pending`, `10_audit_logs`, `12_job_completion` and `13_remediation`,
+in the right order).
 Open it in VS Code, select all, copy, then in Supabase go to **SQL Editor -> New query**,
 paste and click **Run**. It takes a few seconds and should say "Success. No rows returned".
 
 > `setup_all.sql` is generated, so it is git-ignored - re-run the script if the numbered
 > files change. Prefer doing it by hand? Run `01_schema.sql`, `02_policies.sql`,
 > `03_storage.sql`, `04_triggers.sql`, `05_seed.sql`, `09_delete_own_pending.sql`,
-> `10_audit_logs.sql` and `12_job_completion.sql` in
+> `10_audit_logs.sql`, `12_job_completion.sql` and `13_remediation.sql` in
 > that order, then the optional `06_severity_levels.sql`. See [SETUP.md](SETUP.md)
 > step 2 for details. `07_demo_data.sql` and `08_backfill_profiles.sql` are separate
 > because they change data, and `11_zone_control.sql` is superseded (its rules are
 > already in `01` and `02`). **On a live database, re-run `01_schema.sql`,
 > `02_policies.sql`, `04_triggers.sql`, `09_delete_own_pending.sql`,
-> `10_audit_logs.sql` and `12_job_completion.sql`** - all six are
-> idempotent and add the phone / approval / job-completion rules without touching data.
+> `10_audit_logs.sql`, `12_job_completion.sql` and `13_remediation.sql`** - all seven are
+> idempotent and add the phone / approval / job-completion / remediation rules without
+> touching data.
 
 Then create your first admin account:
 

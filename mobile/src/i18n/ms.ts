@@ -440,7 +440,10 @@ export const ms: Record<string, string> = {
   "Finish job": "Selesaikan kerja",
   Completed: "Selesai",
   "the field worker": "petugas lapangan",
-  "Completed by {name} on {date}.": "Diselesaikan oleh {name} pada {date}.",
+  "a field worker": "seorang petugas lapangan",
+  "a supervisor": "seorang penyelia",
+  "Fixed by {name} on {date}.": "Dibaiki oleh {name} pada {date}.",
+  "Closed by {name} on {date}.": "Ditutup oleh {name} pada {date}.",
   "The report is approved. Do the work, then mark the job as done.":
     "Laporan telah diluluskan. Lakukan kerja, kemudian tandakan kerja sebagai selesai.",
   "Waiting for the worker to finish the job.":
@@ -449,28 +452,27 @@ export const ms: Record<string, string> = {
   "Add a short note about the work (optional).":
     "Tambah nota ringkas tentang kerja (pilihan).",
   "After photos": "Foto selepas",
-  "Up to 3 after photos. They are shrunk on the phone before upload.":
-    "Sehingga 3 foto selepas. Imej dikecilkan pada telefon sebelum dimuat naik.",
+  "At least one photo of the finished work, up to 3. They are shrunk on the phone before upload.":
+    "Sekurang-kurangnya satu foto kerja yang siap, sehingga 3. Imej dikecilkan pada telefon sebelum dimuat naik.",
   "You need a connection to mark a job done.":
     "Anda memerlukan sambungan untuk menandakan kerja selesai.",
-  "Mark this job as done?": "Tandakan kerja ini sebagai selesai?",
-  "The record will show as completed. This cannot be undone.":
-    "Rekod akan ditunjukkan sebagai selesai. Tindakan ini tidak boleh dibatalkan.",
-  "Mark as done": "Tandakan selesai",
-  "Mark job as done": "Tandakan kerja selesai",
+  "Mark this job as fixed?": "Tandakan kerja ini sebagai dibaiki?",
+  "Your supervisor will check your photo, then close the job.":
+    "Penyelia anda akan menyemak foto, kemudian menutup tugasan.",
+  "Mark as fixed": "Tandakan dibaiki",
   "Could not upload the photos. Try again.":
     "Tidak dapat memuat naik foto. Cuba lagi.",
   "Could not mark the job as done. Try again.":
     "Tidak dapat menandakan kerja sebagai selesai. Cuba lagi.",
   "This job is already complete.": "Kerja ini sudah selesai.",
-  "Only the worker who submitted this report can finish the job.":
-    "Hanya petugas yang menghantar laporan ini boleh menyelesaikan kerja.",
+  "Only the worker assigned to this job can finish it.":
+    "Hanya petugas yang ditugaskan boleh menyelesaikan kerja ini.",
   "Only hazard reports have a job to finish.":
     "Hanya laporan bahaya mempunyai kerja untuk diselesaikan.",
   "The report must be approved before the job can be finished.":
     "Laporan mesti diluluskan sebelum kerja boleh diselesaikan.",
-  "The record stays approved and also shows as completed.":
-    "Rekod kekal diluluskan dan juga ditunjukkan sebagai selesai.",
+  "The job stays open until a supervisor verifies your photo.":
+    "Tugasan kekal terbuka sehingga penyelia mengesahkan foto anda.",
   "Capture a GPS location before submitting.": "Rakam lokasi GPS sebelum menghantar.",
   "GPS accuracy is unknown. Capture the location again before submitting.":
     "Ketepatan GPS tidak diketahui. Rakam lokasi semula sebelum menghantar.",
@@ -565,4 +567,31 @@ export const ms: Record<string, string> = {
   "AI could not analyze this photo. You can still save the record manually.":
     "AI tidak dapat menganalisis foto ini. Anda masih boleh menyimpan rekod secara manual.",
   "The AI result could not be read. Try again.": "Hasil AI tidak dapat dibaca. Cuba lagi.",
+
+  // The repair loop (13_remediation.sql): assign, fix, verify, close.
+  "Assigned tasks": "Tugasan ditugaskan",
+  "Assigned to {name}": "Ditugaskan kepada {name}",
+  "Waiting for a supervisor to verify the fix.": "Menunggu penyelia mengesahkan pembaikan.",
+  "Sent back: {reason}": "Dipulangkan: {reason}",
+  "This job is already closed.": "Tugasan ini sudah ditutup.",
+  "This job is already finished. Your supervisor will verify it.":
+    "Tugasan ini sudah disiapkan. Penyelia anda akan mengesahkannya.",
+  "No photo was attached to the report.": "Tiada foto dilampirkan pada laporan.",
+  Before: "Sebelum",
+  "Low priority": "Keutamaan rendah",
+  "Medium priority": "Keutamaan sederhana",
+  "High priority": "Keutamaan tinggi",
+  "Due today": "Tamat hari ini",
+  "Due tomorrow": "Tamat esok",
+  "Due {date}": "Tamat {date}",
+  "{count}d overdue": "{count} hari lewat",
+  Assigned: "Ditugaskan",
+  Verified: "Disahkan",
+  "Sent back": "Dipulangkan",
+  'You were assigned "{title}". Open To do to finish it.':
+    'Anda ditugaskan "{title}". Buka To do untuk menyelesaikannya.',
+  'Your fix for "{title}" was verified. The job is closed.':
+    'Pembaikan anda untuk "{title}" telah disahkan. Tugasan ditutup.',
+  'Your fix for "{title}" was sent back: {reason}':
+    'Pembaikan anda untuk "{title}" telah dipulangkan: {reason}',
 };

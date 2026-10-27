@@ -8,7 +8,9 @@ const RECORD_SELECT = `
   zone:zones ( id, name ),
   submitter:profiles!records_submitted_by_fkey ( id, full_name ),
   reviewer:profiles!records_reviewed_by_fkey ( id, full_name ),
-  completer:profiles!records_completed_by_fkey ( id, full_name )
+  completer:profiles!records_completed_by_fkey ( id, full_name ),
+  assignee:profiles!records_assigned_to_fkey ( id, full_name ),
+  closer:profiles!records_closed_by_fkey ( id, full_name )
 `;
 
 export interface RecordFilters {
@@ -17,11 +19,21 @@ export interface RecordFilters {
   status?: string;
   severity?: string;
   zoneId?: string;
-  /** "open" = approved hazard still to do, "done" = finished hazard job. */
+  /**
+   * Work-order state. "open" = still to fix, "verify" = fixed but not yet
+   * verified, "done" = verified and closed. Each one is a stage of the same
+   * approved hazard, so it replaces the type and status filters.
+   */
   completion?: string;
   /** ISO timestamps for the first and last moment of the chosen local days. */
   dateFrom?: string;
   dateTo?: string;
+}
+
+// The three stages of the repair loop, in one place so the list, the counts and
+// the export cannot drift apart. Rejected hazards never enter the loop.
+function isWorkStage(completion: string | undefined): completion is "open" | "verify" | "done" {
+  return completion === "open" || completion === "verify" || completion === "done";
 }
 
 // PostgREST reads the inside of an `or=` filter as syntax, so commas,
@@ -36,14 +48,17 @@ export async function queryRecords(filters: RecordFilters = {}): Promise<FieldRe
   const supabase = await createClient();
   let query = supabase.from("records").select(RECORD_SELECT).order("created_at", { ascending: false });
 
-  if (filters.completion === "open" || filters.completion === "done") {
-    // Completion is a property of an approved hazard job, so it replaces the
-    // type and status filters instead of combining with them.
+  if (isWorkStage(filters.completion)) {
+    // A work stage belongs to an approved hazard, so it replaces the type and
+    // status filters instead of combining with them.
     query = query.eq("type", "hazard").eq("status", "approved");
-    query =
-      filters.completion === "open"
-        ? query.is("completed_at", null)
-        : query.not("completed_at", "is", null);
+    if (filters.completion === "open") {
+      query = query.is("completed_at", null).is("closed_at", null);
+    } else if (filters.completion === "verify") {
+      query = query.not("completed_at", "is", null).is("closed_at", null);
+    } else {
+      query = query.not("closed_at", "is", null);
+    }
   } else {
     if (filters.type) query = query.eq("type", filters.type);
     if (filters.status) query = query.eq("status", filters.status);
@@ -75,12 +90,15 @@ export async function countRecords(filters: RecordFilters = {}): Promise<number>
   const supabase = await createClient();
   let query = supabase.from("records").select("id", { count: "exact", head: true });
 
-  if (filters.completion === "open" || filters.completion === "done") {
+  if (isWorkStage(filters.completion)) {
     query = query.eq("type", "hazard").eq("status", "approved");
-    query =
-      filters.completion === "open"
-        ? query.is("completed_at", null)
-        : query.not("completed_at", "is", null);
+    if (filters.completion === "open") {
+      query = query.is("completed_at", null).is("closed_at", null);
+    } else if (filters.completion === "verify") {
+      query = query.not("completed_at", "is", null).is("closed_at", null);
+    } else {
+      query = query.not("closed_at", "is", null);
+    }
   } else {
     if (filters.type) query = query.eq("type", filters.type);
     if (filters.status) query = query.eq("status", filters.status);
@@ -144,6 +162,99 @@ export async function getUsers(): Promise<Profile[]> {
   const { data, error } = await supabase.from("profiles").select("*").order("created_at");
   if (error) throw new Error(error.message);
   return (data as Profile[]) ?? [];
+}
+
+// Names for a small set of ids, used to label the people who made repair
+// attempts that were sent back. A missing id (a deleted account) is simply
+// absent from the map; the caller falls back to a generic label.
+export async function getProfileNames(ids: string[]): Promise<Record<string, string>> {
+  const unique = Array.from(new Set(ids.filter(Boolean)));
+  if (unique.length === 0) return {};
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .in("id", unique);
+  if (error) throw new Error(error.message);
+
+  const names: Record<string, string> = {};
+  for (const row of (data as Pick<Profile, "id" | "full_name">[]) ?? []) {
+    names[row.id] = row.full_name;
+  }
+  return names;
+}
+
+// Only an active, approved field worker can be handed remediation work: the
+// database function enforces the same rule, so the picker and the rule agree.
+export async function getFieldWorkers(): Promise<Profile[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("role", "field_worker")
+    .eq("is_active", true)
+    .eq("status", "approved")
+    .order("full_name");
+  if (error) throw new Error(error.message);
+  return (data as Profile[]) ?? [];
+}
+
+// The supervisor's repair queue: fixed jobs waiting for a decision, oldest
+// finish first, so nothing sits unverified while newer work jumps ahead.
+export async function getVerificationQueue(limit = 4): Promise<FieldRecord[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("records")
+    .select(RECORD_SELECT)
+    .eq("type", "hazard")
+    .eq("status", "approved")
+    .not("completed_at", "is", null)
+    .is("closed_at", null)
+    .order("completed_at", { ascending: true })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data as unknown as FieldRecord[]) ?? [];
+}
+
+export interface RemediationCounts {
+  /** Open approved hazards with nobody assigned. */
+  unassigned: number;
+  /** Assigned, not yet fixed. */
+  assigned: number;
+  /** Fixed, waiting for a supervisor to verify. */
+  awaiting: number;
+  /** Past the due date and not closed. */
+  overdue: number;
+}
+
+// Four small head-counts for the dashboard block. They are separate queries so
+// the numbers stay exact beyond the 1000-row read cap.
+export async function countRemediation(): Promise<RemediationCounts> {
+  const supabase = await createClient();
+  const openHazard = () =>
+    supabase
+      .from("records")
+      .select("id", { count: "exact", head: true })
+      .eq("type", "hazard")
+      .eq("status", "approved")
+      .is("closed_at", null);
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [unassigned, assigned, awaiting, overdue] = await Promise.all([
+    openHazard().is("assigned_to", null).is("completed_at", null),
+    openHazard().not("assigned_to", "is", null).is("completed_at", null),
+    openHazard().not("completed_at", "is", null),
+    openHazard().lt("due_on", today),
+  ]);
+
+  return {
+    unassigned: unassigned.count ?? 0,
+    assigned: assigned.count ?? 0,
+    awaiting: awaiting.count ?? 0,
+    overdue: overdue.count ?? 0,
+  };
 }
 
 // The bell in the top bar. A field worker sees the decisions made on their own

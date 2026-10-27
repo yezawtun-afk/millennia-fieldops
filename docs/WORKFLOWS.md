@@ -25,42 +25,69 @@ Notes:
   needs the server, so it is disabled offline with a banner telling the worker to save a
   draft instead. Queued records upload automatically when the connection returns.
 
-## Job completion (approved hazards)
+## The repair loop (approved hazards)
 
-An approval is a review decision; finishing the work is a separate event. Only
-hazard records have a job: a flora or soil/water record is an observation and is
-finished as soon as it is reviewed.
+An approval is a review decision; fixing the hazard is a separate job with its own
+lifecycle. Only hazard records have a job: a flora or soil/water record is an
+observation and is finished as soon as it is reviewed.
 
 ```mermaid
-flowchart LR
-    A[Approved hazard] --> B{Completed?}
-    B -- no --> C[To do in My records\nFinish job button]
-    C --> D[Worker adds a note\nand up to 3 after photos]
-    D --> E[complete_record&#40;&#41;]
-    E --> F[Completed\nstatus stays approved]
-    B -- yes --> F
+stateDiagram-v2
+    [*] --> Approved: supervisor approves the hazard
+    Approved --> Assigned: supervisor assigns a worker,\npriority and due date
+    Assigned --> Verify: worker fixes it and adds an after photo
+    Verify --> Closed: supervisor compares before/after,\ncloses the ticket
+    Verify --> Assigned: supervisor sends it back\n(with a reason)
+    Closed --> Assigned: reopened (the fix did not hold)
+    Closed --> [*]
 ```
 
-- `supabase/12_job_completion.sql` adds `completed_at`, `completed_by`,
-  `completion_note` and `completion_photos` to `records`. The review `status`
-  is not changed, so filters, exports, badges and notifications keep working.
-- `complete_record(p_record_id, p_note, p_photos)` is a security-definer
-  function. It refuses anonymous or inactive users, anyone who did not submit
-  the record, non-hazard records, records that are not approved, and records
-  that are already complete. It also limits the list to 3 paths and requires
-  every path to live in the caller's own storage folder.
-- The function accepts only the note and the photo paths, so a worker cannot use
-  it to edit the reviewed content (the `protect_columns` trigger also restores
-  status and review fields).
-- A completion writes one `record.completed` audit entry ("completed the job")
-  and does not fire the review notification.
-- The worker uploads the after photos first, then calls the function. If the
-  call fails, the uploaded files are removed so no orphan is left. Completion
-  needs a connection; there is no offline queue for it yet.
-- The mobile app lists open jobs under **To do** in My records and keeps them out
-  of **Submitted** so the same record is not shown twice. The record's own
-  screen shows the **Work** card, a **Completed** pill, the note and the after
-  photos. Supervisors see the same card read-only on the web dashboard.
+Three moments are kept apart, and only the last one moves the Village Health Score:
+
+| Column | Written by | Meaning |
+| --- | --- | --- |
+| `assigned_at` | `assign_remediation()` | a supervisor handed the work to someone |
+| `completed_at` | `complete_record()` | the worker says it is fixed |
+| `closed_at` | `verify_close()` | a supervisor checked the evidence and closed it |
+
+- `supabase/13_remediation.sql` adds `assigned_to`, `assigned_by`, `assigned_at`,
+  `priority`, `due_on`, `closed_at`, `closed_by`, `close_note`, `reopened_at`,
+  `reopen_reason` and `previous_attempts` to `records`. The review `status` is
+  never changed by this loop, so filters, exports, badges and review
+  notifications keep working.
+- `assign_remediation(p_record_id, p_assignee, p_priority, p_due_on)` is
+  security-definer. Only a reviewer may call it, only an approved, unclosed
+  hazard can be assigned, and only an active, approved field worker can take it.
+  Priority defaults from severity (critical -> high, medium -> medium, else low);
+  a due date is optional and never blocks the work, it only flags overdue jobs.
+- `complete_record()` now belongs to the **holder** of the job: the assignee, or
+  the submitter when nobody was assigned. It still refuses anonymous or inactive
+  users, non-hazard records, unapproved records and jobs that are already fixed
+  or closed, and it now requires **at least one** after photo (max 3), each in the
+  caller's own storage folder.
+- `verify_close(p_record_id, p_note)` is reviewer-only and requires a finished
+  job. It sets `closed_at`/`closed_by` and is the only action that removes the
+  hazard from the health score.
+- `reopen_remediation(p_record_id, p_reason)` is reviewer-only. It archives the
+  attempt into `previous_attempts` (note, photo paths, who and when, plus the
+  reason) before clearing the completion fields, so the job returns to the same
+  worker with the reason attached and no photo is orphaned in storage. It works
+  on a finished job (send back) and on a closed one (reopen).
+- Audit entries: `record.assigned`, `record.completed`, `record.verified` and
+  `record.reopened`, all written by `audit_records()`.
+- Notifications are plain rows in `notifications` (no push server): one for the
+  assignee, one when a fix is verified, one when it is sent back. The mobile app
+  translates the three fixed English patterns.
+- The web record page shows the **Remediation** card: assignment form, then
+  before/after photos side by side, then Verify & close / Send back. The
+  dashboard has a reviewer-only **Remediation** block with counts for to assign,
+  in progress, awaiting verification and overdue, and the list of fixes waiting.
+- The mobile app lists handed-over work under **Assigned tasks** in My records
+  (and on the home screen), with priority and due date. The finish screen shows
+  the original photo, then the after photos, and the button reads **Mark as
+  fixed** - the job stays open until a supervisor verifies it.
+- Jobs that were already completed before this migration are backfilled as
+  closed, so deploying the loop does not drop the live health score overnight.
 
 
 ## Field worker flow (mobile app)
@@ -135,13 +162,18 @@ sequenceDiagram
 | Create a record | Yes (own) | Yes (own) | Yes (own) |
 | Read all records | Yes | Yes | Yes |
 | Approve / reject a record | No | Yes | Yes |
-| Finish an approved hazard job (note + up to 3 after photos) | Yes (own) | Yes (own) | Yes (own) |
+| Assign remediation work (worker, priority, due date) | No | Yes | Yes |
+| Mark an assigned hazard as fixed (note + 1-3 after photos) | Yes (if assigned, or own) | Yes (if assigned, or own) | Yes (if assigned, or own) |
+| Verify & close a fix, or send it back | No | Yes | Yes |
 | Delete a record | Yes (own, while pending) | No | Yes |
 | Manage zones | No | No | Yes |
 | Manage users / roles / deactivation | No | No | Yes |
 | Export CSV / PDF | No | Yes | Yes |
 
-"Own" completion means the submitter of that exact hazard. Reviewers see other people's Work card read-only on the web; the Finish job button only appears for the person who submitted the record.
+The worker who holds a job is the assignee; when nobody was assigned, it stays
+with the submitter so the older one-tap flow keeps working. Everyone else sees
+the same card read-only, and only a reviewer can close the ticket - which is the
+moment the Village Health Score moves.
 
 ## Naming conventions
 
