@@ -1,9 +1,11 @@
-// The side panel: who you are, the one job that is not a tab (the review
-// queue), language, sync, version and log out.
+// The side panel: who you are, today's numbers, the one job that is not a tab
+// (the review queue), drafts, the phone's photo storage, language, sync,
+// version and log out.
 //
 // It deliberately does NOT repeat Home / Map / New / My records /
 // Notifications: those are one tap away in the bottom bar, so a second copy
-// here would only add noise.
+// here would only add noise. For the same reason the sync queue is not a row
+// of its own - the sync card in the footer already owns that number.
 //
 // Built from Modal + Animated, not @react-navigation/drawer, so it needs no
 // native module and can ship over the air to the installed build.
@@ -25,11 +27,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useSync } from "../context/SyncContext";
-import { countPendingReviews } from "../lib/api";
+import { countPendingReviews, fetchSidebarSummary, type SidebarSummary } from "../lib/api";
+import { formatBytes, photoStorageBytes } from "../lib/storage";
 import { appVersion, applyUpdate, checkForUpdate } from "../lib/updates";
 import { LOCALES, useI18n } from "../i18n";
 import { ROLE_LABELS } from "../lib/format";
 import { colors, radius, shadow, spacing, type } from "../theme";
+import { StatCell } from "./ui";
 import { SyncBadge } from "./SyncBadge";
 
 export function Sidebar({
@@ -38,12 +42,14 @@ export function Sidebar({
   onOpenLanguage,
   onOpenReview,
   onOpenProfile,
+  onOpenDrafts,
 }: {
   open: boolean;
   onClose: () => void;
   onOpenLanguage: () => void;
   onOpenReview: () => void;
   onOpenProfile: () => void;
+  onOpenDrafts: () => void;
 }) {
   const { profile, signOut } = useAuth();
   const { locale, t } = useI18n();
@@ -52,6 +58,7 @@ export function Sidebar({
     syncing,
     queued,
     failed,
+    drafts,
     lastSyncedAt,
     status,
     remaining,
@@ -65,6 +72,8 @@ export function Sidebar({
   const progress = useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = useState(open);
   const [reviewCount, setReviewCount] = useState(0);
+  const [summary, setSummary] = useState<SidebarSummary | null>(null);
+  const [photoBytes, setPhotoBytes] = useState<number | null>(null);
   const [checking, setChecking] = useState(false);
 
   const isReviewer = profile?.role === "supervisor" || profile?.role === "admin";
@@ -72,6 +81,14 @@ export function Sidebar({
   const role = profile ? t(ROLE_LABELS[profile.role]) : "";
   const contact = profile?.phone?.trim() || profile?.email || "";
   const localeShort = LOCALES.find((item) => item.value === locale)?.short ?? "EN";
+
+  // The counts read as a dash until they are known (first open, or offline).
+  // Showing 0 would be a claim the panel cannot back up. The spoken label says
+  // why the dash is there, which a lone "—" cannot.
+  const unknownLabel = t("Not available offline");
+  const capturedToday = summary ? String(summary.capturedToday) : "—";
+  const waitingReview = summary ? String(summary.waitingReview) : "—";
+  const assignedJobs = summary ? String(summary.assigned) : "—";
 
   useEffect(() => {
     if (open) {
@@ -107,8 +124,10 @@ export function Sidebar({
     });
   }, [open, reduced]);
 
-  // The review count is the only number the panel owns; ask for it when the
-  // panel opens rather than keeping another watcher running.
+  // The panel's numbers are asked for when it opens rather than kept in a
+  // watcher: nothing changes them while the panel is up, and opening it twice
+  // gets fresh values both times. A failed read (usually offline) keeps the
+  // last known numbers instead of dropping a real 0 back to a dash.
   useEffect(() => {
     if (!open || !isReviewer) return;
     let active = true;
@@ -121,6 +140,31 @@ export function Sidebar({
       active = false;
     };
   }, [open, isReviewer]);
+
+  useEffect(() => {
+    if (!open || !profile?.id) return;
+    const userId = profile.id;
+    let active = true;
+
+    fetchSidebarSummary(userId)
+      .then((value) => {
+        if (active) setSummary(value);
+      })
+      .catch(() => undefined);
+
+    // Reading the folder waits for the first paint, so the panel never stutters
+    // while it slides in.
+    Promise.resolve()
+      .then(photoStorageBytes)
+      .then((bytes) => {
+        if (active) setPhotoBytes(bytes);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
+  }, [open, profile?.id]);
 
   async function checkUpdate() {
     if (checking) return;
@@ -244,6 +288,58 @@ export function Sidebar({
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
+            <View style={styles.stats}>
+              <Text style={styles.statsTitle}>{t("Today's activity")}</Text>
+              <View style={styles.statsRow}>
+                <View
+                  style={styles.statWrap}
+                  accessible
+                  accessibilityRole="text"
+                  accessibilityLabel={`${t("Captured today")}: ${
+                    summary ? summary.capturedToday : unknownLabel
+                  }`}
+                >
+                  <StatCell
+                    label={t("Captured today")}
+                    value={capturedToday}
+                    labelHeight={28}
+                  />
+                </View>
+                <View
+                  style={styles.statWrap}
+                  accessible
+                  accessibilityRole="text"
+                  accessibilityLabel={`${t("Waiting review")}: ${
+                    summary ? summary.waitingReview : unknownLabel
+                  }`}
+                >
+                  <StatCell
+                    label={t("Waiting review")}
+                    value={waitingReview}
+                    labelHeight={28}
+                    tone={
+                      summary && summary.waitingReview > 0 ? colors.pendingInk : colors.ink
+                    }
+                  />
+                </View>
+                <View
+                  style={styles.statWrap}
+                  accessible
+                  accessibilityRole="text"
+                  accessibilityLabel={`${t("Assigned")}: ${
+                    summary ? summary.assigned : unknownLabel
+                  }`}
+                >
+                  <StatCell
+                    label={t("Assigned")}
+                    value={assignedJobs}
+                    labelHeight={28}
+                    last
+                  />
+                </View>
+              </View>
+            </View>
+
             <View style={styles.card}>
               {isReviewer ? (
                 <MenuRow
@@ -259,6 +355,28 @@ export function Sidebar({
                   onPress={onOpenReview}
                 />
               ) : null}
+              <MenuRow
+                icon="document-text-outline"
+                label={t("My offline drafts")}
+                value={
+                  drafts > 0 ? (
+                    <View style={styles.countPill}>
+                      <Text style={styles.countText}>{drafts}</Text>
+                    </View>
+                  ) : undefined
+                }
+                onPress={onOpenDrafts}
+              />
+              <MenuRow
+                icon="folder-open-outline"
+                label={t("Photos on this phone")}
+                value={
+                  <Text style={styles.rowMuted}>
+                    {photoBytes === null ? "—" : formatBytes(photoBytes)}
+                  </Text>
+                }
+                chevron={false}
+              />
               <MenuRow
                 icon="language-outline"
                 label={t("Language")}
@@ -316,19 +434,42 @@ export function Sidebar({
   );
 }
 
+// A row in the panel. Without `onPress` it is information, not a control
+// (the photo size), so it gets no chevron and nothing to press.
 function MenuRow({
   icon,
   label,
   value,
   onPress,
   last,
+  chevron = true,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value?: React.ReactNode;
-  onPress: () => void;
+  onPress?: () => void;
   last?: boolean;
+  chevron?: boolean;
 }) {
+  const content = (
+    <>
+      <View style={styles.rowIcon}>
+        <Ionicons name={icon} size={17} color={colors.primary} />
+      </View>
+      <Text style={styles.rowLabel}>{label}</Text>
+      {value ?? null}
+      {chevron ? <Ionicons name="chevron-forward" size={16} color={colors.faint} /> : null}
+    </>
+  );
+
+  if (!onPress) {
+    return (
+      <View style={[styles.row, !last && styles.rowLine]} accessible accessibilityRole="text">
+        {content}
+      </View>
+    );
+  }
+
   return (
     <Pressable
       onPress={onPress}
@@ -339,12 +480,7 @@ function MenuRow({
         pressed && { backgroundColor: colors.panel },
       ]}
     >
-      <View style={styles.rowIcon}>
-        <Ionicons name={icon} size={17} color={colors.primary} />
-      </View>
-      <Text style={styles.rowLabel}>{label}</Text>
-      {value ?? null}
-      <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+      {content}
     </Pressable>
   );
 }
@@ -432,6 +568,19 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.lg },
 
+  // Today's numbers: the same divided strip as Home, one step smaller.
+  stats: {
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    borderCurve: "continuous",
+    overflow: "hidden",
+    paddingTop: spacing.md,
+    marginBottom: spacing.md,
+  },
+  statsTitle: { ...type.label, fontSize: 12, paddingHorizontal: spacing.md },
+  statsRow: { flexDirection: "row", marginTop: 2 },
+  statWrap: { flex: 1 },
+
   card: {
     backgroundColor: colors.card,
     borderRadius: radius.md,
@@ -456,6 +605,8 @@ const styles = StyleSheet.create({
   },
   rowLabel: { flex: 1, fontSize: 15, fontWeight: "500", color: colors.ink },
   rowValue: { fontSize: 13, fontWeight: "600", color: colors.primary },
+  // A passive readout (the photo size): same weight as a value, no accent.
+  rowMuted: { fontSize: 13, color: colors.muted, fontVariant: ["tabular-nums"] },
   countPill: {
     minWidth: 22,
     height: 22,

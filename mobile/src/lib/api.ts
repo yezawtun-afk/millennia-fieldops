@@ -1,6 +1,12 @@
 // Read helpers that talk to Supabase.
 import { supabase, PHOTO_BUCKET } from "./supabase";
-import type { AppNotification, FieldRecord, Zone } from "./types";
+import type {
+  AppNotification,
+  FieldRecord,
+  RecordStatus,
+  RecordType,
+  Zone,
+} from "./types";
 
 const RECORD_SELECT =
   "*, zone:zones ( id, name ), submitter:profiles!records_submitted_by_fkey ( id, full_name ), completer:profiles!records_completed_by_fkey ( id, full_name ), assignee:profiles!records_assigned_to_fkey ( id, full_name ), closer:profiles!records_closed_by_fkey ( id, full_name )";
@@ -22,6 +28,64 @@ export async function fetchMyRecords(userId: string): Promise<FieldRecord[]> {
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data as unknown as FieldRecord[]) ?? [];
+}
+
+// ---- Side panel counts ----------------------------------------------------
+// Three numbers for the side panel: what I captured today, how much of my work
+// is still waiting for a supervisor, and the hazard jobs assigned to me that
+// are not done. One narrow read with no joins - the panel opens often and must
+// never feel heavy.
+//
+// "Captured today" follows created_at, when the record reached the server, so
+// something captured offline today counts on the day it uploads. Mixing the
+// phone's queue into this number would put two clocks under one label.
+export interface SidebarSummary {
+  capturedToday: number;
+  waitingReview: number;
+  assigned: number;
+}
+
+interface SummaryRow {
+  submitted_by: string | null;
+  assigned_to: string | null;
+  status: RecordStatus;
+  type: RecordType;
+  created_at: string;
+  completed_at: string | null;
+  closed_at: string | null;
+}
+
+export async function fetchSidebarSummary(userId: string): Promise<SidebarSummary> {
+  const { data, error } = await supabase
+    .from("records")
+    .select("submitted_by, assigned_to, status, type, created_at, completed_at, closed_at")
+    .or(`submitted_by.eq.${userId},assigned_to.eq.${userId}`);
+  if (error) throw new Error(error.message);
+
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  return ((data ?? []) as SummaryRow[]).reduce<SidebarSummary>(
+    (acc, row) => {
+      if (row.submitted_by === userId) {
+        if (row.status === "pending") acc.waitingReview += 1;
+        if (new Date(row.created_at) >= startOfDay) acc.capturedToday += 1;
+      }
+      // The same rule the app uses for "Assigned tasks": a job is mine to fix
+      // until it is fixed or closed. Re-assigning it moves it to someone else.
+      if (
+        row.assigned_to === userId &&
+        row.type === "hazard" &&
+        row.status === "approved" &&
+        !row.completed_at &&
+        !row.closed_at
+      ) {
+        acc.assigned += 1;
+      }
+      return acc;
+    },
+    { capturedToday: 0, waitingReview: 0, assigned: 0 }
+  );
 }
 
 export async function fetchRecord(id: string): Promise<FieldRecord | null> {

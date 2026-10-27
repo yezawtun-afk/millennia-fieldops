@@ -547,4 +547,12 @@ export const zh: Record<string, string> = {
     '你对“{title}”的修复已核实，任务已关闭。',
   'Your fix for "{title}" was sent back: {reason}':
     '你对“{title}”的修复已被退回：{reason}',
+
+  // The side panel: today's numbers, drafts and the phone's photo storage.
+  "Today's activity": "今日活动",
+  "Captured today": "今日记录",
+  "Waiting review": "等待审核",
+  "My offline drafts": "我的离线草稿",
+  "Photos on this phone": "本机照片",
+  "Not available offline": "离线时不可用",
 };

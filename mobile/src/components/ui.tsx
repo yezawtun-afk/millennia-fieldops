@@ -116,15 +116,29 @@ export function StatCell({
   value,
   tone = colors.ink,
   last,
+  labelHeight,
 }: {
   label: string;
   value: number | string;
   tone?: string;
   last?: boolean;
+  /**
+   * Reserve this many points for the label (two lines' worth) so the figures in
+   * a strip stay on one line when the labels wrap unevenly, as they do in
+   * Malay. Left unset, the label takes the height it needs.
+   */
+  labelHeight?: number;
 }) {
   return (
     <View style={[styles.statCell, !last && styles.statCellLine]}>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text
+        style={[
+          styles.statLabel,
+          labelHeight ? { minHeight: labelHeight, lineHeight: labelHeight / 2 } : null,
+        ]}
+      >
+        {label}
+      </Text>
       <Text style={[styles.statValue, { color: tone }]}>{value}</Text>
     </View>
   );

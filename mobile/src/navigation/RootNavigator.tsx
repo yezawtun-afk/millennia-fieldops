@@ -96,6 +96,14 @@ function MainTabs({ navigation }: NativeStackScreenProps<RootStackParamList, "Ta
     navigation.navigate("Profile");
   }
 
+  // Drafts are finished in My records, so the panel sends the worker to that
+  // tab rather than growing a second drafts screen. The nested params are how
+  // the parent stack asks the tab navigator to switch.
+  function openDrafts() {
+    setPanelOpen(false);
+    navigation.navigate("Tabs", { screen: "Records" });
+  }
+
   return (
     <>
       <Tabs.Navigator
@@ -128,6 +136,7 @@ function MainTabs({ navigation }: NativeStackScreenProps<RootStackParamList, "Ta
         onOpenLanguage={openLanguage}
         onOpenReview={openReview}
         onOpenProfile={openProfile}
+        onOpenDrafts={openDrafts}
       />
 
       <LanguageSheet visible={languageOpen} onClose={() => setLanguageOpen(false)} />

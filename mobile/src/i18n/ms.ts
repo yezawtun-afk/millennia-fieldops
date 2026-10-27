@@ -594,4 +594,12 @@ export const ms: Record<string, string> = {
     'Pembaikan anda untuk "{title}" telah disahkan. Tugasan ditutup.',
   'Your fix for "{title}" was sent back: {reason}':
     'Pembaikan anda untuk "{title}" telah dipulangkan: {reason}',
+
+  // The side panel: today's numbers, drafts and the phone's photo storage.
+  "Today's activity": "Aktiviti hari ini",
+  "Captured today": "Direkod hari ini",
+  "Waiting review": "Menunggu semakan",
+  "My offline drafts": "Draf luar talian saya",
+  "Photos on this phone": "Foto pada telefon ini",
+  "Not available offline": "Tidak tersedia di luar talian",
 };
