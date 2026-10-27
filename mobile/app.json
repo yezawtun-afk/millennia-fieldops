@@ -37,7 +37,8 @@
         "android.permission.CAMERA",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.READ_MEDIA_IMAGES"
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "plugins": [
@@ -69,7 +70,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "51abb8a6-6521-42ba-b27e-a421b6f72b92"
+        "projectId": "663bf788-c4e8-42fc-969a-0fadbd96be3f"
       }
     },
     "owner": "yezawtun_afk"
