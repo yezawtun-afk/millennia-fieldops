@@ -10,7 +10,7 @@
 // plain top-level import can crash the whole app at start-up. Loading it here
 // means a missing native module can only turn off the phone notification; the
 // in-app notification list keeps working. See
-// `patches/expo-notifications+57.0.23.patch` for the library-side fix.
+// `patches/expo-notifications+58.1.6.patch` for the library-side fix.
 import { supabase } from "./supabase";
 import type { AppNotification } from "./types";
 
