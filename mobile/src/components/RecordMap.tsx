@@ -35,7 +35,7 @@ export function RecordMap({
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [detail, setDetail] = useState<string | null>(null);
-  const webViewRef = useRef<WebView>(null);
+  const webViewRef = useRef<WebView<object> | null>(null);
   const handledCenterRef = useRef(0);
 
   // A stable HTML string keeps the WebView from reloading on unrelated
@@ -106,7 +106,7 @@ export function RecordMap({
 
   return (
     <View style={styles.fill}>
-      <WebView
+      <WebView<object>
         key={attempt}
         ref={webViewRef}
         originWhitelist={["*"]}

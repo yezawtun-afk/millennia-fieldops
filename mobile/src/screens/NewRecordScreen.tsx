@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Text,
   View,
+  type ScrollViewInstance,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -97,7 +98,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
   const [aiPhotoUri, setAiPhotoUri] = useState<string | null>(null);
   const [aiSheetOpen, setAiSheetOpen] = useState(false);
   const aiRequestRef = useRef(0);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance | null>(null);
 
   // Flora fields
   const [species, setSpecies] = useState("");
