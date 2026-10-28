@@ -474,7 +474,6 @@ function MenuRow({
   return (
     <BouncyCard
       onPress={onPress}
-      accessibilityRole="button"
       accessibilityLabel={label}
       style={({ pressed }) => [
         styles.row,

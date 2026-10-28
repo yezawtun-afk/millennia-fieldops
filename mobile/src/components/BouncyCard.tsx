@@ -6,13 +6,19 @@
 // The base style is intentionally minimal — callers provide their own colors,
 // padding, and borders via the `style` prop (merged last).
 import React from "react";
-import { Pressable, StyleSheet, type ViewStyle } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  type PressableStateCallbackType,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 
 export type BouncyCardProps = {
   children: React.ReactNode;
   onPress?: () => void;
   disabled?: boolean;
-  style?: ViewStyle | ViewStyle[];
+  style?: StyleProp<ViewStyle> | ((state: PressableStateCallbackType) => StyleProp<ViewStyle>);
   testID?: string;
   accessibilityLabel?: string;
 };
@@ -32,15 +38,20 @@ export function BouncyCard({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       testID={testID}
-      style={({ pressed }) => [
-        styles.card,
-        disabled && { opacity: 0.5 },
-        pressed && {
-          transform: [{ scale: 0.97 }],
-          opacity: 0.9,
-        },
-        style,
-      ]}
+      style={({ pressed }) => {
+        const resolvedStyle =
+          typeof style === "function" ? style({ pressed }) : style;
+
+        return [
+          styles.card,
+          disabled && { opacity: 0.5 },
+          pressed && {
+            transform: [{ scale: 0.97 }],
+            opacity: 0.9,
+          },
+          resolvedStyle,
+        ];
+      }}
     >
       {children}
     </Pressable>
