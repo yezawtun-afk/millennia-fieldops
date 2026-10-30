@@ -11,7 +11,6 @@
 // native module and can ship over the air to the installed build.
 import React, { useEffect, useRef, useState } from "react";
 import {
-  AccessibilityInfo,
   Alert,
   Animated,
   Easing,
@@ -32,6 +31,7 @@ import { formatBytes, photoStorageBytes } from "../lib/storage";
 import { appVersion, applyUpdate, checkForUpdate } from "../lib/updates";
 import { LOCALES, useI18n } from "../i18n";
 import { ROLE_LABELS } from "../lib/format";
+import { useReduceMotion } from "../lib/useReduceMotion";
 import { colors, radius, shadow, spacing, type } from "../theme";
 import { StatCell } from "./ui";
 import { SyncBadge } from "./SyncBadge";
@@ -67,7 +67,7 @@ export function Sidebar({
   } = useSync();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const reduced = useReducedMotion();
+  const reduced = useReduceMotion();
 
   const panelWidth = Math.min(320, width * 0.84);
   const progress = useRef(new Animated.Value(0)).current;
@@ -486,31 +486,8 @@ function MenuRow({
   );
 }
 
-// The system's "reduce motion" switch: keep the panel arriving, but without
-// the slide.
-function useReducedMotion() {
-  const [reduced, setReduced] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    AccessibilityInfo.isReduceMotionEnabled()
-      .then((value) => {
-        if (active) setReduced(value);
-      })
-      .catch(() => undefined);
-    const subscription = AccessibilityInfo.addEventListener(
-      "reduceMotionChanged",
-      setReduced
-    );
-    return () => {
-      active = false;
-      subscription.remove();
-    };
-  }, []);
-
-  return reduced;
-}
-
+// The system's "reduce motion" switch is read once, in lib/useReduceMotion, so
+// every animation in the app answers to the same preference.
 const styles = StyleSheet.create({
   host: { flex: 1 },
   backdrop: {

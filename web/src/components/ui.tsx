@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import type { RecordType } from "@/lib/types";
 import { TYPE_DOT_CLASSES } from "@/lib/format";
@@ -104,12 +105,16 @@ export function KpiStrip({ children }: { children: ReactNode }) {
   );
 }
 
+// A headline figure. With an `href` the card is a link to the list behind the
+// number, and only then does it lift on hover: a lift plus a pointer cursor on
+// something that does nothing teaches people to click dead cards.
 export function Kpi({
   label,
   value,
   unit,
   sub,
   badge,
+  href,
 }: {
   label: string;
   value: number | string | null;
@@ -118,11 +123,13 @@ export function Kpi({
   /** One sentence under the figure, naming what it is measured against. */
   sub?: string;
   badge?: ReactNode;
+  /** The filtered list this figure counts, if there is one. */
+  href?: string;
 }) {
   const missing = value === null || value === undefined;
 
-  return (
-    <div className="bg-sheet px-4 py-3.5 sm:px-5 rounded-xl border border-line transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-md hover:border-accent cursor-pointer">
+  const body = (
+    <>
       <div className="flex items-start justify-between gap-2">
         <p className="text-[12px] font-medium leading-4 text-muted">{label}</p>
         {badge}
@@ -134,7 +141,20 @@ export function Kpi({
         {unit && !missing ? <span className="text-[12px] text-faint">{unit}</span> : null}
       </p>
       {sub ? <p className="mt-1.5 text-[11px] leading-snug text-faint">{sub}</p> : null}
-    </div>
+    </>
+  );
+
+  const shell = "block rounded-xl border border-line bg-sheet px-4 py-3.5 sm:px-5";
+
+  if (!href) return <div className={shell}>{body}</div>;
+
+  return (
+    <Link
+      href={href}
+      className={`${shell} transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:border-accent hover:shadow-sm motion-reduce:transition-none motion-reduce:hover:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40`}
+    >
+      {body}
+    </Link>
   );
 }
 

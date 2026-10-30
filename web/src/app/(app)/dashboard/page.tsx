@@ -24,6 +24,8 @@ import { DonutChart } from "@/components/DonutChart";
 import { MapView } from "@/components/MapView";
 import { ReviewDialog } from "@/components/ReviewDialog";
 import { RecordRow } from "@/components/RecordRow";
+import { FreshRow } from "@/components/FreshRow";
+import { FreshRows } from "@/components/FreshRows";
 import { HealthBreakdown } from "@/components/overview/HealthBreakdown";
 import { RemediationQueue, type RepairRow } from "@/components/overview/RemediationQueue";
 import { WeekBars } from "@/components/overview/WeekBars";
@@ -378,11 +380,17 @@ export default async function DashboardPage() {
       />
 
       <KpiStrip>
-        <Kpi label={t("Records")} value={total.toLocaleString("en-GB")} sub={weekDelta} />
+        <Kpi
+          label={t("Records")}
+          value={total.toLocaleString("en-GB")}
+          sub={weekDelta}
+          href="/records"
+        />
         <Kpi
           label={t("Waiting review")}
           value={pending}
           sub={oldestPending ? t("oldest waiting {age}", { age: oldestPending }) : t("Nothing waiting")}
+          href="/records?status=pending"
         />
         <Kpi
           label={t("Zones reporting")}
@@ -393,6 +401,7 @@ export default async function DashboardPage() {
               ? t("{count} quiet for {days} days", { count: quietZones, days: QUIET_DAYS })
               : t("Every zone reported this week")
           }
+          href="/map"
         />
         <Kpi
           label={t("Village health")}
@@ -407,6 +416,7 @@ export default async function DashboardPage() {
             open: health.inputs.openCritical,
             total: health.inputs.hazards,
           })}
+          href="/records?type=hazard"
         />
       </KpiStrip>
 
@@ -453,62 +463,66 @@ export default async function DashboardPage() {
               </p>
             </div>
           ) : (
-            <ul className="flex flex-1 flex-col divide-y divide-rule">
-              {triage.map((record) => {
-                const photo = photoUrl(record.photos?.[0]);
-                return (
-                  <li key={record.id} className="flex flex-1 items-center gap-3 px-4 py-3">
-                    <Link
-                      href={`/records/${record.id}`}
-                      className="flex min-w-0 flex-1 items-center gap-3"
-                    >
-                      {photo ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={photo}
-                          alt=""
-                          className="h-10 w-10 shrink-0 rounded-[6px] border border-line object-cover"
-                        />
-                      ) : (
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] bg-negative-soft text-negative-ink">
-                          <TriangleAlert className="h-[18px] w-[18px]" strokeWidth={1.7} />
-                        </span>
-                      )}
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13px] font-medium leading-5 text-ink">
-                          {record.title}
-                        </span>
-                        <span className="mt-0.5 block truncate text-[11px] leading-4 text-faint">
-                          {record.zone?.name ?? t("No zone")} ·{" "}
-                          {ageLabel(t, record.created_at)}
-                        </span>
-                      </span>
-                    </Link>
-                    {isReviewer ? (
-                      <ReviewDialog
-                        tone={triageIsCritical ? "critical" : "neutral"}
-                        record={{
-                          id: record.id,
-                          title: record.title,
-                          zoneName: record.zone?.name ?? null,
-                          severity: record.severity,
-                          notes: record.notes,
-                          photoUrl: photo,
-                          ageLabel: ageLabel(t, record.created_at),
-                        }}
-                      />
-                    ) : (
-                      <Link
-                        href={`/records/${record.id}`}
-                        className="shrink-0 text-[12px] font-medium text-accent hover:underline"
-                      >
-                        {t("Open")}
-                      </Link>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+            <FreshRows ids={triage.map((record) => record.id)}>
+              <ul className="flex flex-1 flex-col divide-y divide-rule">
+                {triage.map((record) => {
+                  const photo = photoUrl(record.photos?.[0]);
+                  return (
+                    <li key={record.id} className="flex flex-1 flex-col">
+                      <FreshRow id={record.id} className="flex flex-1 items-center gap-3 px-4 py-3">
+                        <Link
+                          href={`/records/${record.id}`}
+                          className="flex min-w-0 flex-1 items-center gap-3"
+                        >
+                          {photo ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={photo}
+                              alt=""
+                              className="h-10 w-10 shrink-0 rounded-[6px] border border-line object-cover"
+                            />
+                          ) : (
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] bg-negative-soft text-negative-ink">
+                              <TriangleAlert className="h-[18px] w-[18px]" strokeWidth={1.7} />
+                            </span>
+                          )}
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[13px] font-medium leading-5 text-ink">
+                              {record.title}
+                            </span>
+                            <span className="mt-0.5 block truncate text-[11px] leading-4 text-faint">
+                              {record.zone?.name ?? t("No zone")} ·{" "}
+                              {ageLabel(t, record.created_at)}
+                            </span>
+                          </span>
+                        </Link>
+                        {isReviewer ? (
+                          <ReviewDialog
+                            tone={triageIsCritical ? "critical" : "neutral"}
+                            record={{
+                              id: record.id,
+                              title: record.title,
+                              zoneName: record.zone?.name ?? null,
+                              severity: record.severity,
+                              notes: record.notes,
+                              photoUrl: photo,
+                              ageLabel: ageLabel(t, record.created_at),
+                            }}
+                          />
+                        ) : (
+                          <Link
+                            href={`/records/${record.id}`}
+                            className="shrink-0 text-[12px] font-medium text-accent hover:underline"
+                          >
+                            {t("Open")}
+                          </Link>
+                        )}
+                      </FreshRow>
+                    </li>
+                  );
+                })}
+              </ul>
+            </FreshRows>
           )}
         </section>
       </div>

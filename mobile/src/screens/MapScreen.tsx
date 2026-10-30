@@ -324,7 +324,11 @@ export function MapScreen({ navigation }: Props) {
           accessibilityRole="button"
           accessibilityState={{ selected: mineOnly }}
           accessibilityLabel={t("Mine")}
-          style={[styles.pill, mineOnly ? styles.pillOn : null]}
+          style={({ pressed }) => [
+            styles.pill,
+            mineOnly ? styles.pillOn : null,
+            pressed && { opacity: 0.7, transform: [{ scale: 0.97 }] },
+          ]}
         >
           <Ionicons
             name="person-outline"
@@ -342,7 +346,10 @@ export function MapScreen({ navigation }: Props) {
           hitSlop={10}
           accessibilityRole="button"
           accessibilityLabel={t("Refresh")}
-          style={styles.iconButton}
+          style={({ pressed }) => [
+            styles.iconButton,
+            pressed && { opacity: 0.55, transform: [{ scale: 0.92 }] },
+          ]}
         >
           <Ionicons name="refresh" size={18} color={colors.muted} />
         </Pressable>
@@ -399,7 +406,10 @@ export function MapScreen({ navigation }: Props) {
               accessibilityRole="button"
               accessibilityLabel={t("My location")}
               accessibilityState={{ busy: locationState === "requesting" }}
-              style={styles.locateButton}
+              style={({ pressed }) => [
+                styles.locateButton,
+                pressed && { opacity: 0.7, transform: [{ scale: 0.96 }] },
+              ]}
             >
               {locationState === "requesting" ? (
                 <ActivityIndicator size="small" color={colors.locationInk} />

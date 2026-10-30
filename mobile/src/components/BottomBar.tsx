@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useSync } from "../context/SyncContext";
 import { useI18n } from "../i18n";
+import { useReduceMotion } from "../lib/useReduceMotion";
 import { colors, radius, shadow, type } from "../theme";
 
 const HEADROOM = 20;
@@ -37,6 +38,7 @@ export function BottomBar({
   const { t } = useI18n();
   const { drafts } = useSync();
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReduceMotion();
 
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -78,6 +80,9 @@ export function BottomBar({
   }
 
   function pressIn() {
+    // The darkening in the Pressable style is the real feedback; the squash is
+    // the flourish, so it is the part that goes when motion is reduced.
+    if (reduceMotion) return;
     Animated.timing(scale, {
       toValue: 0.94,
       duration: 110,
@@ -86,6 +91,10 @@ export function BottomBar({
   }
 
   function pressOut() {
+    if (reduceMotion) {
+      scale.setValue(1);
+      return;
+    }
     Animated.spring(scale, {
       toValue: 1,
       speed: 24,

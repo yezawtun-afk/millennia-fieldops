@@ -502,7 +502,7 @@ export function MyRecordsScreen({ navigation }: Props) {
                         })}
                         hitSlop={8}
                         onPress={() => confirmDeleteOutbox(row, "draft")}
-                        style={styles.trash}
+                        style={({ pressed }) => [styles.trash, pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] }]}
                       >
                         <Ionicons name="trash-outline" size={17} color={colors.muted} />
                       </Pressable>
@@ -547,7 +547,7 @@ export function MyRecordsScreen({ navigation }: Props) {
                           })}
                           hitSlop={8}
                           onPress={() => confirmDeleteOutbox(row, "queued")}
-                          style={styles.trash}
+                          style={({ pressed }) => [styles.trash, pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] }]}
                         >
                           <Ionicons name="trash-outline" size={17} color={colors.muted} />
                         </Pressable>
@@ -617,7 +617,7 @@ export function MyRecordsScreen({ navigation }: Props) {
                               })}
                               hitSlop={8}
                               onPress={() => confirmDeleteRecord(record)}
-                              style={styles.trash}
+                              style={({ pressed }) => [styles.trash, pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] }]}
                             >
                               <Ionicons
                                 name="trash-outline"

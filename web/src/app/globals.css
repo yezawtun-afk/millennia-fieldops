@@ -186,6 +186,30 @@ table,
   }
 }
 
+/* A row that has only just arrived from the phone. The list refreshes itself
+   every ten seconds, so a new record would otherwise appear silently; this
+   washes it green once, then leaves the row alone. Colour only - nothing
+   travels - and reduced motion keeps the wash but drops the fade. */
+@keyframes fieldops-row-fresh {
+  from {
+    background-color: var(--color-positive-soft);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+.row-fresh {
+  animation: fieldops-row-fresh 1.6s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row-fresh {
+    animation: none;
+    background-color: var(--color-positive-soft);
+  }
+}
+
 /* A review dialog: the browser handles the focus trap and Escape key.
    Tailwind's reset zeroes every margin, so the centring has to be asked for. */
 dialog.fieldops-dialog {

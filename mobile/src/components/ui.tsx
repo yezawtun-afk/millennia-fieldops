@@ -275,6 +275,9 @@ export function Button({
           backgroundColor: palette.bg,
           borderColor: palette.border,
           opacity: inactive ? 0.45 : pressed ? 0.75 : 1,
+          // A 2% squash under the finger: small enough to read as weight, not
+          // as an animation. The dimming above carries the state.
+          transform: [{ scale: pressed && !inactive ? 0.98 : 1 }],
         },
         style,
       ]}
