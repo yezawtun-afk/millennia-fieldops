@@ -115,6 +115,15 @@ connection exists. This is what makes the app genuinely usable on the ridge with
   | Environmental hazard | hazard with **low / medium / critical** severity |
 
 - Automatic GPS capture (expo-location) and photos (camera or gallery via expo-image-picker).
+- **Zone suggestion from GPS:** once a fix is taken, the form works out which monitoring
+  circle the phone is standing in (or the nearest one within 120 m) and offers it as a
+  one-tap suggestion. It never selects automatically - a boundary between two zones is
+  exactly where a silent guess would be wrong.
+- **Repeat last observation:** on an untouched form, the type, zone and the fields that
+  define it are carried over from the record submitted last (kept in the phone's own
+  database, so it works offline). Title, notes, photos, GPS and the measured values are
+  deliberately left blank - they describe one particular sighting, and a stale value is
+  worse than an empty field.
 - **Offline-first:** records and photos are written to the phone's own SQLite database
   first. When the phone is offline the app says so plainly and disables "Save record"
   (submitting needs the server), directing the worker to **Save as draft** instead; the
@@ -352,7 +361,8 @@ worker receives notification → admin exports hazard PDF.
 2. Deployable AAB (profile `production`) and a Play Store listing; or Play-internal test track.
 3. Automated tests (web: Playwright login + review happy-path; API: PostgREST contract tests).
 4. Offline map tiles for full no-coverage operation.
-5. Zone geofence prompts on capture (auto-select nearest zone from GPS).
+5. Zone awareness while walking: the capture form now suggests a zone from GPS, but the
+   map does not yet highlight which zone the phone is currently inside.
 6. Reporting trends over time (e.g. correlate hazard severity by zone per month).
 7. iOS TestFlight distribution - the code is already cross-platform and the iOS
    permission strings are configured in `app.json`; the only requirement is the paid

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Image,
@@ -27,7 +27,14 @@ import {
   type AiSuggestion,
 } from "../lib/ai";
 import { colors, radius, spacing, type } from "../theme";
-import { enqueueRecord, getOutbox, markPending, saveDraft } from "../lib/sqlite";
+import {
+  enqueueRecord,
+  getLastObservation,
+  getOutbox,
+  markPending,
+  rememberObservation,
+  saveDraft,
+} from "../lib/sqlite";
 import { fetchZones } from "../lib/api";
 import { useOnlineStatus } from "../lib/network";
 import {
@@ -47,6 +54,7 @@ import {
   pickFromLibrary,
   type CapturedPhoto,
 } from "../lib/photos";
+import { findZoneForPoint } from "../lib/zones";
 import { GROWTH_STAGES, HAZARD_TYPES, HEALTH_CONDITIONS, READING_TYPES } from "../lib/format";
 import type { HazardSeverity, OutboxRecord, RecordType, Zone } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
@@ -66,6 +74,9 @@ const SEVERITIES: { label: string; value: HazardSeverity }[] = [
 ];
 
 const NO_ZONE = "No zone";
+
+// What "repeat last" copies: a submitted record without its local queue id.
+type Observation = Omit<OutboxRecord, "localId">;
 
 function formatBytes(bytes: number): string {
   if (!bytes || bytes <= 0) return "0 KB";
@@ -124,6 +135,8 @@ export function NewRecordScreen({ navigation, route }: Props) {
   const [draftId, setDraftId] = useState<string | null>(null);
   // Kept so a draft remembers when the observation was actually made.
   const [observedDate, setObservedDate] = useState(() => new Date().toISOString());
+  // The last record submitted from this phone, for "Repeat last observation".
+  const [lastObservation, setLastObservation] = useState<Observation | null>(null);
 
   const draftParam = route.params?.draftId;
 
@@ -195,6 +208,10 @@ export function NewRecordScreen({ navigation, route }: Props) {
       fetchZones()
         .then(setZones)
         .catch(() => setZones([]));
+      // Local storage: available offline, which is when a repeat is most useful.
+      getLastObservation()
+        .then(setLastObservation)
+        .catch(() => setLastObservation(null));
     }, [])
   );
 
@@ -459,6 +476,47 @@ export function NewRecordScreen({ navigation, route }: Props) {
     return null;
   }
 
+  // What "repeat" would copy, said in one line so the worker knows before they
+  // tap: the type, the one field that defines it, and the zone.
+  function repeatSummary(record: Observation): string {
+    const parts: string[] = [];
+    const typeLabel = TYPE_OPTIONS.find((option) => option.value === record.type)?.label;
+    if (typeLabel) parts.push(t(typeLabel));
+    if (record.type === "flora" && record.species_name) parts.push(record.species_name);
+    if (record.type === "hazard" && record.hazard_type) parts.push(t(record.hazard_type));
+    if (record.type === "soil_water" && record.reading_type) parts.push(t(record.reading_type));
+    const zoneName = zones.find((zone) => zone.id === record.zone_id)?.name;
+    if (zoneName) parts.push(zoneName);
+    return parts.join(" · ");
+  }
+
+  // Start the next observation from the last one. Deliberately NOT copied:
+  // title, notes, photos, GPS and the numbers (count, reading, severity). Those
+  // describe one particular sighting, and a stale value is worse than an empty
+  // field when a supervisor has to trust the record.
+  function repeatLast() {
+    const last = lastObservation;
+    if (!last) return;
+    clearAi();
+    setType(last.type);
+    setSpecies(last.species_name ?? "");
+    setGrowthStage(last.growth_stage);
+    setHealthCondition(last.health_condition);
+    setHazardType(last.hazard_type);
+    setReadingType(last.reading_type);
+    setReadingValue("");
+    setReadingUnit(last.reading_unit ?? defaultUnitFor(last.reading_type));
+    // A zone deleted since the last record must not be carried over.
+    setZoneId(zones.some((zone) => zone.id === last.zone_id) ? last.zone_id : null);
+    setMessage({
+      kind: "info",
+      text: t(
+        "Copied the set-up from your last record. Add a new photo and check the details before saving."
+      ),
+    });
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }
+
   // Park an unfinished record. This is pure local storage, so it works with no
   // connection at all and needs no account details.
   async function saveAsDraft() {
@@ -516,13 +574,18 @@ export function NewRecordScreen({ navigation, route }: Props) {
     setMessage(null);
 
     try {
+      const payload = buildPayload();
       if (draftId) {
         // Finishing a draft moves it from the drafts list into the upload queue.
-        await saveDraft(buildPayload(), draftId);
+        await saveDraft(payload, draftId);
         await markPending(draftId);
       } else {
-        await enqueueRecord(buildPayload());
+        await enqueueRecord(payload);
       }
+
+      // Remember it for "Repeat last observation". A local storage failure must
+      // not cost the worker the record they just filed.
+      await rememberObservation(payload).catch(() => undefined);
 
       reset();
 
@@ -570,6 +633,31 @@ export function NewRecordScreen({ navigation, route }: Props) {
           )
         : t("Sends the first photo for AI analysis. AI can be wrong - review before saving.");
 
+  // Where the phone thinks it is, offered only while no zone is chosen: the
+  // suggestion exists to save a scroll, not to argue with a worker who has
+  // already picked a zone.
+  const zoneSuggestion = useMemo(() => {
+    if (!coords || zones.length === 0 || zoneId !== null) return null;
+    return findZoneForPoint(zones, coords);
+  }, [coords, zones, zoneId]);
+
+  // Repeat is only offered on an untouched form, so it can never overwrite
+  // something the worker has already typed.
+  const formTouched =
+    title.trim().length > 0 ||
+    notes.trim().length > 0 ||
+    photos.length > 0 ||
+    coords !== null ||
+    species.trim().length > 0 ||
+    estimatedCount.trim().length > 0 ||
+    readingValue.trim().length > 0 ||
+    growthStage !== null ||
+    healthCondition !== null ||
+    hazardType !== null ||
+    severity !== null ||
+    readingType !== null;
+  const canRepeat = !draftId && !formTouched;
+
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView
@@ -584,6 +672,25 @@ export function NewRecordScreen({ navigation, route }: Props) {
             {t("Saved on the phone first. It uploads by itself when there is signal.")}
           </Text>
         </View>
+
+        {canRepeat && lastObservation ? (
+          <Pressable
+            onPress={repeatLast}
+            accessibilityRole="button"
+            accessibilityLabel={t("Repeat last observation")}
+            accessibilityHint={t("Fills the form from your last record.")}
+            style={({ pressed }) => [styles.repeatRow, pressed ? { opacity: 0.7 } : null]}
+          >
+            <Ionicons name="copy-outline" size={17} color={colors.primaryDark} />
+            <View style={styles.repeatBody}>
+              <Text style={styles.repeatTitle}>{t("Repeat last observation")}</Text>
+              <Text style={styles.repeatMeta} numberOfLines={1}>
+                {repeatSummary(lastObservation)}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+          </Pressable>
+        ) : null}
 
         <SectionTitle>{t("Record type")}</SectionTitle>
         <ChipGroup
@@ -816,6 +923,37 @@ export function NewRecordScreen({ navigation, route }: Props) {
             <Text style={styles.helper}>{t("No GPS captured yet.")}</Text>
           )}
           <View style={{ height: 10 }} />
+          {zoneSuggestion ? (
+            <Pressable
+              onPress={() => {
+                const zone = zoneSuggestion.zone;
+                setZoneId(zone.id);
+                setMessage({
+                  kind: "info",
+                  text: t("Zone set to {zone}.", { zone: zone.name }),
+                });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t("Use {zone}", { zone: zoneSuggestion.zone.name })}
+              style={({ pressed }) => [
+                styles.zoneSuggestion,
+                pressed ? { opacity: 0.7 } : null,
+              ]}
+            >
+              <Ionicons name="location" size={16} color={colors.primaryDark} />
+              <View style={styles.zoneSuggestionBody}>
+                <Text style={styles.zoneSuggestionTitle}>
+                  {zoneSuggestion.inside
+                    ? t("You are inside {zone}.", { zone: zoneSuggestion.zone.name })
+                    : t("{zone} is about {distance} m away.", {
+                        zone: zoneSuggestion.zone.name,
+                        distance: Math.round(zoneSuggestion.distance),
+                      })}
+                </Text>
+                <Text style={styles.zoneSuggestionAction}>{t("Use this zone")}</Text>
+              </View>
+            </Pressable>
+          ) : null}
           <Button
             title={coords ? t("Update GPS location") : t("Capture GPS location")}
             variant="secondary"
@@ -944,6 +1082,40 @@ const styles = StyleSheet.create({
     backgroundColor: colors.panel,
   },
   catalogText: { fontSize: 12, fontWeight: "600", color: colors.primaryDark },
+  repeatRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.control,
+    backgroundColor: colors.card,
+  },
+  repeatBody: { flex: 1, minWidth: 0 },
+  repeatTitle: { fontSize: 13, fontWeight: "600", color: colors.ink },
+  repeatMeta: { fontSize: 12, color: colors.muted, marginTop: 2 },
+  zoneSuggestion: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primarySoft,
+  },
+  zoneSuggestionBody: { flex: 1, minWidth: 0 },
+  zoneSuggestionTitle: { fontSize: 13, fontWeight: "600", color: colors.primaryDark },
+  zoneSuggestionAction: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.primaryDark,
+    marginTop: 2,
+    textDecorationLine: "underline",
+  },
   photoNote: { fontSize: 12, color: colors.primaryDark, marginTop: 6, lineHeight: 17 },
   coords: { fontSize: 15, fontWeight: "500", color: colors.ink },
   photoRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },

@@ -19,6 +19,7 @@ export const zh: Record<string, string> = {
   "{count}m ago": "{count} 分钟前",
   "{submitted} submitted · {local} on this phone": "已提交 {submitted} 条 · 此手机上有 {local} 条",
   "{unread} unread · {total} total": "{unread} 条未读 · 共 {total} 条",
+  "{zone} is about {distance} m away.": "{zone} 距离约 {distance} 米。",
   "A comment helps the field worker. It is required when you reject a record.":
     "备注可以帮助外勤人员。拒绝记录时必须填写备注。",
   "A comment is needed": "需要填写备注",
@@ -59,6 +60,8 @@ export const zh: Record<string, string> = {
   "Choose a reading type - or save it as a draft.": "请选择读数类型，或保存为草稿。",
   "Choose a severity - or save it as a draft.": "请选择严重程度，或保存为草稿。",
   "Circles show the monitoring zones.": "圆圈表示监测区域。",
+  "Copied the set-up from your last record. Add a new photo and check the details before saving.":
+    "已复制上一条记录的设置。请添加新照片，并在保存前核对这些细节。",
   "Comment: {comment}": "备注：{comment}",
   Coordinates: "坐标",
   "Could not delete": "无法删除",
@@ -106,6 +109,7 @@ export const zh: Record<string, string> = {
     "请说明需要修改什么才能通过这条记录。",
   Failed: "失败",
   "field worker": "外勤人员",
+  "Fills the form from your last record.": "以上一条记录的内容填写表单。",
   "Finish in My records": "前往“我的记录”完成",
   "Finish the draft": "完成草稿",
   "From library": "从相册选择",
@@ -197,6 +201,7 @@ export const zh: Record<string, string> = {
   "Request an account": "申请账号",
   "Request sent. An administrator will review it, and you can sign in with your phone number once it is approved.":
     "申请已发送。管理员将进行审核，批准后即可使用手机号码登录。",
+  "Repeat last observation": "重复上一次观察",
   "Retype password": "重新输入密码",
   Review: "审核",
   "Review queue": "审核队列",
@@ -258,6 +263,7 @@ export const zh: Record<string, string> = {
   Version: "版本",
   "Waiting to upload": "等待上传",
   Yesterday: "昨天",
+  "You are inside {zone}.": "您位于 {zone} 内。",
   "You are offline. Save this as a draft now - open it from My records and tap Save record once you have signal again.":
     "你当前处于离线状态。请先保存为草稿，恢复信号后从“我的记录”打开并点击“保存记录”。",
   "You are offline. Tap Save as draft instead - open it from My records and submit it once you have signal.":
@@ -281,6 +287,7 @@ export const zh: Record<string, string> = {
   'Your hazard report "{title}" was {status}.': "你的隐患报告“{title}”{status}。",
   'Your hazard report "{title}" was {status}. The job is ready to finish in To do.':
     "你的隐患报告“{title}”{status}。工作已可在“待办”中完成。",
+  "Zone set to {zone}.": "区域已设为 {zone}。",
   "Zones load when you are online. You can still save offline.":
     "区域信息需要联网加载，离线时仍可保存。",
 
@@ -363,6 +370,8 @@ export const zh: Record<string, string> = {
   "New password": "新密码",
   "Confirm password": "确认密码",
   "Use at least 8 characters": "至少使用 8 个字符",
+  "Use this zone": "使用此区域",
+  "Use {zone}": "使用 {zone}",
   "Type it again": "再次输入",
   "Passwords do not match": "密码不一致",
   "Your password must be at least 8 characters.": "密码至少需要 8 个字符。",

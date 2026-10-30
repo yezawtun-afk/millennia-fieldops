@@ -22,6 +22,11 @@ async function getDb(): Promise<SQLite.SQLiteDatabase> {
       error      text,
       created_at text not null
     );
+    create table if not exists last_observation (
+      id       text primary key not null,
+      payload  text not null,
+      saved_at text not null
+    );
   `);
   return db;
 }
@@ -135,4 +140,40 @@ export async function removeOutbox(localId: string): Promise<void> {
 export async function markError(localId: string, message: string): Promise<void> {
   const db = await getDb();
   await db.runAsync("update outbox set status = 'error', error = ? where local_id = ?", message, localId);
+}
+
+// The record that was submitted last, kept so the next one can start from it.
+//
+// It cannot be read back from the outbox: an uploaded row is deleted from there
+// as soon as it lands on the server. One row is stored, overwritten each time,
+// and it lives on the phone so repeating works with no signal at all.
+const LAST_OBSERVATION_ID = "last";
+
+export async function rememberObservation(
+  record: Omit<OutboxRecord, "localId">
+): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    `insert into last_observation (id, payload, saved_at) values (?, ?, ?)
+     on conflict (id) do update set payload = excluded.payload, saved_at = excluded.saved_at`,
+    LAST_OBSERVATION_ID,
+    JSON.stringify(record),
+    new Date().toISOString()
+  );
+}
+
+export async function getLastObservation(): Promise<Omit<OutboxRecord, "localId"> | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ payload: string }>(
+    "select payload from last_observation where id = ?",
+    LAST_OBSERVATION_ID
+  );
+  if (!row) return null;
+  try {
+    return JSON.parse(row.payload) as Omit<OutboxRecord, "localId">;
+  } catch {
+    // A row written by an older build may not match today's shape. Better to
+    // offer nothing than to fill the form with nonsense.
+    return null;
+  }
 }

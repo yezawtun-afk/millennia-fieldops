@@ -23,6 +23,7 @@ export const ms: Record<string, string> = {
   "{submitted} submitted · {local} on this phone":
     "{submitted} dihantar · {local} pada telefon ini",
   "{unread} unread · {total} total": "{unread} belum dibaca · {total} jumlah",
+  "{zone} is about {distance} m away.": "{zone} kira-kira {distance} m dari sini.",
   "A comment helps the field worker. It is required when you reject a record.":
     "Komen membantu petugas lapangan. Komen diperlukan apabila anda menolak rekod.",
   "A comment is needed": "Komen diperlukan",
@@ -72,6 +73,8 @@ export const ms: Record<string, string> = {
     "Pilih tahap keterukan - atau simpan sebagai draf.",
   "Circles show the monitoring zones.": "Bulatan menunjukkan zon pemantauan.",
   "Comment: {comment}": "Komen: {comment}",
+  "Copied the set-up from your last record. Add a new photo and check the details before saving.":
+    "Tetapan disalin daripada rekod terakhir anda. Tambah foto baharu dan semak butiran sebelum menyimpan.",
   Coordinates: "Koordinat",
   "Could not delete": "Tidak dapat memadam",
   "Could not load the map. Check your connection and try again.":
@@ -120,6 +123,7 @@ export const ms: Record<string, string> = {
     "Jelaskan apa yang perlu diubah sebelum rekod ini boleh ditolak.",
   Failed: "Gagal",
   "field worker": "petugas lapangan",
+  "Fills the form from your last record.": "Mengisi borang daripada rekod terakhir anda.",
   "Finish in My records": "Siapkan dalam Rekod saya",
   "Finish the draft": "Siapkan draf",
   "From library": "Dari galeri",
@@ -218,6 +222,7 @@ export const ms: Record<string, string> = {
   "Request an account": "Mohon akaun",
   "Request sent. An administrator will review it, and you can sign in with your phone number once it is approved.":
     "Permohonan dihantar. Pentadbir akan menyemaknya, dan anda boleh log masuk dengan nombor telefon anda setelah diluluskan.",
+  "Repeat last observation": "Ulang pemerhatian terakhir",
   "Retype password": "Taip semula kata laluan",
   Review: "Semakan",
   "Review queue": "Baris gilir semakan",
@@ -282,6 +287,7 @@ export const ms: Record<string, string> = {
   Version: "Versi",
   "Waiting to upload": "Menunggu untuk dimuat naik",
   Yesterday: "Semalam",
+  "You are inside {zone}.": "Anda berada di dalam {zone}.",
   "You are offline. Save this as a draft now - open it from My records and tap Save record once you have signal again.":
     "Anda di luar talian. Simpan ini sebagai draf sekarang - buka dari Rekod saya dan ketik Simpan rekod apabila ada isyarat semula.",
   "You are offline. Tap Save as draft instead - open it from My records and submit it once you have signal.":
@@ -308,6 +314,7 @@ export const ms: Record<string, string> = {
     'Laporan bahaya anda "{title}" telah {status}.',
   'Your hazard report "{title}" was {status}. The job is ready to finish in To do.':
     'Laporan bahaya anda "{title}" telah {status}. Kerja sedia untuk diselesaikan dalam Untuk dibuat.',
+  "Zone set to {zone}.": "Zon ditetapkan kepada {zone}.",
   "Zones load when you are online. You can still save offline.":
     "Zon dimuatkan apabila anda dalam talian. Anda masih boleh menyimpan di luar talian.",
 
@@ -393,6 +400,8 @@ export const ms: Record<string, string> = {
   "New password": "Kata laluan baharu",
   "Confirm password": "Sahkan kata laluan",
   "Use at least 8 characters": "Gunakan sekurang-kurangnya 8 aksara",
+  "Use this zone": "Guna zon ini",
+  "Use {zone}": "Guna {zone}",
   "Type it again": "Taip semula",
   "Passwords do not match": "Kata laluan tidak sepadan",
   "Your password must be at least 8 characters.":
