@@ -120,6 +120,33 @@ export async function fetchPendingRecords(): Promise<FieldRecord[]> {
   return (data as unknown as FieldRecord[]) ?? [];
 }
 
+// ---- Who to call -----------------------------------------------------------
+// The people who can answer a question about the site. Read from their
+// accounts rather than from a number typed into the app, so it follows a
+// change of supervisor. The profiles policy lets any active user read names
+// and phone numbers, which is what makes this possible without a new table.
+export interface SupervisorContact {
+  id: string;
+  full_name: string;
+  phone: string;
+}
+
+export async function fetchSiteSupervisors(): Promise<SupervisorContact[]> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, phone")
+    .eq("role", "supervisor")
+    .eq("is_active", true)
+    .not("phone", "is", null)
+    .order("full_name");
+  if (error) throw new Error(error.message);
+
+  // A row without a usable number is not a call target.
+  return ((data ?? []) as { id: string; full_name: string; phone: string | null }[]).filter(
+    (row): row is SupervisorContact => Boolean(row.phone && row.phone.trim())
+  );
+}
+
 // Just the number, for the "waiting for review" shortcut on Home.
 export async function countPendingReviews(): Promise<number> {
   const { count, error } = await supabase

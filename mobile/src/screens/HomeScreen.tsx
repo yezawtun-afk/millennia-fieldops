@@ -6,6 +6,14 @@ import { useAuth } from "../context/AuthContext";
 import { useSync } from "../context/SyncContext";
 import { countPendingReviews, fetchMyRecords } from "../lib/api";
 import { applyUpdate, checkForUpdate } from "../lib/updates";
+import {
+  fetchSiteWeather,
+  isWeatherStale,
+  readCachedWeather,
+  weatherIcon,
+  weatherTimeLabel,
+  type SiteWeather,
+} from "../lib/weather";
 import { useI18n } from "../i18n";
 import { Banner, Button, Card, ListRow, Pill, SectionTitle, StatCell } from "../components/ui";
 import { SyncBadge } from "../components/SyncBadge";
@@ -56,6 +64,7 @@ export function HomeScreen({ navigation }: Props) {
   const [reviewCount, setReviewCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [weather, setWeather] = useState<SiteWeather | null>(null);
 
   const isReviewer = profile?.role === "supervisor" || profile?.role === "admin";
 
@@ -88,6 +97,34 @@ export function HomeScreen({ navigation }: Props) {
       active = false;
     };
   }, [t]);
+
+  // The site forecast, fetched at most every half hour and only while the
+  // phone is online. The cached reading is shown first so the row is there
+  // immediately; when it is old it says so instead of pretending to be live.
+  useEffect(() => {
+    if (!online) return;
+    let active = true;
+
+    (async () => {
+      const cached = await readCachedWeather();
+      if (!active) return;
+      if (cached) setWeather(cached);
+
+      const fetchedAt = cached ? new Date(cached.fetchedAt).getTime() : 0;
+      if (Date.now() - fetchedAt < 30 * 60 * 1000) return;
+
+      try {
+        const next = await fetchSiteWeather();
+        if (active) setWeather(next);
+      } catch {
+        // Offline, or the service is down: the cached reading stays on screen.
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [online]);
 
   // Counts come from every record this user has, not from the five shown below.
   const summary = records.reduce<Summary>(
@@ -168,6 +205,23 @@ export function HomeScreen({ navigation }: Props) {
 
   const firstName = profile?.full_name.split(" ")[0] ?? t("field worker");
 
+  // One sentence of site weather. Under a 20% chance there is nothing to plan
+  // around, so it says that rather than naming a number nobody acts on.
+  const weatherLine = weather
+    ? weather.rainChance >= 20
+      ? weather.rainFrom
+        ? t("{temp}°C · Rain {chance}% from {time}", {
+            temp: weather.tempC,
+            chance: weather.rainChance,
+            time: weather.rainFrom,
+          })
+        : t("{temp}°C · Rain {chance}% later", {
+            temp: weather.tempC,
+            chance: weather.rainChance,
+          })
+      : t("{temp}°C · Rain unlikely", { temp: weather.tempC })
+    : null;
+
   return (
     <ScrollView
       style={styles.screen}
@@ -187,6 +241,22 @@ export function HomeScreen({ navigation }: Props) {
           </Text>
         </View>
       </View>
+
+      {weatherLine ? (
+        <View style={styles.weather}>
+          <Ionicons
+            name={weatherIcon(weather?.code ?? 0) as keyof typeof Ionicons.glyphMap}
+            size={15}
+            color={colors.muted}
+          />
+          <Text style={styles.weatherText}>
+            {weatherLine}
+            {weather && isWeatherStale(weather)
+              ? ` · ${t("last reading {time}", { time: weatherTimeLabel(weather) })}`
+              : ""}
+          </Text>
+        </View>
+      ) : null}
 
       <SyncBadge
         status={syncStatus}
@@ -367,6 +437,17 @@ const styles = StyleSheet.create({
   greeting: { ...type.caption, fontSize: 13 },
   name: { ...type.title, marginTop: 1 },
   meta: { ...type.subhead, marginTop: 2 },
+
+  // Site weather: one muted line under the greeting, not a card. It is context
+  // for the day, not a task.
+  weather: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
+  },
+  weatherText: { flexShrink: 1, fontSize: 12, color: colors.muted },
 
   reviewNote: {
     marginBottom: spacing.md,

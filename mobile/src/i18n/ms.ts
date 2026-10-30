@@ -22,6 +22,10 @@ export const ms: Record<string, string> = {
   "{count}m ago": "{count} min lalu",
   "{submitted} submitted · {local} on this phone":
     "{submitted} dihantar · {local} pada telefon ini",
+  "{temp}°C · Rain unlikely": "{temp}°C · Hujan tidak dijangka",
+  "{temp}°C · Rain {chance}% from {time}":
+    "{temp}°C · Hujan {chance}% mulai {time}",
+  "{temp}°C · Rain {chance}% later": "{temp}°C · Hujan {chance}% kemudian",
   "{unread} unread · {total} total": "{unread} belum dibaca · {total} jumlah",
   "{zone} is about {distance} m away.": "{zone} kira-kira {distance} m dari sini.",
   "A comment helps the field worker. It is required when you reject a record.":
@@ -54,6 +58,10 @@ export const ms: Record<string, string> = {
   "Awaiting review by a supervisor.": "Menunggu semakan penyelia.",
   "Back to sign in": "Kembali ke log masuk",
   "By {name}": "Oleh {name}",
+  Call: "Hubungi",
+  "Call failed": "Panggilan gagal",
+  "Call site supervisor": "Hubungi penyelia tapak",
+  "Call {number}": "Hubungi {number}",
   Cancel: "Batal",
   "Cancel upload": "Batalkan muat naik",
   Capture: "Rakam",
@@ -110,6 +118,7 @@ export const ms: Record<string, string> = {
   "e.g. Wetland water reading": "cth. Bacaan air tanah lembap",
   "Email (optional)": "E-mel (pilihan)",
   "Email or phone number": "E-mel atau nombor telefon",
+  "Emergency hotline": "Talian kecemasan",
   "Enable location access in Settings to show your position on the map.":
     "Benarkan akses lokasi dalam Tetapan untuk menunjukkan kedudukan anda pada peta.",
   "Enable phone alerts": "Dayakan makluman telefon",
@@ -144,6 +153,7 @@ export const ms: Record<string, string> = {
   Keep: "Simpan",
   Language: "Bahasa",
   "Last upload {when}": "Muat naik terakhir {when}",
+  "last reading {time}": "bacaan terakhir {time}",
   Later: "Kemudian",
   "Loading map...": "Memuatkan peta...",
   Location: "Lokasi",
@@ -167,6 +177,7 @@ export const ms: Record<string, string> = {
   "New submissions will appear here as soon as they reach the server.":
     "Penghantaran baharu akan muncul di sini sebaik sahaja sampai ke pelayan.",
   "No GPS captured yet.": "Belum ada GPS direkodkan.",
+  "No number on file": "Tiada nombor dalam rekod",
   "No notifications yet": "Belum ada makluman",
   "No records submitted yet": "Belum ada rekod dihantar",
   "No uploads yet": "Belum ada muat naik",
@@ -265,6 +276,8 @@ export const ms: Record<string, string> = {
   "The record was uploaded for review.": "Rekod telah dimuat naik untuk semakan.",
   "This account has been deactivated. Ask an administrator to reactivate it.":
     "Akaun ini telah dinyahaktifkan. Minta pentadbir mengaktifkannya semula.",
+  "This phone could not open the dialler.":
+    "Telefon ini tidak dapat membuka pendail.",
   "This record could not be loaded. You may be offline.":
     "Rekod ini tidak dapat dimuatkan. Anda mungkin di luar talian.",
   "This record is kept as a draft on this phone. Open My records to finish it and submit it when you have signal.":
@@ -609,6 +622,7 @@ export const ms: Record<string, string> = {
   "Captured today": "Direkod hari ini",
   "Waiting review": "Menunggu semakan",
   "My offline drafts": "Draf luar talian saya",
-  "Photos on this phone": "Foto pada telefon ini",
   "Not available offline": "Tidak tersedia di luar talian",
+  "Call {number} now? This dials the national emergency line. Use it only for a real emergency.":
+    "Hubungi {number} sekarang? Ini menghubungi talian kecemasan kebangsaan. Gunakan hanya untuk kecemasan sebenar.",
 };

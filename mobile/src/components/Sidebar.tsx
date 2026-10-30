@@ -1,6 +1,5 @@
 // The side panel: who you are, today's numbers, the one job that is not a tab
-// (the review queue), drafts, the phone's photo storage, language, sync,
-// version and log out.
+// (the review queue), drafts, language, who to call, sync, version and log out.
 //
 // It deliberately does NOT repeat Home / Map / New / My records /
 // Notifications: those are one tap away in the bottom bar, so a second copy
@@ -14,6 +13,7 @@ import {
   Alert,
   Animated,
   Easing,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -26,8 +26,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useSync } from "../context/SyncContext";
-import { countPendingReviews, fetchSidebarSummary, type SidebarSummary } from "../lib/api";
-import { formatBytes, photoStorageBytes } from "../lib/storage";
+import {
+  countPendingReviews,
+  fetchSidebarSummary,
+  fetchSiteSupervisors,
+  type SidebarSummary,
+  type SupervisorContact,
+} from "../lib/api";
+import {
+  EMERGENCY_NUMBER,
+  cacheSupervisors,
+  readCachedSupervisors,
+} from "../lib/contacts";
 import { appVersion, applyUpdate, checkForUpdate } from "../lib/updates";
 import { LOCALES, useI18n } from "../i18n";
 import { ROLE_LABELS } from "../lib/format";
@@ -74,7 +84,7 @@ export function Sidebar({
   const [mounted, setMounted] = useState(open);
   const [reviewCount, setReviewCount] = useState(0);
   const [summary, setSummary] = useState<SidebarSummary | null>(null);
-  const [photoBytes, setPhotoBytes] = useState<number | null>(null);
+  const [supervisors, setSupervisors] = useState<SupervisorContact[]>([]);
   const [checking, setChecking] = useState(false);
 
   const isReviewer = profile?.role === "supervisor" || profile?.role === "admin";
@@ -153,12 +163,20 @@ export function Sidebar({
       })
       .catch(() => undefined);
 
-    // Reading the folder waits for the first paint, so the panel never stutters
-    // while it slides in.
-    Promise.resolve()
-      .then(photoStorageBytes)
-      .then((bytes) => {
-        if (active) setPhotoBytes(bytes);
+    // The numbers are cached on the phone, because a call is exactly what you
+    // need when there is no signal. The cache shows first; the network read
+    // quietly replaces it, so a change of supervisor lands without a reinstall.
+    readCachedSupervisors()
+      .then((cached) => {
+        if (active && cached.length > 0) setSupervisors(cached);
+      })
+      .catch(() => undefined);
+
+    fetchSiteSupervisors()
+      .then((list) => {
+        if (!active) return;
+        setSupervisors(list);
+        void cacheSupervisors(list);
       })
       .catch(() => undefined);
 
@@ -186,6 +204,42 @@ export function Sidebar({
           onPress: () => {
             void applyUpdate();
           },
+        },
+      ]
+    );
+  }
+
+  // The dialler belongs to the phone: no permission to ask for and no native
+  // module, so this keeps working on the installed build.
+  function callNumber(number: string) {
+    const url = `tel:${number.replace(/\s+/g, "")}`;
+    Linking.openURL(url).catch(() =>
+      Alert.alert(t("Call failed"), t("This phone could not open the dialler."))
+    );
+  }
+
+  // The number is shown before the call, because a mis-dialled emergency line
+  // is not a small mistake.
+  function callSupervisor(contact: SupervisorContact) {
+    Alert.alert(t("Call site supervisor"), `${contact.full_name}\n${contact.phone}`, [
+      { text: t("Cancel"), style: "cancel" },
+      { text: t("Call"), onPress: () => callNumber(contact.phone) },
+    ]);
+  }
+
+  function callEmergency() {
+    Alert.alert(
+      t("Emergency hotline"),
+      t(
+        "Call {number} now? This dials the national emergency line. Use it only for a real emergency.",
+        { number: EMERGENCY_NUMBER }
+      ),
+      [
+        { text: t("Cancel"), style: "cancel" },
+        {
+          text: t("Call {number}", { number: EMERGENCY_NUMBER }),
+          style: "destructive",
+          onPress: () => callNumber(EMERGENCY_NUMBER),
         },
       ]
     );
@@ -369,20 +423,47 @@ export function Sidebar({
                 onPress={onOpenDrafts}
               />
               <MenuRow
-                icon="folder-open-outline"
-                label={t("Photos on this phone")}
-                value={
-                  <Text style={styles.rowMuted}>
-                    {photoBytes === null ? "—" : formatBytes(photoBytes)}
-                  </Text>
-                }
-                chevron={false}
-              />
-              <MenuRow
                 icon="language-outline"
                 label={t("Language")}
                 value={<Text style={styles.rowValue}>{localeShort}</Text>}
                 onPress={onOpenLanguage}
+                last
+              />
+            </View>
+
+            {/* Who to call. Kept apart from the rows above: those open screens,
+                these start a phone call. */}
+            <View style={[styles.card, styles.safetyCard]}>
+              {supervisors.length === 0 ? (
+                <MenuRow
+                  icon="shield-checkmark-outline"
+                  label={t("Call site supervisor")}
+                  value={<Text style={styles.rowMuted}>{t("No number on file")}</Text>}
+                  chevron={false}
+                />
+              ) : (
+                supervisors.slice(0, 3).map((contact) => (
+                  <MenuRow
+                    key={contact.id}
+                    icon="shield-checkmark-outline"
+                    label={
+                      supervisors.length === 1 ? t("Call site supervisor") : contact.full_name
+                    }
+                    value={<Text style={styles.rowMuted}>{contact.phone}</Text>}
+                    onPress={() => callSupervisor(contact)}
+                  />
+                ))
+              )}
+              <MenuRow
+                icon="medkit-outline"
+                label={t("Emergency hotline")}
+                value={
+                  <Text style={[styles.rowValue, { color: colors.rejected }]}>
+                    {EMERGENCY_NUMBER}
+                  </Text>
+                }
+                onPress={callEmergency}
+                danger
                 last
               />
             </View>
@@ -436,7 +517,7 @@ export function Sidebar({
 }
 
 // A row in the panel. Without `onPress` it is information, not a control
-// (the photo size), so it gets no chevron and nothing to press.
+// (the phone number on file), so it gets no chevron and nothing to press.
 function MenuRow({
   icon,
   label,
@@ -444,6 +525,7 @@ function MenuRow({
   onPress,
   last,
   chevron = true,
+  danger = false,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
@@ -451,11 +533,13 @@ function MenuRow({
   onPress?: () => void;
   last?: boolean;
   chevron?: boolean;
+  /** An emergency action: the icon carries the warning colour. */
+  danger?: boolean;
 }) {
   const content = (
     <>
-      <View style={styles.rowIcon}>
-        <Ionicons name={icon} size={17} color={colors.primary} />
+      <View style={[styles.rowIcon, danger && { backgroundColor: colors.rejectedSoft }]}>
+        <Ionicons name={icon} size={17} color={danger ? colors.rejected : colors.primary} />
       </View>
       <Text style={styles.rowLabel}>{label}</Text>
       {value ?? null}
@@ -565,6 +649,7 @@ const styles = StyleSheet.create({
     borderCurve: "continuous",
     overflow: "hidden",
   },
+  safetyCard: { marginTop: spacing.md },
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -583,7 +668,7 @@ const styles = StyleSheet.create({
   },
   rowLabel: { flex: 1, fontSize: 15, fontWeight: "500", color: colors.ink },
   rowValue: { fontSize: 13, fontWeight: "600", color: colors.primary },
-  // A passive readout (the photo size): same weight as a value, no accent.
+  // A passive readout (a phone number): same weight as a value, no accent.
   rowMuted: { fontSize: 13, color: colors.muted, fontVariant: ["tabular-nums"] },
   countPill: {
     minWidth: 22,

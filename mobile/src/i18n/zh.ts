@@ -18,6 +18,9 @@ export const zh: Record<string, string> = {
   "{count}h ago": "{count} 小时前",
   "{count}m ago": "{count} 分钟前",
   "{submitted} submitted · {local} on this phone": "已提交 {submitted} 条 · 此手机上有 {local} 条",
+  "{temp}°C · Rain unlikely": "{temp}°C · 预计无雨",
+  "{temp}°C · Rain {chance}% from {time}": "{temp}°C · {time} 起降雨概率 {chance}%",
+  "{temp}°C · Rain {chance}% later": "{temp}°C · 稍后降雨概率 {chance}%",
   "{unread} unread · {total} total": "{unread} 条未读 · 共 {total} 条",
   "{zone} is about {distance} m away.": "{zone} 距离约 {distance} 米。",
   "A comment helps the field worker. It is required when you reject a record.":
@@ -46,6 +49,10 @@ export const zh: Record<string, string> = {
   "Awaiting review by a supervisor.": "等待主管审核。",
   "Back to sign in": "返回登录",
   "By {name}": "提交人：{name}",
+  Call: "拨打",
+  "Call failed": "拨号失败",
+  "Call site supervisor": "致电现场主管",
+  "Call {number}": "致电 {number}",
   Cancel: "取消",
   "Cancel upload": "取消上传",
   Capture: "采集",
@@ -97,6 +104,7 @@ export const zh: Record<string, string> = {
   "e.g. Wetland water reading": "例如：湿地水质读数",
   "Email (optional)": "电子邮箱（可选）",
   "Email or phone number": "电子邮箱或手机号码",
+  "Emergency hotline": "紧急热线",
   "Enable location access in Settings to show your position on the map.":
     "请在设置中允许定位访问，以便在地图上显示您的位置。",
   "Enable phone alerts": "启用手机通知",
@@ -128,6 +136,7 @@ export const zh: Record<string, string> = {
   Keep: "保留",
   Language: "语言",
   "Last upload {when}": "上次上传：{when}",
+  "last reading {time}": "最后读数 {time}",
   Later: "稍后",
   "Loading map...": "正在加载地图……",
   Location: "位置",
@@ -151,6 +160,7 @@ export const zh: Record<string, string> = {
   "New submissions will appear here as soon as they reach the server.":
     "新的提交一旦到达服务器就会显示在这里。",
   "No GPS captured yet.": "尚未获取 GPS。",
+  "No number on file": "未登记电话号码",
   "No notifications yet": "暂无通知",
   "No records submitted yet": "尚未提交记录",
   "No uploads yet": "尚未上传",
@@ -242,6 +252,7 @@ export const zh: Record<string, string> = {
   "The record was uploaded for review.": "记录已上传，等待审核。",
   "This account has been deactivated. Ask an administrator to reactivate it.":
     "此账号已停用，请联系管理员重新启用。",
+  "This phone could not open the dialler.": "此手机无法打开拨号程序。",
   "This record could not be loaded. You may be offline.": "无法加载此记录，你可能处于离线状态。",
   "This record is kept as a draft on this phone. Open My records to finish it and submit it when you have signal.":
     "此记录已作为草稿保存在手机上。请在“我的记录”中完成，并在有信号时提交。",
@@ -557,11 +568,12 @@ export const zh: Record<string, string> = {
   'Your fix for "{title}" was sent back: {reason}':
     '你对“{title}”的修复已被退回：{reason}',
 
-  // The side panel: today's numbers, drafts and the phone's photo storage.
+  // The side panel: today's numbers, drafts and who to call.
   "Today's activity": "今日活动",
   "Captured today": "今日记录",
   "Waiting review": "等待审核",
   "My offline drafts": "我的离线草稿",
-  "Photos on this phone": "本机照片",
   "Not available offline": "离线时不可用",
+  "Call {number} now? This dials the national emergency line. Use it only for a real emergency.":
+    "现在拨打 {number}？此号码为国家紧急热线，仅在真正紧急时使用。",
 };

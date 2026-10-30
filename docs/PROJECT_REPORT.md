@@ -106,6 +106,15 @@ connection exists. This is what makes the app genuinely usable on the ridge with
   rejected / draft counts (taken from every record, not just the visible list), one-tap
   capture by record type, the upload queue with **Sync now**, the five most recent
   records with their review status, and the app version / update check.
+- **Site weather** on the home screen: temperature and the chance of rain over the next
+  twelve hours, from Open-Meteo (no API key), for the middle of the monitoring area. It is
+  cached on the phone and says how old the reading is once it is more than an hour old. It
+  reports a forecast and never raises a warning - a grid forecast cannot speak for one
+  slope.
+- **Who to call**, in the side panel: *Call site supervisor* dials the account that holds
+  the supervisor role (number cached on the phone, so it survives losing signal), and
+  *Emergency hotline* dials 999 behind a confirmation. The supervisor number is read from
+  the database rather than typed into the app, so it follows a change of person.
 - Capture three record types:
 
   | Type | Caption |
