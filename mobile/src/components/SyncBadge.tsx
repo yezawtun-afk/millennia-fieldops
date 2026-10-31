@@ -8,7 +8,8 @@ import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-nativ
 import { Ionicons } from "@expo/vector-icons";
 import { useI18n } from "../i18n";
 import { useReduceMotion } from "../lib/useReduceMotion";
-import { colors, radius, spacing, type } from "../theme";
+import { radius, spacing, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 import type { SyncStatus } from "../context/SyncContext";
 
 type Props = {
@@ -36,6 +37,8 @@ export function SyncBadge({
 }: Props) {
   const { t } = useI18n();
   const reduceMotion = useReduceMotion();
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
 
   // A short pop when an upload finishes. The card would otherwise just change
   // colour, which is easy to miss while the worker is looking at the form.
@@ -166,41 +169,42 @@ function relativeTime(
   return new Date(iso).toLocaleDateString();
 }
 
-const styles = StyleSheet.create({
-  syncCard: {
-    borderRadius: radius.md,
-    borderCurve: "continuous",
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  syncTop: { flexDirection: "row", alignItems: "flex-start", gap: spacing.md },
-  syncIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.full,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.55)",
-  },
-  syncTitle: { fontSize: 15, fontWeight: "600" },
-  syncDetail: { fontSize: 13, marginTop: 1, lineHeight: 18 },
-  syncWhen: { fontSize: 12, marginTop: 3, opacity: 0.85 },
-  syncAction: {
-    fontSize: 13,
-    fontWeight: "600",
-    marginTop: spacing.sm,
-    textDecorationLine: "underline",
-  },
-
-  compact: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  dot: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },
-  compactTitle: { fontSize: 13, fontWeight: "600" },
-  compactDetail: { ...type.caption, marginTop: 1, lineHeight: 16 },
-  compactAction: { fontSize: 12, fontWeight: "600", color: colors.primary, marginTop: 1 },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    syncCard: {
+      borderRadius: radius.md,
+      borderCurve: "continuous",
+      padding: spacing.lg,
+      marginBottom: spacing.md,
+    },
+    syncTop: { flexDirection: "row", alignItems: "flex-start", gap: spacing.md },
+    syncIcon: {
+      width: 34,
+      height: 34,
+      borderRadius: radius.full,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "rgba(255,255,255,0.55)",
+    },
+    syncTitle: { fontSize: 15, fontWeight: "600" },
+    syncDetail: { fontSize: 13, marginTop: 1, lineHeight: 18 },
+    syncWhen: { fontSize: 12, marginTop: 3, opacity: 0.85 },
+    syncAction: {
+      fontSize: 13,
+      fontWeight: "600",
+      marginTop: spacing.sm,
+      textDecorationLine: "underline",
+    },
+  
+    compact: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+    },
+    dot: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },
+    compactTitle: { fontSize: 13, fontWeight: "600" },
+    compactDetail: { ...type.caption, marginTop: 1, lineHeight: 16 },
+    compactAction: { fontSize: 12, fontWeight: "600", color: colors.primary, marginTop: 1 },
 });

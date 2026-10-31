@@ -10,7 +10,8 @@ import { WebView } from "react-native-webview";
 import { buildMapHtml } from "../lib/mapHtml";
 import type { MapPoint, MapZone, UserLocation } from "../lib/mapHtml";
 import { Button } from "./ui";
-import { colors, spacing } from "../theme";
+import { spacing, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 
 export function RecordMap({
   points,
@@ -37,13 +38,15 @@ export function RecordMap({
   const [detail, setDetail] = useState<string | null>(null);
   const webViewRef = useRef<WebView<object> | null>(null);
   const handledCenterRef = useRef(0);
+  const styles = useThemedStyles(makeStyles);
+  const { colors, isDark } = useTheme();
 
   // A stable HTML string keeps the WebView from reloading on unrelated
   // re-renders (a sync tick, for example). It changes with the data, the
   // filter or the language, which is exactly when a reload is wanted.
   const html = useMemo(
-    () => buildMapHtml(points, zones, { openRecord: openRecordLabel }),
-    [points, zones, openRecordLabel]
+    () => buildMapHtml(points, zones, { openRecord: openRecordLabel }, colors, isDark),
+    [points, zones, openRecordLabel, colors, isDark]
   );
 
   // If the page never says it started, stop showing a spinner and offer a
@@ -155,37 +158,38 @@ export function RecordMap({
   );
 }
 
-const styles = StyleSheet.create({
-  fill: { flex: 1, backgroundColor: colors.page },
-  web: { flex: 1, backgroundColor: colors.page },
-  centered: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.md,
-    backgroundColor: colors.page,
-    padding: spacing.xl,
-  },
-  errorText: {
-    fontSize: 14,
-    color: colors.muted,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  detailText: {
-    fontSize: 12,
-    color: colors.faint,
-    textAlign: "center",
-    lineHeight: 17,
-  },
-  overlay: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.page,
-  },
+const makeStyles = ({ colors }: ThemeScale) =>
+  StyleSheet.create({
+    fill: { flex: 1, backgroundColor: colors.page },
+    web: { flex: 1, backgroundColor: colors.page },
+    centered: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.md,
+      backgroundColor: colors.page,
+      padding: spacing.xl,
+    },
+    errorText: {
+      fontSize: 14,
+      color: colors.muted,
+      textAlign: "center",
+      lineHeight: 20,
+    },
+    detailText: {
+      fontSize: 12,
+      color: colors.faint,
+      textAlign: "center",
+      lineHeight: 17,
+    },
+    overlay: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.page,
+    },
 });

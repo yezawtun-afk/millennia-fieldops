@@ -8,7 +8,8 @@ import { fetchNotifications } from "../lib/api";
 import { ensureNotificationPermission, markAllRead, presentUnreadNotifications } from "../lib/notifications";
 import { useI18n, translateNotification } from "../i18n";
 import { Button, Card, Pill, SectionTitle } from "../components/ui";
-import { colors, radius, spacing, type } from "../theme";
+import { radius, spacing, type Palette, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 import { formatDateTime } from "../lib/format";
 import type { AppNotification } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
@@ -41,7 +42,7 @@ function dayBucket(t: T, iso: string): string {
   return formatDateTime(iso);
 }
 
-function accentForMessage(msg: string): {
+function accentForMessage(colors: Palette, msg: string): {
   bg: string;
   fg: string;
   icon: "checkmark-circle" | "close-circle" | "notifications";
@@ -51,16 +52,16 @@ function accentForMessage(msg: string): {
   const lower = msg.toLowerCase();
   if (lower.includes("approved") || lower.includes("verified")) {
     return {
-      bg: colors.approvedSoft ?? "#D1FAE5",
-      fg: colors.approved ?? "#047857",
+      bg: colors.approvedSoft,
+      fg: colors.approved,
       icon: "checkmark-circle",
       label: lower.includes("verified") ? "Verified" : "Approved",
     };
   }
   if (lower.includes("rejected") || lower.includes("sent back")) {
     return {
-      bg: colors.rejectedSoft ?? "#FDECEA",
-      fg: colors.rejected ?? "#B91C1C",
+      bg: colors.rejectedSoft,
+      fg: colors.rejected,
       icon: "close-circle",
       label: lower.includes("sent back") ? "Sent back" : "Rejected",
     };
@@ -74,6 +75,8 @@ function accentForMessage(msg: string): {
 export function NotificationsScreen({ navigation }: Props) {
   const { profile, session } = useAuth();
   const { t } = useI18n();
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const userId = session?.user.id ?? profile?.id ?? null;
   const [items, setItems] = useState<AppNotification[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -222,7 +225,7 @@ export function NotificationsScreen({ navigation }: Props) {
             <SectionTitle>{title}</SectionTitle>
             <View style={{ gap: spacing.sm }}>
               {rows.map((item) => {
-                const { bg, fg, icon, label } = accentForMessage(item.message);
+                const { bg, fg, icon, label } = accentForMessage(colors, item.message);
                 return (
                   <Card key={item.id} padded>
                     <View style={styles.itemHeader}>
@@ -273,37 +276,38 @@ export function NotificationsScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.page },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  heading: { ...type.title },
-  subline: { ...type.caption, marginTop: 2 },
-  actions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md },
-  actionBtn: { flex: 1 },
-  chipsRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md, marginBottom: spacing.lg },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: radius.full,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.control,
-    minHeight: 36,
-    justifyContent: "center",
-  },
-  chipActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
-  chipText: { fontSize: 13, color: colors.ink, fontWeight: "500" },
-  chipTextActive: { color: colors.primaryDark, fontWeight: "600" },
-  itemHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
-  leftBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 9, paddingVertical: 3 },
-  statusText: { fontSize: 11, fontWeight: "600" },
-  itemHeadRight: { flexDirection: "row", alignItems: "center", gap: 6 },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.rejected },
-  body: { fontSize: 14, color: colors.ink, lineHeight: 20, marginTop: spacing.sm },
-  muted: { fontSize: 13, color: colors.muted, lineHeight: 19, marginTop: 4 },
-  emptyTitle: { fontSize: 15, fontWeight: "600", color: colors.ink, marginTop: spacing.sm },
-  rowActions: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.md },
-  dismissBtn: { flexDirection: "row", alignItems: "center", gap: 3, paddingVertical: 8, paddingHorizontal: 10 },
-  dismissText: { fontSize: 12, fontWeight: "500", color: colors.muted },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.page },
+    content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+    headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    heading: { ...type.title },
+    subline: { ...type.caption, marginTop: 2 },
+    actions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md },
+    actionBtn: { flex: 1 },
+    chipsRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md, marginBottom: spacing.lg },
+    chip: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: radius.full,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.control,
+      minHeight: 36,
+      justifyContent: "center",
+    },
+    chipActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
+    chipText: { fontSize: 13, color: colors.ink, fontWeight: "500" },
+    chipTextActive: { color: colors.primaryDark, fontWeight: "600" },
+    itemHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
+    leftBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 9, paddingVertical: 3 },
+    statusText: { fontSize: 11, fontWeight: "600" },
+    itemHeadRight: { flexDirection: "row", alignItems: "center", gap: 6 },
+    dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.rejected },
+    body: { fontSize: 14, color: colors.ink, lineHeight: 20, marginTop: spacing.sm },
+    muted: { fontSize: 13, color: colors.muted, lineHeight: 19, marginTop: 4 },
+    emptyTitle: { fontSize: 15, fontWeight: "600", color: colors.ink, marginTop: spacing.sm },
+    rowActions: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.md },
+    dismissBtn: { flexDirection: "row", alignItems: "center", gap: 3, paddingVertical: 8, paddingHorizontal: 10 },
+    dismissText: { fontSize: 12, fontWeight: "500", color: colors.muted },
 });

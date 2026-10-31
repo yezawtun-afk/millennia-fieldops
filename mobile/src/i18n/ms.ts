@@ -95,6 +95,7 @@ export const ms: Record<string, string> = {
   "Could not start the upload. Check your connection.":
     "Tidak dapat memulakan muat naik. Periksa sambungan anda.",
   Decision: "Keputusan",
+  "Dark mode": "Mod gelap",
   Delete: "Padam",
   'Delete "{title}"? This cannot be undone - the record and its photos are removed for everyone.':
     'Padam "{title}"? Tindakan ini tidak boleh dibatalkan - rekod dan fotonya akan dipadam untuk semua orang.',

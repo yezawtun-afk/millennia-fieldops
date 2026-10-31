@@ -11,7 +11,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useI18n } from "../i18n";
-import { colors, radius, spacing, type } from "../theme";
+import { radius, spacing, type Palette, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 
 // ---- Screen / layout ------------------------------------------------------
 
@@ -27,6 +28,7 @@ export function Card({
   /** Use for a card that holds a form or prose rather than full-bleed rows. */
   padded?: boolean;
 }) {
+  const styles = useThemedStyles(makeStyles);
   return <View style={[styles.card, padded ? styles.cardPadded : null, style]}>{children}</View>;
 }
 
@@ -37,6 +39,7 @@ export function SectionTitle({
   children: React.ReactNode;
   action?: React.ReactNode;
 }) {
+  const styles = useThemedStyles(makeStyles);
   if (!action) return <Text style={styles.sectionTitle}>{children}</Text>;
   return (
     <View style={styles.sectionTitleRow}>
@@ -47,6 +50,7 @@ export function SectionTitle({
 }
 
 export function Label({ children }: { children: React.ReactNode }) {
+  const styles = useThemedStyles(makeStyles);
   return <Text style={styles.label}>{children}</Text>;
 }
 
@@ -60,6 +64,7 @@ export function Field({ label, children }: { label: string; children: React.Reac
 }
 
 export function Divider() {
+  const styles = useThemedStyles(makeStyles);
   return <View style={styles.divider} />;
 }
 
@@ -80,6 +85,9 @@ export function ListRow({
   onPress?: () => void;
   last?: boolean;
 }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
+
   return (
     <Pressable
       onPress={onPress}
@@ -114,7 +122,7 @@ export function ListRow({
 export function StatCell({
   label,
   value,
-  tone = colors.ink,
+  tone,
   last,
   labelHeight,
 }: {
@@ -129,6 +137,9 @@ export function StatCell({
    */
   labelHeight?: number;
 }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
+
   return (
     <View style={[styles.statCell, !last && styles.statCellLine]}>
       <Text
@@ -139,7 +150,7 @@ export function StatCell({
       >
         {label}
       </Text>
-      <Text style={[styles.statValue, { color: tone }]}>{value}</Text>
+      <Text style={[styles.statValue, { color: tone ?? colors.ink }]}>{value}</Text>
     </View>
   );
 }
@@ -154,6 +165,8 @@ export function Input({
   trailing?: React.ReactNode;
 }) {
   const [focused, setFocused] = useState(false);
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const field = (
     <TextInput
       placeholderTextColor={colors.faint}
@@ -202,6 +215,8 @@ export function SearchInput({
   accessibilityLabel?: string;
 }) {
   const { t } = useI18n();
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
 
   return (
     <View>
@@ -237,12 +252,16 @@ export function SearchInput({
 
 // ---- Buttons --------------------------------------------------------------
 
-const buttonVariants = {
-  primary: { bg: colors.primary, fg: colors.onTint, border: colors.primary },
-  secondary: { bg: colors.card, fg: colors.ink, border: colors.control },
-  ghost: { bg: "transparent", fg: colors.ink, border: "transparent" },
-  danger: { bg: colors.rejected, fg: colors.onTint, border: colors.rejected },
-} as const;
+function buttonPalette(colors: Palette) {
+  return {
+    primary: { bg: colors.primary, fg: colors.onTint, border: colors.primary },
+    secondary: { bg: colors.card, fg: colors.ink, border: colors.control },
+    ghost: { bg: "transparent", fg: colors.ink, border: "transparent" },
+    danger: { bg: colors.rejected, fg: colors.onTint, border: colors.rejected },
+  } as const;
+}
+
+type ButtonVariant = keyof ReturnType<typeof buttonPalette>;
 
 export function Button({
   title,
@@ -254,12 +273,14 @@ export function Button({
 }: {
   title: string;
   onPress: () => void;
-  variant?: keyof typeof buttonVariants;
+  variant?: ButtonVariant;
   disabled?: boolean;
   loading?: boolean;
   style?: ViewStyle | ViewStyle[];
 }) {
-  const palette = buttonVariants[variant];
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
+  const palette = buttonPalette(colors)[variant];
   const inactive = disabled || loading;
 
   return (
@@ -304,6 +325,7 @@ export function Pill({
   background: string;
   icon?: React.ReactNode;
 }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={[styles.pill, { backgroundColor: background }]}>
       {icon}
@@ -329,6 +351,7 @@ export function ChipGroup({
   /** A group that does not apply to the current choice stays readable but inert. */
   disabled?: boolean;
 }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.chipRow}>
       {options.map((option) => {
@@ -366,6 +389,8 @@ export function Banner({
   kind?: "info" | "error" | "warning" | "success";
   children: React.ReactNode;
 }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const palette =
     kind === "error"
       ? { bg: colors.rejectedSoft, fg: colors.rejectedInk, icon: "alert-circle-outline" as const }
@@ -384,6 +409,7 @@ export function Banner({
 }
 
 export function EmptyState({ title, hint }: { title: string; hint?: string }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.empty}>
       <Text style={styles.emptyTitle}>{title}</Text>
@@ -392,129 +418,130 @@ export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderCurve: "continuous",
-    overflow: "hidden",
-  },
-  cardPadded: { padding: spacing.lg },
-  sectionTitle: { ...type.heading, fontSize: 15 },
-  sectionTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: spacing.sm,
-  },
-  label: { ...type.label, marginBottom: 6 },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line },
-  listRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 13,
-    minHeight: 56,
-  },
-  listRowLine: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
-  listRowIcon: { width: 32, alignItems: "center" },
-  listRowTitle: { ...type.body, fontSize: 15, fontWeight: "500" },
-  listRowMeta: { ...type.caption, marginTop: 1 },
-  statCell: { flex: 1, paddingVertical: spacing.md, paddingHorizontal: spacing.sm },
-  statCellLine: { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: colors.line },
-  statLabel: { ...type.label, fontSize: 11 },
-  statValue: { ...type.number, fontSize: 22, marginTop: 2 },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.control,
-    borderRadius: radius.md,
-    borderCurve: "continuous",
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    minHeight: 46,
-    fontSize: 15,
-    color: colors.ink,
-    backgroundColor: colors.card,
-  },
-  inputFocused: { borderColor: colors.primary },
-  inputMultiline: { minHeight: 88, textAlignVertical: "top" },
-  inputShell: { justifyContent: "center" },
-  inputWithTrailing: { paddingRight: 44 },
-  inputTrailing: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  searchIcon: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 38,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1,
-  },
-  searchField: { paddingLeft: 38 },
-  searchClear: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
-  button: {
-    borderWidth: 1,
-    borderRadius: radius.md,
-    borderCurve: "continuous",
-    minHeight: 46,
-    paddingHorizontal: spacing.lg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonText: { fontSize: 15, fontWeight: "600" },
-  pill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.full,
-    alignSelf: "flex-start",
-  },
-  pillText: { fontSize: 11, fontWeight: "500" },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  chip: {
-    borderWidth: 1,
-    borderColor: colors.control,
-    backgroundColor: colors.card,
-    borderRadius: radius.full,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    minHeight: 38,
-    justifyContent: "center",
-  },
-  chipSelected: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
-  chipDisabled: { opacity: 0.45 },
-  chipText: { fontSize: 13, color: colors.ink },
-  chipTextSelected: { color: colors.primaryDark, fontWeight: "600" },
-  banner: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.sm,
-    borderRadius: radius.md,
-    borderCurve: "continuous",
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  bannerText: { flex: 1, fontSize: 13, lineHeight: 18 },
-  empty: {
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderCurve: "continuous",
-    paddingVertical: spacing.xxl,
-    paddingHorizontal: spacing.lg,
-    alignItems: "center",
-  },
-  emptyTitle: { ...type.body, fontWeight: "500" },
-  emptyHint: { ...type.caption, marginTop: 4, textAlign: "center" },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      borderCurve: "continuous",
+      overflow: "hidden",
+    },
+    cardPadded: { padding: spacing.lg },
+    sectionTitle: { ...type.heading, fontSize: 15 },
+    sectionTitleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: spacing.sm,
+    },
+    label: { ...type.label, marginBottom: 6 },
+    divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line },
+    listRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: 13,
+      minHeight: 56,
+    },
+    listRowLine: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
+    listRowIcon: { width: 32, alignItems: "center" },
+    listRowTitle: { ...type.body, fontSize: 15, fontWeight: "500" },
+    listRowMeta: { ...type.caption, marginTop: 1 },
+    statCell: { flex: 1, paddingVertical: spacing.md, paddingHorizontal: spacing.sm },
+    statCellLine: { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: colors.line },
+    statLabel: { ...type.label, fontSize: 11 },
+    statValue: { ...type.number, fontSize: 22, marginTop: 2 },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.control,
+      borderRadius: radius.md,
+      borderCurve: "continuous",
+      paddingHorizontal: 12,
+      paddingVertical: 11,
+      minHeight: 46,
+      fontSize: 15,
+      color: colors.ink,
+      backgroundColor: colors.card,
+    },
+    inputFocused: { borderColor: colors.primary },
+    inputMultiline: { minHeight: 88, textAlignVertical: "top" },
+    inputShell: { justifyContent: "center" },
+    inputWithTrailing: { paddingRight: 44 },
+    inputTrailing: {
+      position: "absolute",
+      right: 0,
+      top: 0,
+      bottom: 0,
+      width: 44,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    searchIcon: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 38,
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 1,
+    },
+    searchField: { paddingLeft: 38 },
+    searchClear: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+    button: {
+      borderWidth: 1,
+      borderRadius: radius.md,
+      borderCurve: "continuous",
+      minHeight: 46,
+      paddingHorizontal: spacing.lg,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    buttonText: { fontSize: 15, fontWeight: "600" },
+    pill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: radius.full,
+      alignSelf: "flex-start",
+    },
+    pillText: { fontSize: 11, fontWeight: "500" },
+    chipRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+    chip: {
+      borderWidth: 1,
+      borderColor: colors.control,
+      backgroundColor: colors.card,
+      borderRadius: radius.full,
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      minHeight: 38,
+      justifyContent: "center",
+    },
+    chipSelected: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
+    chipDisabled: { opacity: 0.45 },
+    chipText: { fontSize: 13, color: colors.ink },
+    chipTextSelected: { color: colors.primaryDark, fontWeight: "600" },
+    banner: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+      borderRadius: radius.md,
+      borderCurve: "continuous",
+      padding: spacing.md,
+      marginBottom: spacing.md,
+    },
+    bannerText: { flex: 1, fontSize: 13, lineHeight: 18 },
+    empty: {
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      borderCurve: "continuous",
+      paddingVertical: spacing.xxl,
+      paddingHorizontal: spacing.lg,
+      alignItems: "center",
+    },
+    emptyTitle: { ...type.body, fontWeight: "500" },
+    emptyHint: { ...type.caption, marginTop: 4, textAlign: "center" },
 });

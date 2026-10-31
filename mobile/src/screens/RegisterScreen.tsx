@@ -6,7 +6,8 @@ import { useI18n } from "../i18n";
 import { LanguageButton } from "../components/LanguageButton";
 import { Banner, Button, Card, Field, Input } from "../components/ui";
 import { PasswordInput } from "../components/PasswordInput";
-import { colors, spacing, type } from "../theme";
+import { spacing, type ThemeScale } from "../theme";
+import { useThemedStyles } from "../lib/useTheme";
 import type { AuthStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Register">;
@@ -14,6 +15,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, "Register">;
 export function RegisterScreen({ navigation }: Props) {
   const { signUp } = useAuth();
   const { t } = useI18n();
+  const styles = useThemedStyles(makeStyles);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -129,23 +131,24 @@ export function RegisterScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.page },
-  content: {
-    padding: spacing.xl,
-    paddingTop: spacing.xxl,
-    paddingBottom: spacing.xxl,
-    flexGrow: 1,
-    justifyContent: "center",
-  },
-  languageRow: { position: "absolute", top: spacing.xxl, right: spacing.lg, zIndex: 2 },
-  title: { ...type.title, fontSize: 22, textAlign: "center" },
-  subtitle: {
-    ...type.subhead,
-    textAlign: "center",
-    marginTop: 3,
-    marginBottom: spacing.xl,
-    paddingHorizontal: spacing.md,
-  },
-  card: { padding: spacing.lg },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    flex: { flex: 1, backgroundColor: colors.page },
+    content: {
+      padding: spacing.xl,
+      paddingTop: spacing.xxl,
+      paddingBottom: spacing.xxl,
+      flexGrow: 1,
+      justifyContent: "center",
+    },
+    languageRow: { position: "absolute", top: spacing.xxl, right: spacing.lg, zIndex: 2 },
+    title: { ...type.title, fontSize: 22, textAlign: "center" },
+    subtitle: {
+      ...type.subhead,
+      textAlign: "center",
+      marginTop: 3,
+      marginBottom: spacing.xl,
+      paddingHorizontal: spacing.md,
+    },
+    card: { padding: spacing.lg },
 });

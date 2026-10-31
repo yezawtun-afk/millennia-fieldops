@@ -8,7 +8,8 @@ import React, { useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LOCALES, useI18n } from "../i18n";
-import { colors, radius, spacing, type } from "../theme";
+import { radius, spacing, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 
 export function LanguageSheet({
   visible,
@@ -18,6 +19,8 @@ export function LanguageSheet({
   onClose: () => void;
 }) {
   const { locale, setLocale, t } = useI18n();
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -57,10 +60,13 @@ export function LanguageSheet({
   );
 }
 
-export function LanguageButton({ tint = colors.muted }: { tint?: string }) {
+export function LanguageButton({ tint }: { tint?: string }) {
   const { locale, t } = useI18n();
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const [open, setOpen] = useState(false);
   const current = LOCALES.find((item) => item.value === locale) ?? LOCALES[0];
+  const ink = tint ?? colors.muted;
 
   return (
     <>
@@ -71,8 +77,8 @@ export function LanguageButton({ tint = colors.muted }: { tint?: string }) {
         hitSlop={10}
         style={styles.trigger}
       >
-        <Ionicons name="language-outline" size={16} color={tint} />
-        <Text style={[styles.triggerText, { color: tint }]}>{current.short}</Text>
+        <Ionicons name="language-outline" size={16} color={ink} />
+        <Text style={[styles.triggerText, { color: ink }]}>{current.short}</Text>
       </Pressable>
 
       <LanguageSheet visible={open} onClose={() => setOpen(false)} />
@@ -80,44 +86,45 @@ export function LanguageButton({ tint = colors.muted }: { tint?: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  trigger: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: radius.full,
-    backgroundColor: colors.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.control,
-  },
-  triggerText: { fontSize: 12, fontWeight: "600" },
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(15, 32, 24, 0.35)",
-    justifyContent: "flex-end",
-    padding: spacing.lg,
-  },
-  sheet: {
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    borderCurve: "continuous",
-    padding: spacing.lg,
-    gap: spacing.xs,
-  },
-  title: { ...type.subhead, fontWeight: "600", color: colors.ink, marginBottom: spacing.sm },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
-  },
-  rowSelected: { backgroundColor: colors.primarySoft },
-  rowText: { fontSize: 15, color: colors.ink },
-  rowTextSelected: { fontWeight: "600", color: colors.primaryDark },
-  cancel: { alignItems: "center", paddingVertical: spacing.md, marginTop: spacing.xs },
-  cancelText: { fontSize: 14, fontWeight: "500", color: colors.muted },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    trigger: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 5,
+      borderRadius: radius.full,
+      backgroundColor: colors.card,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.control,
+    },
+    triggerText: { fontSize: 12, fontWeight: "600" },
+    backdrop: {
+      flex: 1,
+      backgroundColor: "rgba(15, 32, 24, 0.35)",
+      justifyContent: "flex-end",
+      padding: spacing.lg,
+    },
+    sheet: {
+      backgroundColor: colors.card,
+      borderRadius: radius.lg,
+      borderCurve: "continuous",
+      padding: spacing.lg,
+      gap: spacing.xs,
+    },
+    title: { ...type.subhead, fontWeight: "600", color: colors.ink, marginBottom: spacing.sm },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.sm,
+    },
+    rowSelected: { backgroundColor: colors.primarySoft },
+    rowText: { fontSize: 15, color: colors.ink },
+    rowTextSelected: { fontWeight: "600", color: colors.primaryDark },
+    cancel: { alignItems: "center", paddingVertical: spacing.md, marginTop: spacing.xs },
+    cancelText: { fontSize: 14, fontWeight: "500", color: colors.muted },
 });

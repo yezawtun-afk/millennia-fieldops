@@ -9,7 +9,8 @@ import { useI18n } from "../i18n";
 import { SEVERITY_LABELS } from "../lib/format";
 import type { AiSuggestion } from "../lib/ai";
 import { Banner, Button, Card } from "./ui";
-import { colors, radius, spacing, type } from "../theme";
+import { radius, spacing, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 import { FadeInCard } from "./FadeInCard";
 
 interface Row {
@@ -32,6 +33,8 @@ export function AiSuggestionSheet({
   onApply: (suggestion: AiSuggestion) => void;
 }) {
   const { t } = useI18n();
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
 
   if (!visible || !suggestion) return null;
 
@@ -203,6 +206,7 @@ function SuggestionRow({
   muted: boolean;
   last: boolean;
 }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={[styles.row, last ? null : styles.rowLine]}>
       <Text style={styles.rowLabel}>{label}</Text>
@@ -211,64 +215,65 @@ function SuggestionRow({
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.page },
-  head: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
-  },
-  headText: { flex: 1, minWidth: 0 },
-  title: { ...type.title, fontSize: 22 },
-  sub: { ...type.subhead, marginTop: 2 },
-  close: {
-    width: 34,
-    height: 34,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius.full,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.control,
-  },
-  content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
-  sheetBody: { marginTop: 6 },
-  photo: {
-    width: "100%",
-    height: 190,
-    borderRadius: radius.md,
-    backgroundColor: colors.line,
-  },
-  confidenceRow: { flexDirection: "row" },
-  confidenceBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    minHeight: 30,
-    borderRadius: radius.full,
-  },
-  confidenceGood: { backgroundColor: colors.approvedSoft },
-  confidenceLow: { backgroundColor: colors.sevMediumSoft },
-  confidenceText: { fontSize: 12, fontWeight: "600" },
-  row: { paddingVertical: 10, gap: 4 },
-  rowLine: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
-  rowLabel: { fontSize: 12, fontWeight: "600", color: colors.muted },
-  rowValue: { ...type.body, fontSize: 15 },
-  rowMuted: { color: colors.muted, fontStyle: "italic" },
-  helper: { ...type.caption, lineHeight: 17 },
-  footer: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.line,
-    backgroundColor: colors.card,
-  },
-  footerButton: { flex: 1 },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.page },
+    head: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.md,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.md,
+    },
+    headText: { flex: 1, minWidth: 0 },
+    title: { ...type.title, fontSize: 22 },
+    sub: { ...type.subhead, marginTop: 2 },
+    close: {
+      width: 34,
+      height: 34,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: radius.full,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.control,
+    },
+    content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
+    sheetBody: { marginTop: 6 },
+    photo: {
+      width: "100%",
+      height: 190,
+      borderRadius: radius.md,
+      backgroundColor: colors.line,
+    },
+    confidenceRow: { flexDirection: "row" },
+    confidenceBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingHorizontal: 10,
+      minHeight: 30,
+      borderRadius: radius.full,
+    },
+    confidenceGood: { backgroundColor: colors.approvedSoft },
+    confidenceLow: { backgroundColor: colors.sevMediumSoft },
+    confidenceText: { fontSize: 12, fontWeight: "600" },
+    row: { paddingVertical: 10, gap: 4 },
+    rowLine: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
+    rowLabel: { fontSize: 12, fontWeight: "600", color: colors.muted },
+    rowValue: { ...type.body, fontSize: 15 },
+    rowMuted: { color: colors.muted, fontStyle: "italic" },
+    helper: { ...type.caption, lineHeight: 17 },
+    footer: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.md,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.line,
+      backgroundColor: colors.card,
+    },
+    footerButton: { flex: 1 },
 });

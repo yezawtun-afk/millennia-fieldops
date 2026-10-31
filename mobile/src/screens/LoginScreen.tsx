@@ -7,7 +7,8 @@ import { useI18n } from "../i18n";
 import { LanguageButton } from "../components/LanguageButton";
 import { Banner, Button, Card, Field, Input } from "../components/ui";
 import { PasswordInput } from "../components/PasswordInput";
-import { colors, radius, spacing, type } from "../theme";
+import { radius, spacing, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 import type { AuthStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
@@ -15,6 +16,8 @@ type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 export function LoginScreen({ navigation }: Props) {
   const { signIn } = useAuth();
   const { t } = useI18n();
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -85,35 +88,36 @@ export function LoginScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.page },
-  content: {
-    padding: spacing.xl,
-    paddingTop: spacing.xxl,
-    paddingBottom: spacing.xxl,
-    flexGrow: 1,
-    justifyContent: "center",
-  },
-  languageRow: { position: "absolute", top: spacing.xxl, right: spacing.lg, zIndex: 2 },
-  header: { alignItems: "center", marginBottom: spacing.xl },
-  mark: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    borderCurve: "continuous",
-    backgroundColor: colors.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing.md,
-  },
-  title: { ...type.title, fontSize: 22 },
-  subtitle: { ...type.subhead, marginTop: 3, textAlign: "center" },
-  card: { padding: spacing.lg },
-  hint: {
-    ...type.caption,
-    textAlign: "center",
-    marginTop: spacing.lg,
-    lineHeight: 17,
-    paddingHorizontal: spacing.md,
-  },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    flex: { flex: 1, backgroundColor: colors.page },
+    content: {
+      padding: spacing.xl,
+      paddingTop: spacing.xxl,
+      paddingBottom: spacing.xxl,
+      flexGrow: 1,
+      justifyContent: "center",
+    },
+    languageRow: { position: "absolute", top: spacing.xxl, right: spacing.lg, zIndex: 2 },
+    header: { alignItems: "center", marginBottom: spacing.xl },
+    mark: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.md,
+      borderCurve: "continuous",
+      backgroundColor: colors.primarySoft,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing.md,
+    },
+    title: { ...type.title, fontSize: 22 },
+    subtitle: { ...type.subhead, marginTop: 3, textAlign: "center" },
+    card: { padding: spacing.lg },
+    hint: {
+      ...type.caption,
+      textAlign: "center",
+      marginTop: spacing.lg,
+      lineHeight: 17,
+      paddingHorizontal: spacing.md,
+    },
 });

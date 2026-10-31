@@ -4,7 +4,8 @@ import { createNativeStackNavigator, type NativeStackScreenProps } from "@react-
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
-import { colors } from "../theme";
+import { type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 import { LoginScreen } from "../screens/LoginScreen";
 import { RegisterScreen } from "../screens/RegisterScreen";
 import { HomeScreen } from "../screens/HomeScreen";
@@ -31,14 +32,16 @@ const Tabs = createBottomTabNavigator<MainTabParamList>();
 // The app mark shown in the header: the leaf from the dashboard, not a
 // letter in a box.
 function HeaderBrand() {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   return (
-    <View style={headerStyles.brand}>
-      <View style={headerStyles.badge}>
+    <View style={styles.brand}>
+      <View style={styles.badge}>
         <Ionicons name="leaf-outline" size={15} color={colors.primary} />
       </View>
       <View>
-        <Text style={headerStyles.brandTitle}>Millennia FieldOps</Text>
-        <Text style={headerStyles.brandSub}>Millennia Village</Text>
+        <Text style={styles.brandTitle}>Millennia FieldOps</Text>
+        <Text style={styles.brandSub}>Millennia Village</Text>
       </View>
     </View>
   );
@@ -47,6 +50,8 @@ function HeaderBrand() {
 // The panel's door: a plain menu mark, same weight as the other header icons.
 function HeaderMenu({ onPress }: { onPress: () => void }) {
   const { t } = useI18n();
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
 
   return (
     <Pressable
@@ -54,7 +59,7 @@ function HeaderMenu({ onPress }: { onPress: () => void }) {
       hitSlop={12}
       accessibilityRole="button"
       accessibilityLabel={t("Open menu")}
-      style={({ pressed }) => [headerStyles.menu, pressed && { opacity: 0.55 }]}
+      style={({ pressed }) => [styles.menu, pressed && { opacity: 0.55 }]}
     >
       <Ionicons name="menu" size={24} color={colors.ink} />
     </Pressable>
@@ -66,6 +71,7 @@ function MainTabs({ navigation }: NativeStackScreenProps<RootStackParamList, "Ta
   // Uploading is handled by SyncProvider, which also feeds the status badge.
   const { session } = useAuth();
   const { t } = useI18n();
+  const { colors } = useTheme();
   const userId = session?.user.id ?? null;
   const [unread, setUnread] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -147,6 +153,7 @@ function MainTabs({ navigation }: NativeStackScreenProps<RootStackParamList, "Ta
 export function RootNavigator() {
   const { session, loading } = useAuth();
   const { t } = useI18n();
+  const { colors } = useTheme();
 
   if (loading) {
     return (
@@ -222,17 +229,18 @@ export function RootNavigator() {
   );
 }
 
-const headerStyles = StyleSheet.create({
-  brand: { flexDirection: "row", alignItems: "center", gap: 8 },
-  badge: {
-    width: 28,
-    height: 28,
-    borderRadius: 7,
-    backgroundColor: colors.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  brandTitle: { color: colors.ink, fontSize: 14, fontWeight: "600", lineHeight: 17 },
-  brandSub: { color: colors.muted, fontSize: 11, lineHeight: 13 },
-  menu: { paddingHorizontal: 2 },
+const makeStyles = ({ colors }: ThemeScale) =>
+  StyleSheet.create({
+    brand: { flexDirection: "row", alignItems: "center", gap: 8 },
+    badge: {
+      width: 28,
+      height: 28,
+      borderRadius: 7,
+      backgroundColor: colors.primarySoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    brandTitle: { color: colors.ink, fontSize: 14, fontWeight: "600", lineHeight: 17 },
+    brandSub: { color: colors.muted, fontSize: 11, lineHeight: 13 },
+    menu: { paddingHorizontal: 2 },
 });

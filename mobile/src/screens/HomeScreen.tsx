@@ -17,8 +17,9 @@ import {
 import { useI18n } from "../i18n";
 import { Banner, Button, Card, ListRow, Pill, SectionTitle, StatCell } from "../components/ui";
 import { SyncBadge } from "../components/SyncBadge";
-import { colors, radius, spacing, type } from "../theme";
-import { ROLE_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, STATUS_LABELS, TYPE_COLORS, formatDate } from "../lib/format";
+import { radius, spacing, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
+import { ROLE_LABELS, PRIORITY_LABELS, STATUS_LABELS, formatDate } from "../lib/format";
 import type { FieldRecord, RecordType } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
 
@@ -47,6 +48,8 @@ const CAPTURE_OPTIONS: {
 export function HomeScreen({ navigation }: Props) {
   const { profile } = useAuth();
   const { t } = useI18n();
+  const styles = useThemedStyles(makeStyles);
+  const { colors, tones } = useTheme();
   const {
     online,
     syncing,
@@ -311,8 +314,8 @@ export function HomeScreen({ navigation }: Props) {
                   record.priority ? (
                     <Pill
                       label={t(PRIORITY_LABELS[record.priority])}
-                      color={PRIORITY_COLORS[record.priority].fg}
-                      background={PRIORITY_COLORS[record.priority].bg}
+                      color={tones.priority[record.priority].fg}
+                      background={tones.priority[record.priority].bg}
                     />
                   ) : undefined
                 }
@@ -353,10 +356,10 @@ export function HomeScreen({ navigation }: Props) {
               <View
                 style={[
                   styles.captureIcon,
-                  { backgroundColor: TYPE_COLORS[option.type].bg },
+                  { backgroundColor: tones.type[option.type].bg },
                 ]}
               >
-                <Ionicons name={option.icon} size={18} color={TYPE_COLORS[option.type].fg} />
+                <Ionicons name={option.icon} size={18} color={tones.type[option.type].fg} />
               </View>
             }
             onPress={() => navigation.navigate("New", { type: option.type })}
@@ -423,73 +426,74 @@ export function HomeScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.page },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
-
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
-  },
-  greeting: { ...type.caption, fontSize: 13 },
-  name: { ...type.title, marginTop: 1 },
-  meta: { ...type.subhead, marginTop: 2 },
-
-  // Site weather: one muted line under the greeting, not a card. It is context
-  // for the day, not a task.
-  weather: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: -spacing.sm,
-    marginBottom: spacing.md,
-  },
-  weatherText: { flexShrink: 1, fontSize: 12, color: colors.muted },
-
-  reviewNote: {
-    marginBottom: spacing.md,
-    backgroundColor: colors.primarySoft,
-    borderRadius: radius.md,
-    borderCurve: "continuous",
-    padding: spacing.lg,
-  },
-  reviewText: { fontSize: 14, fontWeight: "500", color: colors.primaryDark },
-  queueTop: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-
-  strip: {
-    flexDirection: "row",
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderCurve: "continuous",
-    overflow: "hidden",
-    paddingHorizontal: spacing.xs,
-  },
-
-  draftNote: {
-    marginTop: spacing.md,
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderCurve: "continuous",
-    padding: spacing.lg,
-    gap: 2,
-  },
-  draftText: { ...type.body, fontSize: 14 },
-  draftLink: { fontSize: 13, fontWeight: "500", color: colors.primary },
-
-  captureIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.sm,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  link: { fontSize: 13, fontWeight: "500", color: colors.primary },
-
-  empty: { paddingVertical: spacing.lg, alignItems: "center", gap: 2 },
-  emptyTitle: { fontSize: 15, fontWeight: "500", color: colors.ink },
-  emptyHint: { ...type.caption, textAlign: "center" },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.page },
+    content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  
+    header: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.md,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.lg,
+    },
+    greeting: { ...type.caption, fontSize: 13 },
+    name: { ...type.title, marginTop: 1 },
+    meta: { ...type.subhead, marginTop: 2 },
+  
+    // Site weather: one muted line under the greeting, not a card. It is context
+    // for the day, not a task.
+    weather: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginTop: -spacing.sm,
+      marginBottom: spacing.md,
+    },
+    weatherText: { flexShrink: 1, fontSize: 12, color: colors.muted },
+  
+    reviewNote: {
+      marginBottom: spacing.md,
+      backgroundColor: colors.primarySoft,
+      borderRadius: radius.md,
+      borderCurve: "continuous",
+      padding: spacing.lg,
+    },
+    reviewText: { fontSize: 14, fontWeight: "500", color: colors.primaryDark },
+    queueTop: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  
+    strip: {
+      flexDirection: "row",
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      borderCurve: "continuous",
+      overflow: "hidden",
+      paddingHorizontal: spacing.xs,
+    },
+  
+    draftNote: {
+      marginTop: spacing.md,
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      borderCurve: "continuous",
+      padding: spacing.lg,
+      gap: 2,
+    },
+    draftText: { ...type.body, fontSize: 14 },
+    draftLink: { fontSize: 13, fontWeight: "500", color: colors.primary },
+  
+    captureIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.sm,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  
+    link: { fontSize: 13, fontWeight: "500", color: colors.primary },
+  
+    empty: { paddingVertical: spacing.lg, alignItems: "center", gap: 2 },
+    emptyTitle: { fontSize: 15, fontWeight: "500", color: colors.ink },
+    emptyHint: { ...type.caption, textAlign: "center" },
 });

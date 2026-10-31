@@ -5,7 +5,8 @@ import React, { useEffect, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useI18n } from "../i18n";
-import { colors, radius, spacing, type } from "../theme";
+import { radius, spacing, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 import { Button, ChipGroup } from "./ui";
 
 export const STATUS_FILTERS = ["all", "pending", "approved", "rejected"] as const;
@@ -58,6 +59,8 @@ export function RecordFilterSheet({
   onApply: (next: RecordFiltersValue) => void;
 }) {
   const { t } = useI18n();
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
 
   // The sheet edits a draft so closing it (or tapping the backdrop) leaves the
   // list exactly as it was.
@@ -181,39 +184,40 @@ export function RecordFilterSheet({
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(15, 32, 24, 0.35)",
-    justifyContent: "flex-end",
-    padding: spacing.lg,
-  },
-  sheet: {
-    maxHeight: "85%",
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    borderCurve: "continuous",
-    padding: spacing.lg,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: spacing.md,
-  },
-  title: { ...type.heading, fontSize: 17 },
-  scroll: { flexShrink: 1 },
-  body: { gap: spacing.lg, paddingBottom: spacing.xs },
-  group: { gap: spacing.sm },
-  groupTitle: { ...type.label, fontSize: 12 },
-  hint: { ...type.caption, lineHeight: 17 },
-  footer: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-    paddingTop: spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.line,
-  },
-  footerButton: { flex: 1 },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: "rgba(15, 32, 24, 0.35)",
+      justifyContent: "flex-end",
+      padding: spacing.lg,
+    },
+    sheet: {
+      maxHeight: "85%",
+      backgroundColor: colors.card,
+      borderRadius: radius.lg,
+      borderCurve: "continuous",
+      padding: spacing.lg,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: spacing.md,
+    },
+    title: { ...type.heading, fontSize: 17 },
+    scroll: { flexShrink: 1 },
+    body: { gap: spacing.lg, paddingBottom: spacing.xs },
+    group: { gap: spacing.sm },
+    groupTitle: { ...type.label, fontSize: 12 },
+    hint: { ...type.caption, lineHeight: 17 },
+    footer: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      marginTop: spacing.lg,
+      paddingTop: spacing.md,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.line,
+    },
+    footerButton: { flex: 1 },
 });

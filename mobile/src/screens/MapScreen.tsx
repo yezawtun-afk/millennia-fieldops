@@ -1,4 +1,4 @@
-// The site map: every record with a GPS fix, plus the monitoring zones.
+﻿// The site map: every record with a GPS fix, plus the monitoring zones.
 // Open to all three roles - the database lets any active account read the
 // whole site, and the website's map has always worked the same way.
 import React, { useCallback, useMemo, useRef, useState } from "react";
@@ -27,8 +27,9 @@ import type { UserLocation } from "../lib/mapHtml";
 import { useI18n } from "../i18n";
 import { Button, Card, ChipGroup } from "../components/ui";
 import { RecordMap } from "../components/RecordMap";
-import { colors, radius, shadow, spacing, type } from "../theme";
-import { STATUS_LABELS, TYPE_COLORS, TYPE_LABELS } from "../lib/format";
+import { radius, shadow, spacing, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
+import { STATUS_LABELS, TYPE_LABELS } from "../lib/format";
 import type { FieldRecord, RecordType, Zone } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
 
@@ -43,6 +44,8 @@ const FILTERS = ["all", "flora", "soil_water", "hazard"] as const;
 export function MapScreen({ navigation }: Props) {
   const { profile, session } = useAuth();
   const { t } = useI18n();
+  const styles = useThemedStyles(makeStyles);
+  const { colors, tones } = useTheme();
   const { online } = useSync();
   const userId = session?.user.id ?? profile?.id ?? null;
 
@@ -283,9 +286,9 @@ export function MapScreen({ navigation }: Props) {
           id: record.id,
           lat: record.latitude as number,
           lng: record.longitude as number,
-          color: TYPE_COLORS[record.type].fg,
+          color: tones.type[record.type].fg,
           label: record.title,
-          sub: `${record.zone?.name ?? t("No zone")} · ${t(STATUS_LABELS[record.status])}`,
+          sub: `${record.zone?.name ?? t("No zone")} Â· ${t(STATUS_LABELS[record.status])}`,
         })),
     [records, filter, mineOnly, userId, t]
   );
@@ -427,9 +430,9 @@ export function MapScreen({ navigation }: Props) {
       </Card>
 
       <View style={styles.legend}>
-        <LegendDot color={TYPE_COLORS.flora.fg} label={t("Flora")} />
-        <LegendDot color={TYPE_COLORS.soil_water.fg} label={t("Soil & Water")} />
-        <LegendDot color={TYPE_COLORS.hazard.fg} label={t("Hazard")} />
+        <LegendDot color={tones.type.flora.fg} label={t("Flora")} />
+        <LegendDot color={tones.type.soil_water.fg} label={t("Soil & Water")} />
+        <LegendDot color={tones.type.hazard.fg} label={t("Hazard")} />
         <Text style={styles.legendNote}>{t("Circles show the monitoring zones.")}</Text>
       </View>
     </View>
@@ -437,6 +440,7 @@ export function MapScreen({ navigation }: Props) {
 }
 
 function LegendDot({ color, label }: { color: string; label: string }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.legendItem}>
       <View style={[styles.dot, { backgroundColor: color }]} />
@@ -445,72 +449,73 @@ function LegendDot({ color, label }: { color: string; label: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.page, padding: spacing.lg, gap: spacing.md },
-  head: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
-  headText: { flex: 1, minWidth: 0 },
-  title: { ...type.title, fontSize: 22 },
-  sub: { ...type.caption, marginTop: 2 },
-  pill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    borderWidth: 1,
-    borderColor: colors.control,
-    backgroundColor: colors.card,
-    borderRadius: radius.full,
-    paddingHorizontal: 10,
-    height: 30,
-  },
-  pillOn: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
-  pillText: { fontSize: 12, color: colors.muted, fontWeight: "500" },
-  pillTextOn: { color: colors.primaryDark, fontWeight: "600" },
-  iconButton: {
-    width: 30,
-    height: 30,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius.full,
-  },
-  mapCard: { flex: 1, overflow: "hidden" },
-  locateButton: {
-    position: "absolute",
-    top: spacing.md,
-    right: spacing.md,
-    zIndex: 10,
-    height: 34,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.control,
-    backgroundColor: colors.card,
-    boxShadow: shadow.control,
-  },
-  locateText: { fontSize: 12, fontWeight: "600", color: colors.ink },
-  placeholder: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.md,
-    padding: spacing.xl,
-  },
-  placeholderText: {
-    fontSize: 14,
-    color: colors.muted,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  legend: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: 5 },
-  dot: { width: 9, height: 9, borderRadius: radius.full },
-  legendLabel: { fontSize: 12, color: colors.ink, fontWeight: "500" },
-  legendNote: { fontSize: 12, color: colors.muted },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.page, padding: spacing.lg, gap: spacing.md },
+    head: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
+    headText: { flex: 1, minWidth: 0 },
+    title: { ...type.title, fontSize: 22 },
+    sub: { ...type.caption, marginTop: 2 },
+    pill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      borderWidth: 1,
+      borderColor: colors.control,
+      backgroundColor: colors.card,
+      borderRadius: radius.full,
+      paddingHorizontal: 10,
+      height: 30,
+    },
+    pillOn: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
+    pillText: { fontSize: 12, color: colors.muted, fontWeight: "500" },
+    pillTextOn: { color: colors.primaryDark, fontWeight: "600" },
+    iconButton: {
+      width: 30,
+      height: 30,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: radius.full,
+    },
+    mapCard: { flex: 1, overflow: "hidden" },
+    locateButton: {
+      position: "absolute",
+      top: spacing.md,
+      right: spacing.md,
+      zIndex: 10,
+      height: 34,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingHorizontal: 10,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: colors.control,
+      backgroundColor: colors.card,
+      boxShadow: shadow.control,
+    },
+    locateText: { fontSize: 12, fontWeight: "600", color: colors.ink },
+    placeholder: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.md,
+      padding: spacing.xl,
+    },
+    placeholderText: {
+      fontSize: 14,
+      color: colors.muted,
+      textAlign: "center",
+      lineHeight: 20,
+    },
+    legend: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      alignItems: "center",
+      gap: spacing.md,
+    },
+    legendItem: { flexDirection: "row", alignItems: "center", gap: 5 },
+    dot: { width: 9, height: 9, borderRadius: radius.full },
+    legendLabel: { fontSize: 12, color: colors.ink, fontWeight: "500" },
+    legendNote: { fontSize: 12, color: colors.muted },
 });

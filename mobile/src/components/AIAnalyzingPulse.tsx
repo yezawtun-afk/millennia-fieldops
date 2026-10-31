@@ -8,7 +8,8 @@ import React, { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text } from "react-native";
 import { useI18n } from "../i18n";
 import { useReduceMotion } from "../lib/useReduceMotion";
-import { colors, radius, spacing, type } from "../theme";
+import { radius, spacing, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 
 export type AIAnalyzingPulseProps = {
   label?: string;
@@ -17,6 +18,7 @@ export type AIAnalyzingPulseProps = {
 export function AIAnalyzingPulse({ label }: AIAnalyzingPulseProps) {
   const { t } = useI18n();
   const reduceMotion = useReduceMotion();
+  const styles = useThemedStyles(makeStyles);
   const pulseAnim = useRef(new Animated.Value(reduceMotion ? 1 : 0.4)).current;
 
   useEffect(() => {
@@ -58,18 +60,19 @@ export function AIAnalyzingPulse({ label }: AIAnalyzingPulseProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    padding: 12,
-    backgroundColor: colors.approvedSoft,
-    borderRadius: radius.md,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  text: {
-    ...type.body,
-    color: colors.approvedInk,
-    fontWeight: "600",
-  },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+      wrap: {
+        padding: 12,
+        backgroundColor: colors.approvedSoft,
+        borderRadius: radius.md,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
+      },
+      text: {
+        ...type.body,
+        color: colors.approvedInk,
+        fontWeight: "600",
+      },
 });

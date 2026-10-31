@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+﻿import React, { useCallback, useMemo, useState } from "react";
 import {
   Alert,
   Keyboard,
@@ -32,9 +32,9 @@ import {
   type StatusFilter,
   type TypeFilter,
 } from "../components/RecordFilterSheet";
-import { colors, radius, spacing, type } from "../theme";
+import { radius, spacing, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 import {
-  PRIORITY_COLORS,
   PRIORITY_LABELS,
   STATUS_LABELS,
   daysUntilDue,
@@ -70,6 +70,8 @@ function holdsJob(record: FieldRecord, userId: string | null): boolean {
 export function MyRecordsScreen({ navigation }: Props) {
   const { profile, session } = useAuth();
   const { t } = useI18n();
+  const styles = useThemedStyles(makeStyles);
+  const { colors, tones } = useTheme();
   const { syncing, syncNow } = useSync();
   const userId = session?.user.id ?? profile?.id ?? null;
   const [records, setRecords] = useState<FieldRecord[]>([]);
@@ -174,7 +176,7 @@ export function MyRecordsScreen({ navigation }: Props) {
               : t("Due {date}", { date: formatDueDate(record.due_on) })
       );
     }
-    return parts.join(" · ");
+    return parts.join(" Â· ");
   }
 
   const drafts = showLocal ? localRows.filter((row) => row.status === "draft") : [];
@@ -323,7 +325,7 @@ export function MyRecordsScreen({ navigation }: Props) {
       <View style={styles.header}>
         <Text style={styles.title}>{t("My records")}</Text>
         <Text style={styles.subhead}>
-          {t("{submitted} submitted · {local} on this phone", {
+          {t("{submitted} submitted Â· {local} on this phone", {
             submitted: records.length,
             local: outbox.length,
           })}
@@ -448,8 +450,8 @@ export function MyRecordsScreen({ navigation }: Props) {
                       record.priority ? (
                         <Pill
                           label={t(PRIORITY_LABELS[record.priority])}
-                          color={PRIORITY_COLORS[record.priority].fg}
-                          background={PRIORITY_COLORS[record.priority].bg}
+                          color={tones.priority[record.priority].fg}
+                          background={tones.priority[record.priority].bg}
                         />
                       ) : undefined
                     }
@@ -470,7 +472,7 @@ export function MyRecordsScreen({ navigation }: Props) {
                   <ListRow
                     key={record.id}
                     title={record.title}
-                    meta={`${record.zone?.name ?? t("No zone")} · ${t("Approved")} ${formatDate(
+                    meta={`${record.zone?.name ?? t("No zone")} Â· ${t("Approved")} ${formatDate(
                       record.reviewed_at ?? record.observed_date
                     )}`}
                     last={index === ownJobs.length - 1}
@@ -490,7 +492,7 @@ export function MyRecordsScreen({ navigation }: Props) {
                   <ListRow
                     key={row.localId}
                     title={row.payload.title}
-                    meta={t("Not finished · started {date}", {
+                    meta={t("Not finished Â· started {date}", {
                       date: formatDate(row.createdAt),
                     })}
                     last={index === drafts.length - 1}
@@ -525,7 +527,7 @@ export function MyRecordsScreen({ navigation }: Props) {
                     meta={
                       row.status === "error" && row.error
                         ? row.error
-                        : t("Queued · {date}", {
+                        : t("Queued Â· {date}", {
                             date: formatDate(row.payload.observed_date),
                           })
                     }
@@ -585,7 +587,7 @@ export function MyRecordsScreen({ navigation }: Props) {
                     <ListRow
                       key={record.id}
                       title={record.title}
-                      meta={`${record.zone?.name ?? t("No zone")} · ${formatDate(
+                      meta={`${record.zone?.name ?? t("No zone")} Â· ${formatDate(
                         record.observed_date
                       )}`}
                       last={index === submitted.length - 1}
@@ -663,62 +665,63 @@ export function MyRecordsScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.page },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
-  header: { paddingTop: spacing.sm, paddingBottom: spacing.lg },
-  title: { ...type.title },
-  subhead: { ...type.subhead, marginTop: 2 },
-  filters: { gap: spacing.sm, marginBottom: spacing.lg },
-  searchRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  searchBox: { flex: 1 },
-  filterButton: {
-    height: 46,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.control,
-    backgroundColor: colors.card,
-  },
-  filterButtonActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
-  },
-  filterButtonText: { fontSize: 14, fontWeight: "500", color: colors.ink },
-  filterButtonTextActive: { color: colors.primaryDark, fontWeight: "600" },
-  filterBadge: {
-    minWidth: 18,
-    height: 18,
-    paddingHorizontal: 5,
-    borderRadius: radius.full,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.primary,
-  },
-  filterBadgeText: { fontSize: 11, fontWeight: "600", color: colors.onTint },
-  filterFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 2,
-  },
-  filterCount: { ...type.caption },
-  clear: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4 },
-  clearText: { fontSize: 12, fontWeight: "600", color: colors.muted },
-  rowRight: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  trash: {
-    width: 30,
-    height: 30,
-    borderRadius: radius.sm,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  empty: { paddingVertical: spacing.lg, alignItems: "center", gap: 2 },
-  emptyTitle: { fontSize: 15, fontWeight: "500", color: colors.ink },
-  emptyHint: { ...type.caption, textAlign: "center" },
-  footnote: { ...type.caption, marginTop: spacing.md, paddingHorizontal: spacing.xs },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.page },
+    content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+    header: { paddingTop: spacing.sm, paddingBottom: spacing.lg },
+    title: { ...type.title },
+    subhead: { ...type.subhead, marginTop: 2 },
+    filters: { gap: spacing.sm, marginBottom: spacing.lg },
+    searchRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+    searchBox: { flex: 1 },
+    filterButton: {
+      height: 46,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 5,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.control,
+      backgroundColor: colors.card,
+    },
+    filterButtonActive: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primarySoft,
+    },
+    filterButtonText: { fontSize: 14, fontWeight: "500", color: colors.ink },
+    filterButtonTextActive: { color: colors.primaryDark, fontWeight: "600" },
+    filterBadge: {
+      minWidth: 18,
+      height: 18,
+      paddingHorizontal: 5,
+      borderRadius: radius.full,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.primary,
+    },
+    filterBadgeText: { fontSize: 11, fontWeight: "600", color: colors.onTint },
+    filterFooter: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginTop: 2,
+    },
+    filterCount: { ...type.caption },
+    clear: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4 },
+    clearText: { fontSize: 12, fontWeight: "600", color: colors.muted },
+    rowRight: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+    trash: {
+      width: 30,
+      height: 30,
+      borderRadius: radius.sm,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    empty: { paddingVertical: spacing.lg, alignItems: "center", gap: 2 },
+    emptyTitle: { fontSize: 15, fontWeight: "500", color: colors.ink },
+    emptyHint: { ...type.caption, textAlign: "center" },
+    footnote: { ...type.caption, marginTop: spacing.md, paddingHorizontal: spacing.xs },
 });

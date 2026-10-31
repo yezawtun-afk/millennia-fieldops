@@ -6,11 +6,13 @@ import { Pressable, StyleSheet, TextInputProps } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Input } from "./ui";
 import { useI18n } from "../i18n";
-import { colors, radius } from "../theme";
+import { radius } from "../theme";
+import { useTheme } from "../lib/useTheme";
 
 export function PasswordInput(props: TextInputProps) {
   const { t } = useI18n();
   const [visible, setVisible] = useState(false);
+  const { colors } = useTheme();
 
   return (
     <Input

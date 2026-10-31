@@ -1,4 +1,4 @@
-import { colors } from "../theme";
+import type { Palette } from "../theme";
 import { READING_DEFINITIONS } from "./measurements";
 import type {
   HazardSeverity,
@@ -32,23 +32,37 @@ export const SEVERITY_LABELS: Record<HazardSeverity, string> = {
   critical: "Critical",
 };
 
-export const TYPE_COLORS: Record<RecordType, { fg: string; bg: string }> = {
-  flora: { fg: colors.flora, bg: colors.floraSoft },
-  soil_water: { fg: colors.water, bg: colors.waterSoft },
-  hazard: { fg: colors.hazard, bg: colors.hazardSoft },
-};
+// The tint pairs below carry colour, so they are built from whichever palette
+// is active. `useTheme()` calls these once per theme change and hands the result
+// to components as `tones`.
+export interface TintPair {
+  fg: string;
+  bg: string;
+}
 
-export const STATUS_COLORS: Record<RecordStatus, { fg: string; bg: string }> = {
-  pending: { fg: colors.pendingInk, bg: colors.pendingSoft },
-  approved: { fg: colors.approvedInk, bg: colors.approvedSoft },
-  rejected: { fg: colors.rejectedInk, bg: colors.rejectedSoft },
-};
+export function typeTones(colors: Palette): Record<RecordType, TintPair> {
+  return {
+    flora: { fg: colors.flora, bg: colors.floraSoft },
+    soil_water: { fg: colors.water, bg: colors.waterSoft },
+    hazard: { fg: colors.hazard, bg: colors.hazardSoft },
+  };
+}
 
-export const SEVERITY_COLORS: Record<HazardSeverity, { fg: string; bg: string }> = {
-  low: { fg: colors.sevLow, bg: colors.sevLowSoft },
-  medium: { fg: colors.sevMedium, bg: colors.sevMediumSoft },
-  critical: { fg: colors.sevCritical, bg: colors.sevCriticalSoft },
-};
+export function statusTones(colors: Palette): Record<RecordStatus, TintPair> {
+  return {
+    pending: { fg: colors.pendingInk, bg: colors.pendingSoft },
+    approved: { fg: colors.approvedInk, bg: colors.approvedSoft },
+    rejected: { fg: colors.rejectedInk, bg: colors.rejectedSoft },
+  };
+}
+
+export function severityTones(colors: Palette): Record<HazardSeverity, TintPair> {
+  return {
+    low: { fg: colors.sevLow, bg: colors.sevLowSoft },
+    medium: { fg: colors.sevMedium, bg: colors.sevMediumSoft },
+    critical: { fg: colors.sevCritical, bg: colors.sevCriticalSoft },
+  };
+}
 
 // Work-order priority. It follows severity by default, but a supervisor can
 // raise it, so it gets its own labels rather than reusing the severity words.
@@ -58,11 +72,30 @@ export const PRIORITY_LABELS: Record<RemediationPriority, string> = {
   high: "High priority",
 };
 
-export const PRIORITY_COLORS: Record<RemediationPriority, { fg: string; bg: string }> = {
-  low: { fg: colors.muted, bg: colors.panel },
-  medium: { fg: colors.sevMedium, bg: colors.sevMediumSoft },
-  high: { fg: colors.sevCritical, bg: colors.sevCriticalSoft },
-};
+export function priorityTones(colors: Palette): Record<RemediationPriority, TintPair> {
+  return {
+    low: { fg: colors.muted, bg: colors.panel },
+    medium: { fg: colors.sevMedium, bg: colors.sevMediumSoft },
+    high: { fg: colors.sevCritical, bg: colors.sevCriticalSoft },
+  };
+}
+
+/** The four tint maps, ready to index by type/status/severity/priority. */
+export interface Tones {
+  type: Record<RecordType, TintPair>;
+  status: Record<RecordStatus, TintPair>;
+  severity: Record<HazardSeverity, TintPair>;
+  priority: Record<RemediationPriority, TintPair>;
+}
+
+export function makeTones(colors: Palette): Tones {
+  return {
+    type: typeTones(colors),
+    status: statusTones(colors),
+    severity: severityTones(colors),
+    priority: priorityTones(colors),
+  };
+}
 
 // Dropdown options for the capture form.
 export const GROWTH_STAGES = ["Seedling", "Sapling", "Mature"];

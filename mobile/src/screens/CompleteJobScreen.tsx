@@ -1,4 +1,4 @@
-// Finish an approved hazard job.
+﻿// Finish an approved hazard job.
 //
 // The review decides whether the report is valid; this screen records that the
 // work itself was done. It writes a note and up to three "after" photos through
@@ -27,11 +27,10 @@ import { captureFromCamera, deletePhoto, pickFromLibrary } from "../lib/photos";
 import { removeRecordPhotos, uploadRecordPhoto } from "../lib/upload";
 import { useOnlineStatus } from "../lib/network";
 import { Banner, Button, Card, Input, Pill, SectionTitle } from "../components/ui";
-import { colors, radius, spacing, type } from "../theme";
+import { radius, spacing, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 import {
-  PRIORITY_COLORS,
   PRIORITY_LABELS,
-  SEVERITY_COLORS,
   SEVERITY_LABELS,
   daysUntilDue,
   formatDate,
@@ -50,6 +49,8 @@ export function CompleteJobScreen({ route, navigation }: Props) {
   const { id } = route.params;
   const { profile, session } = useAuth();
   const { t } = useI18n();
+  const styles = useThemedStyles(makeStyles);
+  const { colors, tones } = useTheme();
   const online = useOnlineStatus();
   const userId = session?.user.id ?? profile?.id ?? null;
 
@@ -268,15 +269,15 @@ export function CompleteJobScreen({ route, navigation }: Props) {
           {record.severity ? (
             <Pill
               label={t(SEVERITY_LABELS[record.severity])}
-              color={SEVERITY_COLORS[record.severity].fg}
-              background={SEVERITY_COLORS[record.severity].bg}
+              color={tones.severity[record.severity].fg}
+              background={tones.severity[record.severity].bg}
             />
           ) : null}
         </View>
 
         <Text style={styles.title}>{record.title}</Text>
         <Text style={styles.meta}>
-          {record.zone?.name ?? t("No zone")} · {t("Approved")}{" "}
+          {record.zone?.name ?? t("No zone")} Â· {t("Approved")}{" "}
           {record.reviewed_at ? formatDate(record.reviewed_at) : ""}
         </Text>
 
@@ -291,8 +292,8 @@ export function CompleteJobScreen({ route, navigation }: Props) {
               {record.priority ? (
                 <Pill
                   label={t(PRIORITY_LABELS[record.priority])}
-                  color={PRIORITY_COLORS[record.priority].fg}
-                  background={PRIORITY_COLORS[record.priority].bg}
+                  color={tones.priority[record.priority].fg}
+                  background={tones.priority[record.priority].bg}
                 />
               ) : null}
               {record.due_on ? (
@@ -421,53 +422,54 @@ export function CompleteJobScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.page },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
-  centered: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.page,
-    padding: spacing.xl,
-    gap: spacing.sm,
-  },
-  centeredText: { ...type.body, textAlign: "center", color: colors.muted, lineHeight: 21 },
-  rowLeft: { flexDirection: "row", gap: 6, alignItems: "center", flexWrap: "wrap" },
-  title: { ...type.title, fontSize: 22, marginTop: spacing.md },
-  meta: { ...type.subhead, marginTop: 3 },
-  feedback: {
-    fontSize: 14,
-    color: colors.ink,
-    marginTop: spacing.md,
-    lineHeight: 20,
-    backgroundColor: colors.panel,
-    borderRadius: radius.sm,
-    padding: spacing.md,
-  },
-  cardSpacing: { marginTop: spacing.lg },
-  assignment: { marginTop: spacing.md, gap: spacing.sm },
-  assignmentLine: { fontSize: 14, color: colors.ink },
-  noteInput: { minHeight: 96 },
-  helper: { ...type.caption, lineHeight: 17 },
-  photoRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: spacing.md },
-  photoWrap: { position: "relative" },
-  photo: { width: 84, height: 84, borderRadius: radius.sm, backgroundColor: colors.line },
-  photoRemove: {
-    position: "absolute",
-    top: -6,
-    right: -6,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.rejected,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  photoRemoveText: { color: colors.onTint, fontWeight: "600", fontSize: 12, lineHeight: 15 },
-  photoButtons: { flexDirection: "row", marginTop: spacing.md, gap: spacing.sm },
-  flexBtn: { flex: 1 },
-  submit: { marginTop: spacing.xl },
-  footerHint: { ...type.caption, marginTop: spacing.sm, textAlign: "center", lineHeight: 17 },
-  muted: { fontSize: 14, color: colors.muted, lineHeight: 20, textAlign: "center" },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    flex: { flex: 1, backgroundColor: colors.page },
+    content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+    centered: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.page,
+      padding: spacing.xl,
+      gap: spacing.sm,
+    },
+    centeredText: { ...type.body, textAlign: "center", color: colors.muted, lineHeight: 21 },
+    rowLeft: { flexDirection: "row", gap: 6, alignItems: "center", flexWrap: "wrap" },
+    title: { ...type.title, fontSize: 22, marginTop: spacing.md },
+    meta: { ...type.subhead, marginTop: 3 },
+    feedback: {
+      fontSize: 14,
+      color: colors.ink,
+      marginTop: spacing.md,
+      lineHeight: 20,
+      backgroundColor: colors.panel,
+      borderRadius: radius.sm,
+      padding: spacing.md,
+    },
+    cardSpacing: { marginTop: spacing.lg },
+    assignment: { marginTop: spacing.md, gap: spacing.sm },
+    assignmentLine: { fontSize: 14, color: colors.ink },
+    noteInput: { minHeight: 96 },
+    helper: { ...type.caption, lineHeight: 17 },
+    photoRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: spacing.md },
+    photoWrap: { position: "relative" },
+    photo: { width: 84, height: 84, borderRadius: radius.sm, backgroundColor: colors.line },
+    photoRemove: {
+      position: "absolute",
+      top: -6,
+      right: -6,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: colors.rejected,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    photoRemoveText: { color: colors.onTint, fontWeight: "600", fontSize: 12, lineHeight: 15 },
+    photoButtons: { flexDirection: "row", marginTop: spacing.md, gap: spacing.sm },
+    flexBtn: { flex: 1 },
+    submit: { marginTop: spacing.xl },
+    footerHint: { ...type.caption, marginTop: spacing.sm, textAlign: "center", lineHeight: 17 },
+    muted: { fontSize: 14, color: colors.muted, lineHeight: 20, textAlign: "center" },
 });

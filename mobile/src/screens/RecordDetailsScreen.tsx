@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+﻿import React, { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, Image, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -8,20 +8,17 @@ import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../i18n";
 import { openInOpenStreetMap } from "../lib/location";
 import { Button, Card, Pill, SectionTitle } from "../components/ui";
-import { colors, radius, spacing, type } from "../theme";
+import { radius, spacing, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 import {
-  PRIORITY_COLORS,
   PRIORITY_LABELS,
-  STATUS_COLORS,
   STATUS_LABELS,
-  TYPE_COLORS,
   TYPE_LABELS,
   daysUntilDue,
   formatDate,
   formatDateTime,
   formatDueDate,
   isOverdue,
-  SEVERITY_COLORS,
 } from "../lib/format";
 import type { FieldRecord } from "../lib/types";
 import type { RootStackParamList } from "../navigation/types";
@@ -32,6 +29,8 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
   const { id } = route.params;
   const { profile, session } = useAuth();
   const { t } = useI18n();
+  const styles = useThemedStyles(makeStyles);
+  const { colors, tones } = useTheme();
   const userId = session?.user.id ?? profile?.id ?? null;
   const [record, setRecord] = useState<FieldRecord | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
@@ -168,13 +167,13 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
       <View style={styles.rowLeft}>
         <Pill
           label={t(TYPE_LABELS[record.type])}
-          color={TYPE_COLORS[record.type].fg}
-          background={TYPE_COLORS[record.type].bg}
+          color={tones.type[record.type].fg}
+          background={tones.type[record.type].bg}
         />
         <Pill
           label={t(STATUS_LABELS[record.status])}
-          color={STATUS_COLORS[record.status].fg}
-          background={STATUS_COLORS[record.status].bg}
+          color={tones.status[record.status].fg}
+          background={tones.status[record.status].bg}
         />
         {isCompleted ? (
           <Pill
@@ -189,15 +188,15 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
         {record.type === "hazard" && record.severity ? (
           <Pill
             label={t(record.severity)}
-            color={SEVERITY_COLORS[record.severity].fg}
-            background={SEVERITY_COLORS[record.severity].bg}
+            color={tones.severity[record.severity].fg}
+            background={tones.severity[record.severity].bg}
           />
         ) : null}
       </View>
 
       <Text style={styles.title}>{record.title}</Text>
       <Text style={styles.meta}>
-        {record.zone?.name ?? t("No zone")} ·{" "}
+        {record.zone?.name ?? t("No zone")} Â·{" "}
         {t("observed {date}", { date: formatDate(record.observed_date) })}
       </Text>
 
@@ -295,8 +294,8 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
                 {record.priority ? (
                   <Pill
                     label={t(PRIORITY_LABELS[record.priority])}
-                    color={PRIORITY_COLORS[record.priority].fg}
-                    background={PRIORITY_COLORS[record.priority].bg}
+                    color={tones.priority[record.priority].fg}
+                    background={tones.priority[record.priority].bg}
                   />
                 ) : null}
                 {record.due_on ? (
@@ -393,47 +392,48 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.page },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
-  centered: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.page,
-    padding: spacing.xl,
-  },
-  rowLeft: { flexDirection: "row", gap: 6, alignItems: "center", flexWrap: "wrap" },
-  title: { ...type.title, fontSize: 22, marginTop: spacing.md },
-  meta: { ...type.subhead, marginTop: 3 },
-  cardSpacing: { marginTop: spacing.lg },
-  body: { fontSize: 15, color: colors.ink, lineHeight: 21 },
-  muted: { fontSize: 14, color: colors.muted, lineHeight: 20 },
-  factRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "baseline",
-    gap: spacing.lg,
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.line,
-  },
-  factRowLast: { borderBottomWidth: 0, paddingBottom: 0 },
-  factLabel: { fontSize: 13, color: colors.muted },
-  factValue: { fontSize: 15, color: colors.ink, fontWeight: "500", flexShrink: 1, textAlign: "right" },
-  mono: { fontVariant: ["tabular-nums"] },
-  photoRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  photo: { width: 104, height: 104, borderRadius: radius.sm, backgroundColor: colors.line },
-  feedback: {
-    fontSize: 14,
-    color: colors.ink,
-    marginTop: spacing.md,
-    lineHeight: 20,
-    backgroundColor: colors.panel,
-    borderRadius: radius.sm,
-    padding: spacing.md,
-  },
-  reviewText: { gap: 6 },
-  assignment: { gap: 6, marginBottom: spacing.sm },
-  assignmentPills: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.page },
+    content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+    centered: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.page,
+      padding: spacing.xl,
+    },
+    rowLeft: { flexDirection: "row", gap: 6, alignItems: "center", flexWrap: "wrap" },
+    title: { ...type.title, fontSize: 22, marginTop: spacing.md },
+    meta: { ...type.subhead, marginTop: 3 },
+    cardSpacing: { marginTop: spacing.lg },
+    body: { fontSize: 15, color: colors.ink, lineHeight: 21 },
+    muted: { fontSize: 14, color: colors.muted, lineHeight: 20 },
+    factRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "baseline",
+      gap: spacing.lg,
+      paddingVertical: 10,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.line,
+    },
+    factRowLast: { borderBottomWidth: 0, paddingBottom: 0 },
+    factLabel: { fontSize: 13, color: colors.muted },
+    factValue: { fontSize: 15, color: colors.ink, fontWeight: "500", flexShrink: 1, textAlign: "right" },
+    mono: { fontVariant: ["tabular-nums"] },
+    photoRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+    photo: { width: 104, height: 104, borderRadius: radius.sm, backgroundColor: colors.line },
+    feedback: {
+      fontSize: 14,
+      color: colors.ink,
+      marginTop: spacing.md,
+      lineHeight: 20,
+      backgroundColor: colors.panel,
+      borderRadius: radius.sm,
+      padding: spacing.md,
+    },
+    reviewText: { gap: 6 },
+    assignment: { gap: 6, marginBottom: spacing.sm },
+    assignmentPills: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
 });

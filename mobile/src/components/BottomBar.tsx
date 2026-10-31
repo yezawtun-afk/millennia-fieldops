@@ -15,7 +15,8 @@ import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useSync } from "../context/SyncContext";
 import { useI18n } from "../i18n";
 import { useReduceMotion } from "../lib/useReduceMotion";
-import { colors, radius, shadow, type } from "../theme";
+import { radius, shadow, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 
 const HEADROOM = 20;
 const BAR_HEIGHT = 62;
@@ -39,6 +40,8 @@ export function BottomBar({
   const { drafts } = useSync();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReduceMotion();
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
 
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -191,61 +194,62 @@ export function BottomBar({
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    backgroundColor: colors.page,
-  },
-  headroom: { height: HEADROOM },
-  bar: {
-    backgroundColor: colors.card,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.line,
-  },
-  slots: {
-    height: BAR_HEIGHT,
-    flexDirection: "row",
-    alignItems: "stretch",
-  },
-  slot: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "flex-end",
-    paddingBottom: 9,
-    gap: 3,
-  },
-  iconWrap: { width: 26, height: 22, alignItems: "center", justifyContent: "center" },
-  label: { ...type.label, fontSize: 10, lineHeight: 12, color: colors.muted },
-  labelActive: { color: colors.primary, fontWeight: "600" },
-
-  badge: {
-    position: "absolute",
-    top: -5,
-    right: -10,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    paddingHorizontal: 4,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeText: { color: colors.onTint, fontSize: 9, fontWeight: "700" },
-
-  fabWrap: {
-    position: "absolute",
-    top: 0,
-    left: "50%",
-    marginLeft: -FAB_SIZE / 2,
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-  },
-  fab: {
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: radius.lg + 2,
-    borderCurve: "continuous",
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: shadow.fab,
-  },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    root: {
+      backgroundColor: colors.page,
+    },
+    headroom: { height: HEADROOM },
+    bar: {
+      backgroundColor: colors.card,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.line,
+    },
+    slots: {
+      height: BAR_HEIGHT,
+      flexDirection: "row",
+      alignItems: "stretch",
+    },
+    slot: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "flex-end",
+      paddingBottom: 9,
+      gap: 3,
+    },
+    iconWrap: { width: 26, height: 22, alignItems: "center", justifyContent: "center" },
+    label: { ...type.label, fontSize: 10, lineHeight: 12, color: colors.muted },
+    labelActive: { color: colors.primary, fontWeight: "600" },
+  
+    badge: {
+      position: "absolute",
+      top: -5,
+      right: -10,
+      minWidth: 16,
+      height: 16,
+      borderRadius: 8,
+      paddingHorizontal: 4,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    badgeText: { color: colors.onTint, fontSize: 9, fontWeight: "700" },
+  
+    fabWrap: {
+      position: "absolute",
+      top: 0,
+      left: "50%",
+      marginLeft: -FAB_SIZE / 2,
+      width: FAB_SIZE,
+      height: FAB_SIZE,
+    },
+    fab: {
+      width: FAB_SIZE,
+      height: FAB_SIZE,
+      borderRadius: radius.lg + 2,
+      borderCurve: "continuous",
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: shadow.fab,
+    },
 });

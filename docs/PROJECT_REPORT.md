@@ -115,6 +115,13 @@ connection exists. This is what makes the app genuinely usable on the ridge with
   the supervisor role (number cached on the phone, so it survives losing signal), and
   *Emergency hotline* dials 999 behind a confirmation. The supervisor number is read from
   the database rather than typed into the app, so it follows a change of person.
+- **Dark mode on the phone**, chosen in the side panel (*Dark mode* switch) and remembered
+  on the device. The palette is a second, hand-tuned set of colours rather than an
+  inversion: surfaces, both text tiers and every tint/ink pair were re-picked so text keeps
+  its contrast at night. The map's tiles are darkened in the page itself. The setting is
+  an explicit Light/Dark choice; following the phone's system setting needs a new native
+  build, because the installed app declares a light-only interface, so it is not offered
+  yet. Dark mode is a phone feature: the web dashboard keeps its light theme.
 - Capture three record types:
 
   | Type | Caption |

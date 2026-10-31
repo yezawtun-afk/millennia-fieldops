@@ -81,6 +81,7 @@ export const zh: Record<string, string> = {
   "Could not save the record.": "无法保存记录。",
   "Could not start the upload. Check your connection.": "无法开始上传，请检查网络连接。",
   Decision: "审核决定",
+  "Dark mode": "深色模式",
   Delete: "删除",
   'Delete "{title}"? This cannot be undone - the record and its photos are removed for everyone.':
     "删除“{title}”？此操作无法撤销，记录及其照片将对所有人移除。",

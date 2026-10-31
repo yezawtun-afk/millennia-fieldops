@@ -20,7 +20,8 @@ import { changePassword, updateDisplayName } from "../lib/api";
 import { formatDate, ROLE_LABELS } from "../lib/format";
 import { Banner, Button, Card, Input, ListRow, Pill, SectionTitle } from "../components/ui";
 import { PasswordInput } from "../components/PasswordInput";
-import { colors, radius, spacing, type } from "../theme";
+import { radius, spacing, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 
 const MIN_PASSWORD = 8;
 
@@ -29,6 +30,8 @@ type Notice = { kind: "success" | "error"; text: string } | null;
 export function ProfileScreen() {
   const { profile, session, refreshProfile } = useAuth();
   const { t } = useI18n();
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
 
   const [name, setName] = useState(profile?.full_name ?? "");
   const [savingName, setSavingName] = useState(false);
@@ -262,35 +265,36 @@ export function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.page },
-  content: {
-    padding: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
-
-  identity: { alignItems: "center", paddingTop: spacing.sm, paddingBottom: spacing.lg },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing.md,
-  },
-  avatarText: { fontSize: 28, fontWeight: "700", color: colors.primaryDark },
-  name: { ...type.title, fontSize: 22, textAlign: "center" },
-  pills: { flexDirection: "row", gap: 6, marginTop: spacing.sm },
-
-  note: { ...type.caption, marginTop: spacing.sm, lineHeight: 17 },
-  hint: { ...type.caption, lineHeight: 17, marginTop: 6, marginBottom: spacing.md },
-  notice: { marginTop: spacing.md, marginBottom: spacing.md },
-  mismatch: { ...type.caption, color: colors.rejectedInk, marginTop: 6, marginBottom: spacing.md },
-  gap: { height: spacing.xl },
-  titleGap: { height: 6 },
-
-  fieldLabel: { ...type.label, marginBottom: 6 },
-  fieldLabelSpaced: { marginTop: spacing.md },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    flex: { flex: 1, backgroundColor: colors.page },
+    content: {
+      padding: spacing.lg,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xxl,
+    },
+  
+    identity: { alignItems: "center", paddingTop: spacing.sm, paddingBottom: spacing.lg },
+    avatar: {
+      width: 72,
+      height: 72,
+      borderRadius: radius.full,
+      backgroundColor: colors.primarySoft,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing.md,
+    },
+    avatarText: { fontSize: 28, fontWeight: "700", color: colors.primaryDark },
+    name: { ...type.title, fontSize: 22, textAlign: "center" },
+    pills: { flexDirection: "row", gap: 6, marginTop: spacing.sm },
+  
+    note: { ...type.caption, marginTop: spacing.sm, lineHeight: 17 },
+    hint: { ...type.caption, lineHeight: 17, marginTop: 6, marginBottom: spacing.md },
+    notice: { marginTop: spacing.md, marginBottom: spacing.md },
+    mismatch: { ...type.caption, color: colors.rejectedInk, marginTop: 6, marginBottom: spacing.md },
+    gap: { height: spacing.xl },
+    titleGap: { height: 6 },
+  
+    fieldLabel: { ...type.label, marginBottom: 6 },
+    fieldLabelSpaced: { marginTop: spacing.md },
 });

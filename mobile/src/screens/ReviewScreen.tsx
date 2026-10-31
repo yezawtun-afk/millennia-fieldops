@@ -11,8 +11,9 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { fetchPendingRecords } from "../lib/api";
 import { useI18n } from "../i18n";
 import { Banner, Card, EmptyState, ListRow, Pill } from "../components/ui";
-import { colors, spacing, type } from "../theme";
-import { formatDate, TYPE_COLORS, TYPE_LABELS } from "../lib/format";
+import { spacing, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
+import { formatDate, TYPE_LABELS } from "../lib/format";
 import type { FieldRecord } from "../lib/types";
 import type { RootStackParamList } from "../navigation/types";
 
@@ -20,6 +21,8 @@ type Props = NativeStackScreenProps<RootStackParamList, "ReviewQueue">;
 
 export function ReviewScreen({ navigation }: Props) {
   const { t } = useI18n();
+  const styles = useThemedStyles(makeStyles);
+  const { colors, tones } = useTheme();
   const [records, setRecords] = useState<FieldRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -91,7 +94,7 @@ export function ReviewScreen({ navigation }: Props) {
               onPress={() => navigation.navigate("ReviewRecord", { id: record.id })}
               icon={
                 <View
-                  style={[styles.typeIcon, { backgroundColor: TYPE_COLORS[record.type].bg }]}
+                  style={[styles.typeIcon, { backgroundColor: tones.type[record.type].bg }]}
                 >
                   <Ionicons
                     name={
@@ -102,15 +105,15 @@ export function ReviewScreen({ navigation }: Props) {
                           : "water-outline"
                     }
                     size={17}
-                    color={TYPE_COLORS[record.type].fg}
+                    color={tones.type[record.type].fg}
                   />
                 </View>
               }
               right={
                 <Pill
                   label={t(TYPE_LABELS[record.type])}
-                  color={TYPE_COLORS[record.type].fg}
-                  background={TYPE_COLORS[record.type].bg}
+                  color={tones.type[record.type].fg}
+                  background={tones.type[record.type].bg}
                 />
               }
             />
@@ -126,18 +129,19 @@ export function ReviewScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.page },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
-  header: { paddingTop: spacing.sm, paddingBottom: spacing.lg },
-  title: { ...type.title },
-  subhead: { ...type.subhead, marginTop: 2 },
-  typeIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  footnote: { ...type.caption, marginTop: spacing.md, paddingHorizontal: spacing.xs, lineHeight: 17 },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.page },
+    content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+    header: { paddingTop: spacing.sm, paddingBottom: spacing.lg },
+    title: { ...type.title },
+    subhead: { ...type.subhead, marginTop: 2 },
+    typeIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 8,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    footnote: { ...type.caption, marginTop: spacing.md, paddingHorizontal: spacing.xs, lineHeight: 17 },
 });

@@ -18,6 +18,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   useWindowDimensions,
   View,
@@ -42,7 +43,8 @@ import { appVersion, applyUpdate, checkForUpdate } from "../lib/updates";
 import { LOCALES, useI18n } from "../i18n";
 import { ROLE_LABELS } from "../lib/format";
 import { useReduceMotion } from "../lib/useReduceMotion";
-import { colors, radius, shadow, spacing, type } from "../theme";
+import { radius, shadow, spacing, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 import { StatCell } from "./ui";
 import { SyncBadge } from "./SyncBadge";
 import { BouncyCard } from "./BouncyCard";
@@ -78,6 +80,8 @@ export function Sidebar({
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const reduced = useReduceMotion();
+  const styles = useThemedStyles(makeStyles);
+  const { colors, isDark, setMode } = useTheme();
 
   const panelWidth = Math.min(320, width * 0.84);
   const progress = useRef(new Animated.Value(0)).current;
@@ -427,7 +431,25 @@ export function Sidebar({
                 label={t("Language")}
                 value={<Text style={styles.rowValue}>{localeShort}</Text>}
                 onPress={onOpenLanguage}
+              />
+              {/* A switch, not a row that opens a screen: there are two states
+                  and both fit in the row. "System" waits for a native build. */}
+              <MenuRow
+                icon={isDark ? "moon" : "moon-outline"}
+                label={t("Dark mode")}
+                chevron={false}
                 last
+                control
+                value={
+                  <Switch
+                    value={isDark}
+                    onValueChange={(next) => setMode(next ? "dark" : "light")}
+                    accessibilityLabel={t("Dark mode")}
+                    trackColor={{ false: colors.control, true: colors.primary }}
+                    thumbColor={colors.card}
+                    ios_backgroundColor={colors.control}
+                  />
+                }
               />
             </View>
 
@@ -526,6 +548,7 @@ function MenuRow({
   last,
   chevron = true,
   danger = false,
+  control = false,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
@@ -535,7 +558,14 @@ function MenuRow({
   chevron?: boolean;
   /** An emergency action: the icon carries the warning colour. */
   danger?: boolean;
+  /**
+   * A control inside the row (a switch) is its own accessibility element, so the
+   * row must not swallow it into one grouped "text" element.
+   */
+  control?: boolean;
 }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const content = (
     <>
       <View style={[styles.rowIcon, danger && { backgroundColor: colors.rejectedSoft }]}>
@@ -549,7 +579,11 @@ function MenuRow({
 
   if (!onPress) {
     return (
-      <View style={[styles.row, !last && styles.rowLine]} accessible accessibilityRole="text">
+      <View
+        style={[styles.row, !last && styles.rowLine]}
+        accessible={!control}
+        accessibilityRole={control ? undefined : "text"}
+      >
         {content}
       </View>
     );
@@ -572,130 +606,131 @@ function MenuRow({
 
 // The system's "reduce motion" switch is read once, in lib/useReduceMotion, so
 // every animation in the app answers to the same preference.
-const styles = StyleSheet.create({
-  host: { flex: 1 },
-  backdrop: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: "rgba(15, 32, 24, 0.4)",
-  },
-  panel: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: colors.page,
-    boxShadow: shadow.panel,
-  },
-
-  top: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
-  brandRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  mark: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    backgroundColor: colors.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  brandTitle: { color: colors.ink, fontSize: 15, fontWeight: "600", lineHeight: 18 },
-  brandSub: { color: colors.muted, fontSize: 11, lineHeight: 14 },
-  close: { padding: 4 },
-
-  userCard: {
-    marginTop: spacing.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderCurve: "continuous",
-    padding: spacing.md,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: { color: colors.primaryDark, fontSize: 16, fontWeight: "700" },
-  userName: { fontSize: 15, fontWeight: "600", color: colors.ink },
-  userMeta: { ...type.caption, marginTop: 2 },
-
-  scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.lg },
-
-  // Today's numbers: the same divided strip as Home, one step smaller.
-  stats: {
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderCurve: "continuous",
-    overflow: "hidden",
-    paddingTop: spacing.md,
-    marginBottom: spacing.md,
-  },
-  statsTitle: { ...type.label, fontSize: 12, paddingHorizontal: spacing.md },
-  statsRow: { flexDirection: "row", marginTop: 2 },
-  statWrap: { flex: 1 },
-
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderCurve: "continuous",
-    overflow: "hidden",
-  },
-  safetyCard: { marginTop: spacing.md },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: spacing.md,
-    minHeight: 52,
-  },
-  rowLine: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
-  rowIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: colors.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  rowLabel: { flex: 1, fontSize: 15, fontWeight: "500", color: colors.ink },
-  rowValue: { fontSize: 13, fontWeight: "600", color: colors.primary },
-  // A passive readout (a phone number): same weight as a value, no accent.
-  rowMuted: { fontSize: 13, color: colors.muted, fontVariant: ["tabular-nums"] },
-  countPill: {
-    minWidth: 22,
-    height: 22,
-    paddingHorizontal: 7,
-    borderRadius: 11,
-    backgroundColor: colors.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  countText: { fontSize: 12, fontWeight: "700", color: colors.primaryDark },
-
-  footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, gap: 10 },
-  footerCard: {
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderCurve: "continuous",
-    overflow: "hidden",
-  },
-  footerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: spacing.md,
-    minHeight: 48,
-  },
-  footerLabel: { flex: 1, fontSize: 14, color: colors.ink },
-  footerValue: { fontSize: 13, color: colors.muted, fontVariant: ["tabular-nums"] },
-  hairline: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    host: { flex: 1 },
+    backdrop: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      backgroundColor: "rgba(15, 32, 24, 0.4)",
+    },
+    panel: {
+      position: "absolute",
+      top: 0,
+      bottom: 0,
+      left: 0,
+      backgroundColor: colors.page,
+      boxShadow: shadow.panel,
+    },
+  
+    top: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
+    brandRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+    mark: {
+      width: 30,
+      height: 30,
+      borderRadius: 8,
+      backgroundColor: colors.primarySoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    brandTitle: { color: colors.ink, fontSize: 15, fontWeight: "600", lineHeight: 18 },
+    brandSub: { color: colors.muted, fontSize: 11, lineHeight: 14 },
+    close: { padding: 4 },
+  
+    userCard: {
+      marginTop: spacing.lg,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      borderCurve: "continuous",
+      padding: spacing.md,
+    },
+    avatar: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.full,
+      backgroundColor: colors.primarySoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    avatarText: { color: colors.primaryDark, fontSize: 16, fontWeight: "700" },
+    userName: { fontSize: 15, fontWeight: "600", color: colors.ink },
+    userMeta: { ...type.caption, marginTop: 2 },
+  
+    scroll: { flex: 1 },
+    scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.lg },
+  
+    // Today's numbers: the same divided strip as Home, one step smaller.
+    stats: {
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      borderCurve: "continuous",
+      overflow: "hidden",
+      paddingTop: spacing.md,
+      marginBottom: spacing.md,
+    },
+    statsTitle: { ...type.label, fontSize: 12, paddingHorizontal: spacing.md },
+    statsRow: { flexDirection: "row", marginTop: 2 },
+    statWrap: { flex: 1 },
+  
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      borderCurve: "continuous",
+      overflow: "hidden",
+    },
+    safetyCard: { marginTop: spacing.md },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingHorizontal: spacing.md,
+      minHeight: 52,
+    },
+    rowLine: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
+    rowIcon: {
+      width: 28,
+      height: 28,
+      borderRadius: 8,
+      backgroundColor: colors.primarySoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    rowLabel: { flex: 1, fontSize: 15, fontWeight: "500", color: colors.ink },
+    rowValue: { fontSize: 13, fontWeight: "600", color: colors.primary },
+    // A passive readout (a phone number): same weight as a value, no accent.
+    rowMuted: { fontSize: 13, color: colors.muted, fontVariant: ["tabular-nums"] },
+    countPill: {
+      minWidth: 22,
+      height: 22,
+      paddingHorizontal: 7,
+      borderRadius: 11,
+      backgroundColor: colors.primarySoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    countText: { fontSize: 12, fontWeight: "700", color: colors.primaryDark },
+  
+    footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, gap: 10 },
+    footerCard: {
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      borderCurve: "continuous",
+      overflow: "hidden",
+    },
+    footerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingHorizontal: spacing.md,
+      minHeight: 48,
+    },
+    footerLabel: { flex: 1, fontSize: 14, color: colors.ink },
+    footerValue: { fontSize: 13, color: colors.muted, fontVariant: ["tabular-nums"] },
+    hairline: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line },
 });

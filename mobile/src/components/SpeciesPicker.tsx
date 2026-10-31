@@ -13,7 +13,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useI18n } from "../i18n";
 import { SPECIES_CATALOG, matchesSpecies, type SpeciesEntry } from "../lib/species";
-import { colors, radius, spacing, type } from "../theme";
+import { radius, spacing, type ThemeScale } from "../theme";
+import { useTheme, useThemedStyles } from "../lib/useTheme";
 import { SearchInput } from "./ui";
 
 export function SpeciesPicker({
@@ -27,6 +28,8 @@ export function SpeciesPicker({
 }) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
 
   useEffect(() => {
     if (visible) setQuery("");
@@ -120,6 +123,8 @@ export function SpeciesPicker({
 }
 
 function SpeciesRow({ entry, onPress }: { entry: SpeciesEntry; onPress: () => void }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const localNames = [entry.malay, entry.chinese].filter(Boolean).join(" · ");
 
   return (
@@ -140,66 +145,67 @@ function SpeciesRow({ entry, onPress }: { entry: SpeciesEntry; onPress: () => vo
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.page },
-  head: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
-  },
-  headText: { flex: 1, minWidth: 0 },
-  title: { ...type.title, fontSize: 22 },
-  sub: { ...type.subhead, marginTop: 2 },
-  close: {
-    width: 34,
-    height: 34,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius.full,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.control,
-  },
-  search: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
-  list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
-  line: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line, marginLeft: 0 },
-  row: {
-    minHeight: 60,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    paddingVertical: 10,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.card,
-  },
-  rowText: { flex: 1, minWidth: 0 },
-  scientific: { ...type.body, fontSize: 15, fontWeight: "600", fontStyle: "italic" },
-  common: { ...type.caption, marginTop: 2 },
-  empty: {
-    alignItems: "center",
-    gap: spacing.sm,
-    paddingVertical: spacing.xxl,
-    paddingHorizontal: spacing.lg,
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-  },
-  emptyTitle: { ...type.body, fontWeight: "600" },
-  emptyHint: { ...type.caption, textAlign: "center" },
-  manual: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.md,
-    minHeight: 46,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
-  },
-  manualText: { flex: 1, fontSize: 14, fontWeight: "600", color: colors.primaryDark },
+const makeStyles = ({ colors, type }: ThemeScale) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.page },
+    head: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.md,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.md,
+    },
+    headText: { flex: 1, minWidth: 0 },
+    title: { ...type.title, fontSize: 22 },
+    sub: { ...type.subhead, marginTop: 2 },
+    close: {
+      width: 34,
+      height: 34,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: radius.full,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.control,
+    },
+    search: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
+    list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
+    line: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line, marginLeft: 0 },
+    row: {
+      minHeight: 60,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      paddingVertical: 10,
+      paddingHorizontal: spacing.md,
+      backgroundColor: colors.card,
+    },
+    rowText: { flex: 1, minWidth: 0 },
+    scientific: { ...type.body, fontSize: 15, fontWeight: "600", fontStyle: "italic" },
+    common: { ...type.caption, marginTop: 2 },
+    empty: {
+      alignItems: "center",
+      gap: spacing.sm,
+      paddingVertical: spacing.xxl,
+      paddingHorizontal: spacing.lg,
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+    },
+    emptyTitle: { ...type.body, fontWeight: "600" },
+    emptyHint: { ...type.caption, textAlign: "center" },
+    manual: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      marginHorizontal: spacing.lg,
+      marginBottom: spacing.md,
+      paddingHorizontal: spacing.md,
+      minHeight: 46,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      backgroundColor: colors.primarySoft,
+    },
+    manualText: { flex: 1, fontSize: 14, fontWeight: "600", color: colors.primaryDark },
 });

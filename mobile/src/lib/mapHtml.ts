@@ -5,7 +5,7 @@
 // pin's "Open record" link is tapped. Labels arrive already translated, because
 // the HTML is built once per language rather than re-running t() inside the
 // page.
-import { colors } from "../theme";
+import type { Palette } from "../theme";
 import { LEAFLET_CSS, LEAFLET_JS } from "./leafletBundle";
 import { MARKER_CLUSTER_CSS, MARKER_CLUSTER_JS } from "./markerClusterBundle";
 
@@ -57,13 +57,38 @@ function toScriptJson(value: unknown): string {
     .replace(/\u2029/g, "\\u2029");
 }
 
-export function buildMapHtml(points: MapPoint[], zones: MapZone[], labels: MapLabels): string {
+export function buildMapHtml(
+  points: MapPoint[],
+  zones: MapZone[],
+  labels: MapLabels,
+  colors: Palette,
+  dark: boolean
+): string {
   const data = {
     points,
     zones,
     center: SITE_CENTER,
     openLabel: labels.openRecord,
   };
+
+  // Leaflet's own chrome (popup, zoom buttons, attribution) is white by default,
+  // which is a bright rectangle on a night map. Only overridden in dark mode, so
+  // the light map is exactly the page it has always been.
+  const chromeCss = dark
+    ? `
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+    background: ${colors.card};
+    color: ${colors.ink};
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.5);
+  }
+  .leaflet-bar a, .leaflet-bar a:hover { background: ${colors.card}; color: ${colors.ink}; border-bottom-color: ${colors.line}; }
+  .leaflet-control-attribution { background: ${colors.card}; color: ${colors.muted}; }
+  .leaflet-control-attribution a { color: ${colors.primary}; }
+  /* OSM tiles are drawn for daylight. Inverting the hue and darkening keeps the
+     roads and labels legible without pulling in a second tile provider. */
+  .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.82) contrast(0.9); }
+`
+    : "";
 
   return `<!doctype html>
 <html>
@@ -87,7 +112,7 @@ export function buildMapHtml(points: MapPoint[], zones: MapZone[], labels: MapLa
     width: 16px;
     height: 16px;
     box-sizing: border-box;
-    border: 2.5px solid #fff;
+    border: 2.5px solid ${colors.card};
     border-radius: 50%;
     box-shadow: 0 1px 4px rgba(20, 24, 27, 0.45);
   }
@@ -100,9 +125,9 @@ export function buildMapHtml(points: MapPoint[], zones: MapZone[], labels: MapLa
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    border: 2px solid #fff;
+    border: 2px solid ${colors.card};
     background: ${colors.primary};
-    color: #fff;
+    color: ${colors.onTint};
     font-size: 13px;
     font-weight: 700;
     box-shadow: 0 2px 8px rgba(20, 24, 27, 0.35);
@@ -120,7 +145,7 @@ export function buildMapHtml(points: MapPoint[], zones: MapZone[], labels: MapLa
     border: 2.5px solid ${colors.ink};
     border-radius: 50%;
     background: ${colors.location};
-    box-shadow: 0 0 0 2px #fff, 0 2px 8px rgba(20, 24, 27, 0.4);
+    box-shadow: 0 0 0 2px ${colors.card}, 0 2px 8px rgba(20, 24, 27, 0.4);
   }
   .user-cone {
     position: absolute;
@@ -139,6 +164,7 @@ export function buildMapHtml(points: MapPoint[], zones: MapZone[], labels: MapLa
     pointer-events: none;
     will-change: transform;
   }
+${chromeCss}
 </style>
 </head>
 <body>
