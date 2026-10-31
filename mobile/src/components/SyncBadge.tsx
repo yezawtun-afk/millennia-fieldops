@@ -7,6 +7,7 @@ import React, { useEffect, useRef } from "react";
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useI18n } from "../i18n";
+import { formatDate } from "../lib/format";
 import { useReduceMotion } from "../lib/useReduceMotion";
 import { radius, spacing, type ThemeScale } from "../theme";
 import { useTheme, useThemedStyles } from "../lib/useTheme";
@@ -108,6 +109,12 @@ export function SyncBadge({
         : t("No uploads yet")
       : null;
 
+  // What the compact line appends after the detail. It must not be derived from
+  // `when`: "No uploads yet" is a sentence, and feeding it to the date helper
+  // used to print the epoch (new Date(null) is 1 Jan 1970).
+  const syncedNote =
+    status === "synced" ? (lastSyncedAt ? relativeTime(t, lastSyncedAt) : t("No uploads yet")) : null;
+
   if (variant === "compact") {
     return (
       <Pressable
@@ -124,7 +131,7 @@ export function SyncBadge({
           <Text style={[styles.compactTitle, { color: palette.fg }]}>{title}</Text>
           <Text style={styles.compactDetail} numberOfLines={2}>
             {detail}
-            {when ? ` · ${relativeTime(t, lastSyncedAt!)}` : ""}
+            {syncedNote ? ` · ${syncedNote}` : ""}
           </Text>
         </View>
         {online && (remaining > 0 || syncing) ? (
@@ -160,13 +167,19 @@ function relativeTime(
   t: (text: string, params?: Record<string, string | number>) => string,
   iso: string
 ): string {
-  const diff = Date.now() - new Date(iso).getTime();
+  const then = new Date(iso).getTime();
+  // A missing or unreadable stamp gets the app's normal date format, never a
+  // relative time measured from 1970.
+  if (Number.isNaN(then)) return formatDate(iso);
+  const diff = Date.now() - then;
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return t("just now");
   if (minutes < 60) return t("{count}m ago", { count: minutes });
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return t("{count}h ago", { count: hours });
-  return new Date(iso).toLocaleDateString();
+  // An absolute date here, so a stamp from another month or year is not read as
+  // "720h ago" - and it always carries the year, unlike the locale default.
+  return formatDate(iso);
 }
 
 const makeStyles = ({ colors, type }: ThemeScale) =>
