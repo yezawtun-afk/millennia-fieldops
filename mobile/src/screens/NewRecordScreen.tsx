@@ -76,6 +76,27 @@ const SEVERITIES: { label: string; value: HazardSeverity }[] = [
 
 const NO_ZONE = "No zone";
 
+// Which field a validation message belongs to. The order is the order the
+// fields appear in, so "the first problem" is the one nearest the top.
+type FieldKey =
+  | "title"
+  | "species"
+  | "hazardType"
+  | "severity"
+  | "readingType"
+  | "readingValue"
+  | "gps";
+
+const FIELD_ORDER: FieldKey[] = [
+  "title",
+  "species",
+  "hazardType",
+  "severity",
+  "readingType",
+  "readingValue",
+  "gps",
+];
+
 // What "repeat last" copies: a submitted record without its local queue id.
 type Observation = Omit<OutboxRecord, "localId">;
 
@@ -134,6 +155,15 @@ export function NewRecordScreen({ navigation, route }: Props) {
     kind: "info" | "success" | "error" | "warning";
     text: string;
   } | null>(null);
+  // Problems found on the last save attempt, each pinned to its own field.
+  const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
+  // Where each field sits, so a failed save can scroll to the first one. A save
+  // press happens at the bottom of a long form; the field it complains about is
+  // usually off-screen, and a message nobody scrolls back to is a silent failure.
+  const fieldRefs = useRef<
+    Partial<Record<FieldKey, React.ComponentRef<typeof View> | null>>
+  >({});
+  const scrollY = useRef(0);
   // Set when the form is editing an unfinished draft (opened from My records).
   const [draftId, setDraftId] = useState<string | null>(null);
   // Kept so a draft remembers when the observation was actually made.
@@ -192,6 +222,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
       setZoneId(p.zone_id);
       setObservedDate(p.observed_date);
       setDraftId(row.localId);
+      setErrors({});
       setMessage({
         kind: "info",
         text: t("Draft loaded - finish the details, then tap Save record."),
@@ -237,6 +268,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
     setReadingUnit("");
     setZoneId(null);
     setDraftId(null);
+    setErrors({});
     setObservedDate(new Date().toISOString());
   }
 
@@ -278,21 +310,9 @@ export function NewRecordScreen({ navigation, route }: Props) {
       return;
     }
     setCoords(result);
-
-    if (result.accuracy == null) {
-      setMessage({
-        kind: "warning",
-        text: t("GPS accuracy is unknown. Move to open sky and capture the location again."),
-      });
-    } else if (!isGpsAccuracyGood(result.accuracy)) {
-      setMessage({
-        kind: "warning",
-        text: t(
-          "GPS accuracy is ±{accuracy} m. Move to open sky and capture again. Records need ±{limit} m or better.",
-          { accuracy: Math.round(result.accuracy), limit: GPS_ACCURACY_LIMIT_M }
-        ),
-      });
-    }
+    // The Location card prints the accuracy (and its quality) in place, so a
+    // weak fix is not repeated as a banner at the top of the form.
+    clearError("gps");
   }
 
   function chooseReadingType(next: string) {
@@ -300,6 +320,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
     setReadingType(next);
     setReadingUnit(defaultUnitFor(next));
     setReadingValue("");
+    clearError("readingType");
   }
 
   async function runPhotoAnalysis() {
@@ -449,34 +470,60 @@ export function NewRecordScreen({ navigation, route }: Props) {
     };
   }
 
-  // What still has to be filled in before a record counts as complete.
-  function missingDetail(): string | null {
-    if (!title.trim()) return t("Give the record a short title - or save it as a draft.");
+  // What still has to be filled in before a record counts as complete, keyed by
+  // the field that owns each problem. Drafts skip this entirely: an unfinished
+  // record is exactly what a draft is for.
+  function validateForm(): Partial<Record<FieldKey, string>> {
+    const found: Partial<Record<FieldKey, string>> = {};
+
+    if (!title.trim())
+      found.title = t("Give the record a short title - or save it as a draft.");
     if (type === "flora" && !species.trim())
-      return t("Add the species name - or save it as a draft.");
+      found.species = t("Add the species name - or save it as a draft.");
     if (type === "hazard" && !hazardType)
-      return t("Choose a hazard type - or save it as a draft.");
+      found.hazardType = t("Choose a hazard type - or save it as a draft.");
     if (type === "hazard" && !severity)
-      return t("Choose a severity - or save it as a draft.");
+      found.severity = t("Choose a severity - or save it as a draft.");
     if (type === "soil_water" && !readingType)
-      return t("Choose a reading type - or save it as a draft.");
+      found.readingType = t("Choose a reading type - or save it as a draft.");
     if (type === "soil_water" && !readingValue.trim())
-      return t("Add the reading value - or save it as a draft.");
+      found.readingValue = t("Add the reading value - or save it as a draft.");
     if (type === "soil_water") {
-      const readingError = validateReading(readingType, readingValue, readingUnit);
-      if (readingError) return t(readingError.key, readingError.params);
+      const readingProblem = validateReading(readingType, readingValue, readingUnit);
+      // An empty value already has the sentence above; this one is for a value
+      // that is there but unusable, such as a pH of 40.
+      if (readingProblem && !found.readingValue)
+        found.readingValue = t(readingProblem.key, readingProblem.params);
     }
-    if (!coords) return t("Capture a GPS location before submitting.");
-    if (coords.accuracy == null) {
-      return t("GPS accuracy is unknown. Capture the location again before submitting.");
-    }
-    if (!isGpsAccuracyGood(coords.accuracy)) {
-      return t(
+    if (!coords) {
+      found.gps = t("Capture a GPS location before submitting.");
+    } else if (coords.accuracy == null) {
+      found.gps = t("GPS accuracy is unknown. Capture the location again before submitting.");
+    } else if (!isGpsAccuracyGood(coords.accuracy)) {
+      // The Location card already prints this live, in red, the moment the fix
+      // is captured; the map still carries it so a save is blocked and revealed.
+      found.gps = t(
         "GPS accuracy is ±{accuracy} m. Move to open sky and capture again. Records need ±{limit} m or better.",
         { accuracy: Math.round(coords.accuracy), limit: GPS_ACCURACY_LIMIT_M }
       );
     }
-    return null;
+    return found;
+  }
+
+  function clearError(key: FieldKey) {
+    setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
+  }
+
+  // Bring a field into view, about a thumb's width below the header.
+  function revealField(key: FieldKey) {
+    const node = fieldRefs.current[key];
+    if (!node) return;
+    node.measureInWindow((_x, y) => {
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, scrollY.current + y - 150),
+        animated: true,
+      });
+    });
   }
 
   // What "repeat" would copy, said in one line so the worker knows before they
@@ -547,11 +594,15 @@ export function NewRecordScreen({ navigation, route }: Props) {
   }
 
   async function save() {
-    const missing = missingDetail();
-    if (missing) {
-      setMessage({ kind: "error", text: missing });
+    const problems = validateForm();
+    const first = FIELD_ORDER.find((key) => problems[key]);
+    if (first) {
+      setErrors(problems);
+      setMessage(null);
+      revealField(first);
       return;
     }
+    setErrors({});
 
     // Submitting needs the server. Offline the button is disabled, and this is
     // the backstop in case the connection dropped in the meantime.
@@ -668,6 +719,10 @@ export function NewRecordScreen({ navigation, route }: Props) {
         style={styles.screen}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        onScroll={(event) => {
+          scrollY.current = event.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
       >
         <View style={styles.header}>
           <Text style={styles.title}>{draftId ? t("Finish the draft") : t("New record")}</Text>
@@ -704,6 +759,9 @@ export function NewRecordScreen({ navigation, route }: Props) {
             if (found && found.value !== type) {
               clearAi();
               setType(found.value);
+              // Each type owns a different set of fields, so the old problems
+              // no longer describe anything on screen.
+              setErrors({});
             }
           }}
           labelFor={t}
@@ -734,10 +792,19 @@ export function NewRecordScreen({ navigation, route }: Props) {
         ) : null}
 
         <Card padded style={{ marginBottom: spacing.lg }}>
-          <Field label={t("Title")}>
+          <Field
+            label={t("Title")}
+            error={errors.title}
+            ref={(node) => {
+              fieldRefs.current.title = node;
+            }}
+          >
             <Input
               value={title}
-              onChangeText={setTitle}
+              onChangeText={(value) => {
+                setTitle(value);
+                if (value.trim()) clearError("title");
+              }}
               placeholder={
                 type === "flora"
                   ? t("e.g. Resprouting ferns - southern slope")
@@ -767,10 +834,19 @@ export function NewRecordScreen({ navigation, route }: Props) {
 
           {type === "flora" ? (
             <>
-              <Field label={t("Species name")}>
+              <Field
+                label={t("Species name")}
+                error={errors.species}
+                ref={(node) => {
+                  fieldRefs.current.species = node;
+                }}
+              >
                 <Input
                   value={species}
-                  onChangeText={setSpecies}
+                  onChangeText={(value) => {
+                    setSpecies(value);
+                    if (value.trim()) clearError("species");
+                  }}
                   placeholder="e.g. Dicranopteris linearis"
                 />
                 <Pressable
@@ -818,21 +894,38 @@ export function NewRecordScreen({ navigation, route }: Props) {
 
           {type === "hazard" ? (
             <>
-              <Field label={t("Hazard type")}>
+              <Field
+                label={t("Hazard type")}
+                error={errors.hazardType}
+                ref={(node) => {
+                  fieldRefs.current.hazardType = node;
+                }}
+              >
                 <ChipGroup
                   options={HAZARD_TYPES}
                   value={hazardType}
-                  onChange={setHazardType}
+                  onChange={(value) => {
+                    setHazardType(value);
+                    if (value) clearError("hazardType");
+                  }}
                   labelFor={t}
                 />
               </Field>
-              <Field label={t("Severity")}>
+              <Field
+                label={t("Severity")}
+                error={errors.severity}
+                ref={(node) => {
+                  fieldRefs.current.severity = node;
+                }}
+              >
                 <ChipGroup
                   options={SEVERITIES.map((s) => s.label)}
                   value={SEVERITIES.find((s) => s.value === severity)?.label ?? null}
-                  onChange={(label) =>
-                    setSeverity(SEVERITIES.find((s) => s.label === label)?.value ?? null)
-                  }
+                  onChange={(label) => {
+                    const value = SEVERITIES.find((s) => s.label === label)?.value ?? null;
+                    setSeverity(value);
+                    if (value) clearError("severity");
+                  }}
                   labelFor={t}
                 />
               </Field>
@@ -841,7 +934,13 @@ export function NewRecordScreen({ navigation, route }: Props) {
 
           {type === "soil_water" ? (
             <>
-              <Field label={t("Reading type")}>
+              <Field
+                label={t("Reading type")}
+                error={errors.readingType}
+                ref={(node) => {
+                  fieldRefs.current.readingType = node;
+                }}
+              >
                 <ChipGroup
                   options={READING_TYPES}
                   value={readingType}
@@ -849,10 +948,18 @@ export function NewRecordScreen({ navigation, route }: Props) {
                   labelFor={t}
                 />
               </Field>
-              <Field label={t("Value")}>
+              <Field
+                label={t("Value")}
+                ref={(node) => {
+                  fieldRefs.current.readingValue = node;
+                }}
+              >
                 <Input
                   value={readingValue}
-                  onChangeText={setReadingValue}
+                  onChangeText={(value) => {
+                    setReadingValue(value);
+                    if (value.trim()) clearError("readingValue");
+                  }}
                   keyboardType="decimal-pad"
                   placeholder={
                     readingDefinition
@@ -867,6 +974,10 @@ export function NewRecordScreen({ navigation, route }: Props) {
                   <Text style={styles.helperError}>
                     {t(readingError.key, readingError.params)}
                   </Text>
+                ) : errors.readingValue ? (
+                  // A value that cannot be saved says so once: live while typing
+                  // (above), and here only when the field is still empty.
+                  <Text style={styles.helperError}>{errors.readingValue}</Text>
                 ) : null}
               </Field>
               <Field label={t("Unit")}>
@@ -893,77 +1004,88 @@ export function NewRecordScreen({ navigation, route }: Props) {
           </Field>
         </Card>
 
-        <Card padded style={{ marginBottom: spacing.lg }}>
-          <SectionTitle>{t("Location")}</SectionTitle>
-          {coords ? (
-            <>
-              <Text style={styles.coords}>
-                {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
-              </Text>
-              <Text
-                style={[
-                  styles.helper,
-                  !isGpsAccuracyGood(coords.accuracy) ? styles.helperError : null,
-                ]}
-              >
-                {coords.accuracy == null
-                  ? t("Accuracy unknown - capture again before submitting.")
-                  : t("GPS accuracy ±{accuracy} m · {quality}", {
-                      accuracy: Math.round(coords.accuracy),
-                      quality: isGpsAccuracyGood(coords.accuracy) ? t("Good") : t("Weak"),
-                    })}
-              </Text>
-              {!isGpsAccuracyGood(coords.accuracy) ? (
-                <Text style={styles.helper}>
-                  {t(
-                    "Move to open sky and tap Update GPS location. Records need ±{limit} m or better.",
-                    { limit: GPS_ACCURACY_LIMIT_M }
-                  )}
+        <View
+          ref={(node) => {
+            fieldRefs.current.gps = node;
+          }}
+        >
+          <Card padded style={{ marginBottom: spacing.lg }}>
+            <SectionTitle>{t("Location")}</SectionTitle>
+            {coords ? (
+              <>
+                <Text style={styles.coords}>
+                  {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
                 </Text>
-              ) : null}
-            </>
-          ) : (
-            <Text style={styles.helper}>{t("No GPS captured yet.")}</Text>
-          )}
-          <View style={{ height: 10 }} />
-          {zoneSuggestion ? (
-            <Pressable
-              onPress={() => {
-                const zone = zoneSuggestion.zone;
-                setZoneId(zone.id);
-                setMessage({
-                  kind: "info",
-                  text: t("Zone set to {zone}.", { zone: zone.name }),
-                });
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={t("Use {zone}", { zone: zoneSuggestion.zone.name })}
-              style={({ pressed }) => [
-                styles.zoneSuggestion,
-                pressed ? { opacity: 0.7 } : null,
-              ]}
-            >
-              <Ionicons name="location" size={16} color={colors.primaryDark} />
-              <View style={styles.zoneSuggestionBody}>
-                <Text style={styles.zoneSuggestionTitle}>
-                  {zoneSuggestion.inside
-                    ? t("You are inside {zone}.", { zone: zoneSuggestion.zone.name })
-                    : t("{zone} is about {distance} m away.", {
-                        zone: zoneSuggestion.zone.name,
-                        distance: Math.round(zoneSuggestion.distance),
+                <Text
+                  style={[
+                    styles.helper,
+                    !isGpsAccuracyGood(coords.accuracy) ? styles.helperError : null,
+                  ]}
+                >
+                  {coords.accuracy == null
+                    ? t("Accuracy unknown - capture again before submitting.")
+                    : t("GPS accuracy ±{accuracy} m · {quality}", {
+                        accuracy: Math.round(coords.accuracy),
+                        quality: isGpsAccuracyGood(coords.accuracy) ? t("Good") : t("Weak"),
                       })}
                 </Text>
-                <Text style={styles.zoneSuggestionAction}>{t("Use this zone")}</Text>
-              </View>
-            </Pressable>
-          ) : null}
-          <Button
-            title={coords ? t("Update GPS location") : t("Capture GPS location")}
-            variant="secondary"
-            onPress={captureGps}
-            loading={gpsBusy}
-          />
-        </Card>
+                {!isGpsAccuracyGood(coords.accuracy) ? (
+                  <Text style={styles.helper}>
+                    {t(
+                      "Move to open sky and tap Update GPS location. Records need ±{limit} m or better.",
+                      { limit: GPS_ACCURACY_LIMIT_M }
+                    )}
+                  </Text>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <Text style={styles.helper}>{t("No GPS captured yet.")}</Text>
+                {errors.gps ? (
+                  <Text style={styles.helperError}>{errors.gps}</Text>
+                ) : null}
+              </>
+            )}
+            <View style={{ height: 10 }} />
+            {zoneSuggestion ? (
+              <Pressable
+                onPress={() => {
+                  const zone = zoneSuggestion.zone;
+                  setZoneId(zone.id);
+                  setMessage({
+                    kind: "info",
+                    text: t("Zone set to {zone}.", { zone: zone.name }),
+                  });
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t("Use {zone}", { zone: zoneSuggestion.zone.name })}
+                style={({ pressed }) => [
+                  styles.zoneSuggestion,
+                  pressed ? { opacity: 0.7 } : null,
+                ]}
+              >
+                <Ionicons name="location" size={16} color={colors.primaryDark} />
+                <View style={styles.zoneSuggestionBody}>
+                  <Text style={styles.zoneSuggestionTitle}>
+                    {zoneSuggestion.inside
+                      ? t("You are inside {zone}.", { zone: zoneSuggestion.zone.name })
+                      : t("{zone} is about {distance} m away.", {
+                          zone: zoneSuggestion.zone.name,
+                          distance: Math.round(zoneSuggestion.distance),
+                        })}
+                  </Text>
+                  <Text style={styles.zoneSuggestionAction}>{t("Use this zone")}</Text>
+                </View>
+              </Pressable>
+            ) : null}
+            <Button
+              title={coords ? t("Update GPS location") : t("Capture GPS location")}
+              variant="secondary"
+              onPress={captureGps}
+              loading={gpsBusy}
+            />
+          </Card>
+        </View>
 
         <Card padded style={{ marginBottom: spacing.lg }}>
           <SectionTitle>{t("Photos")}</SectionTitle>

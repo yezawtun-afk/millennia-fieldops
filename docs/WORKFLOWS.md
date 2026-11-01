@@ -24,6 +24,11 @@ Notes:
   the phone first. "Save as draft" works with no connection (local only); "Save record"
   needs the server, so it is disabled offline with a banner telling the worker to save a
   draft instead. Queued records upload automatically when the connection returns.
+- A failed save never reports from the top of the form. Every problem the record has
+  (no title, no hazard type or severity, an impossible reading, no GPS) is printed
+  directly under the field that owns it, and the screen scrolls to the first one. The
+  field keeps the message until it is filled in. Drafts skip this check: an unfinished
+  record is what a draft is for.
 
 ## The repair loop (approved hazards)
 

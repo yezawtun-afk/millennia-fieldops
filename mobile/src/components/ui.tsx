@@ -54,14 +54,26 @@ export function Label({ children }: { children: React.ReactNode }) {
   return <Text style={styles.label}>{children}</Text>;
 }
 
-export function Field({ label, children }: { label: string; children: React.ReactNode }) {
+// One labelled block of a form. `error` prints the problem directly under the
+// control it belongs to, so a failed save points at the field instead of
+// throwing a banner at the top of a long form.
+export const Field = React.forwardRef<
+  React.ComponentRef<typeof View>,
+  { label: string; children: React.ReactNode; error?: string | null }
+>(function Field({ label, children, error }, ref) {
+  const styles = useThemedStyles(makeStyles);
   return (
-    <View style={{ marginBottom: spacing.lg }}>
+    <View ref={ref} style={{ marginBottom: spacing.lg }}>
       <Label>{label}</Label>
       {children}
+      {error ? (
+        <Text style={styles.fieldError} accessibilityLiveRegion="polite">
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
-}
+});
 
 export function Divider() {
   const styles = useThemedStyles(makeStyles);
@@ -439,6 +451,9 @@ const makeStyles = ({ colors, type }: ThemeScale) =>
       marginBottom: spacing.sm,
     },
     label: { ...type.label, marginBottom: 6 },
+    // A field-level error sits tight under its control, at helper size, so it
+    // reads as belonging to that one line rather than to the screen.
+    fieldError: { fontSize: 12, color: colors.rejectedInk, marginTop: 6, lineHeight: 17 },
     divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line },
     listRow: {
       flexDirection: "row",
