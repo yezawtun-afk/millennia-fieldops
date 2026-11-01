@@ -1,30 +1,26 @@
-# Millennia FieldOps (updated build)
+# Millennia FieldOps
 
-A field data collection system for Millennia Village, built **exactly to the project
-proposal**. It has three parts that share one Supabase backend:
+A field data collection system for Millennia Village, built to the project proposal.
+Three parts share one Supabase backend, one database and one set of accounts:
 
 | Part | Folder | Technology | Who uses it |
 | --- | --- | --- | --- |
-| Mobile field app | `mobile/` | React Native (Expo) + TypeScript + expo-sqlite | Field workers |
+| Mobile field app | `mobile/` | React Native (Expo) + TypeScript + expo-sqlite | Field workers, and supervisors reviewing on the go |
 | Web admin dashboard | `web/` | Next.js (App Router) + TypeScript + Tailwind CSS | Supervisors & admins |
 | Backend & database | `supabase/` | Supabase (PostgreSQL, Auth, Storage, REST API) | Shared |
 
-Maps use **Leaflet.js** with **OpenStreetMap** tiles.
-
-> This folder is a fresh build created to match the proposal's stated stack
-> (React Native/Expo, Next.js, Supabase, SQLite, TypeScript). The earlier
-> `Millennia Village3_openai` folder used a different stack (PWA + Express + Prisma)
-> and is left untouched.
+Maps use **Leaflet.js** with **OpenStreetMap** tiles in both parts, so the phone and
+the dashboard draw the same picture.
 
 ---
 
-## Status: deployed and demo-ready (Oct 2026)
+## Status: deployed and demo-ready (Nov 2026)
 
 | Component | Where | Notes |
 | --- | --- | --- |
-| Web dashboard | https://millennia-fieldops-rewrite.vercel.app/ | Next.js on Vercel |
-| Android app | EAS Build (APK, internal distribution) | build profiles in `mobile/eas.json`; the newest APK is linked on the Expo build page, and later JavaScript changes arrive over the air (`eas update`) |
-| Database | Supabase | schema + 5 zones + demo data loaded |
+| Web dashboard | https://millennia-fieldops-rewrite.vercel.app/ | Next.js on Vercel, redeployed on every push to `main` |
+| Android app | EAS Build (APK, internal distribution) | version `2.1.0`, versionCode 12; build profiles in `mobile/eas.json`. JavaScript changes after that arrive over the air (`eas update`, branch `preview`) and never change the version number |
+| Database | Supabase | schema, 5 monitoring zones and demo data loaded |
 
 Demo accounts and a full end-of-project snapshot live in
 [`docs/PROJECT_REPORT.md`](docs/PROJECT_REPORT.md)
@@ -48,6 +44,12 @@ Demo accounts and a full end-of-project snapshot live in
 - Capture **flora & biodiversity**, **soil & water** and **environmental hazard** records.
 - **Three languages**: English (default), Bahasa Melayu and 简体中文. The globe button in the
   header switches instantly and the choice is remembered on the phone.
+- **Light and dark mode**, switched from the side panel and remembered on the phone. The
+  web dashboard stays light. Dark is a hand-picked green-tinted charcoal set, not the light
+  palette inverted: every text/background pair was chosen again so it clears about 4:1, the
+  keyboard and caret follow it, and the map tiles are dimmed by the same switch. The app now
+  holds the splash screen until the saved choice is read, so a dark-mode user never sees a
+  white flash at start.
 - Automatic **GPS** (expo-location) and **photos** (expo-camera / expo-image-picker).
   Photos are **compressed on the phone before upload** (long edge 1600 px, quality 0.6,
   a second pass for very large files), so uploads use less data and storage.
@@ -55,8 +57,8 @@ Demo accounts and a full end-of-project snapshot live in
   app says so and asks you to use **Save as draft** (the "Save record" button needs a
   connection); a draft is opened from My Records and submitted later. Records already
   queued upload automatically when a connection returns ("Sync now" also available).
-- A **sync badge** on Home shows the truth at a glance: 🟢 Synced, 🟡 Syncing… (with the
-  number left), 🔴 Offline (number queued), plus an amber **Needs retry** state and a
+- A **sync badge** on Home shows the truth at a glance: synced, syncing… (with the
+  number left), offline (number queued), plus an amber **needs retry** state and a
   relative "last upload" time.
 - **Supervisors and admins can review records on the phone**: the Review tab lists pending
   records oldest first and opens a full record with Approve / Reject (a comment is required
@@ -150,22 +152,69 @@ and [`docs/WORKFLOWS.md`](docs/WORKFLOWS.md).
 
 ---
 
+## Checks before you push
+
+Both parts are TypeScript, so these two commands catch almost every mistake. Run them
+from the repo root in PowerShell:
+
+```powershell
+cd mobile; npx tsc --noEmit; cd ..
+cd web; npm run build
+```
+
+- `npx tsc --noEmit` type-checks the phone app without building anything. It takes about a
+  minute and prints nothing when the code is clean.
+- `npm run build` compiles the dashboard the way Vercel will. A broken page, a bad import
+  or a Supabase query with the wrong types fails here, before it reaches production.
+
+Pushing to `main` is the deploy: Vercel rebuilds `web/` automatically, and the phone app
+takes only an `eas update` (see `docs/DEPLOY.md`).
+
+---
+
 ## Project layout
 
 ```text
-Millennia FieldOps updated 5/
-  README.md
-  docs/                     Architecture, database, workflows, setup, deploy guide,
-                            project report (PROJECT_REPORT.md / .docx)
-  supabase/                 SQL: schema, policies, storage, triggers, seed,
-                            demo data, profile backfill; generated setup_all.sql
-  tools/                    make-app-icons.ps1, bundle-db-sql.ps1, onedrive-links.ps1
+millennia-fieldops/
+  README.md                 This file: what the system is and how to run it
+  docs/
+    SETUP.md                Step-by-step first install
+    DEPLOY.md               Shipping: EAS APK build, over-the-air updates, Vercel
+    ARCHITECTURE.md         How the three parts fit together
+    DATABASE.md             Schema, enums, policies, triggers
+    WORKFLOWS.md            The day-to-day flows (capture -> sync -> review)
+    PROJECT_REPORT.md       End-of-project report and demo accounts
+    PROJECT_REPORT.docx     The same report for submission
+  supabase/
+    01..13_*.sql            Numbered setup: schema, policies, storage, triggers,
+                            seed, demo data, audit log, zones, job completion
+    functions/analyze-record  Edge function for the AI photo suggestion
+  tools/                    Regenerate what is generated, never hand-edit it:
+                            build-leaflet-bundle.js     inlined Leaflet for the phone map
+                            build-markercluster-bundle.js  inlined marker clustering
+                            bundle-db-sql.ps1           supabase/setup_all.sql
+                            make-app-icons.ps1          app icon and splash art
+                            onedrive-links.ps1          junction workaround for OneDrive
   web/                      Next.js dashboard (TypeScript + Tailwind)
-    src/app/                Pages (App Router)
-    src/components/         Sidebar, badges, map, forms
-    src/lib/                Supabase clients, types, format, CSV/PDF
+    src/app/                Routes: login, dashboard, records, map, users, audit
+    src/app/api/            Login, account request, CSV/PDF export
+    src/components/         Shell, tables, map, review panel, zones; overview/ panels
+    src/i18n/               EN / MS / ZH dictionaries and the server helper
+    src/lib/                Supabase clients (client, server, admin, middleware), data
+                            queries, health scores, CSV and PDF writers
   mobile/                   Expo React Native app (TypeScript)
+    App.tsx                 Theme provider, splash hold, fonts, navigation tree
+    src/theme.ts            Colour palettes, spacing, radius, type scale, shadows
     src/screens/            One file per screen
-    src/lib/                Supabase client, SQLite queue, sync, GPS, photos
-    src/context/            Auth and toast providers
+    src/components/         Framed sheets, fields, map WebView, sidebar, sync badge
+    src/navigation/         Tab bar, stack, headers
+    src/context/            Auth and sync providers
+    src/i18n/               EN / MS / ZH dictionaries
+    src/lib/                Supabase, SQLite queue, sync, GPS, photos, AI, weather,
+                            zones, map HTML, inlined Leaflet bundles
+    patches/                patch-package fixes applied on install
 ```
+
+Generated files are not committed: `supabase/setup_all.sql`, `mobile/dist`,
+`mobile/.expo`, `web/.next`, `web/next-env.d.ts`. Rebuild the first with
+`tools/bundle-db-sql.ps1`; the rest are produced by the tools themselves.

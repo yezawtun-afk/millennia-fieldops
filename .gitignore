@@ -19,8 +19,9 @@ web/out
 web/next-env.d.ts
 *.tsbuildinfo
 
-# Expo / React Native
-mobile/.expo
+# Expo / React Native. `.expo` is written by `expo start` wherever the command
+# runs, so the pattern is not tied to one folder.
+.expo
 mobile/.expo-shared
 mobile/dist
 mobile/web-build
@@ -50,8 +51,9 @@ agent/skills/
 .taste-skill/
 skills-lock.json
 
-# Logs, OS and editor files
+# Logs, shell redirection leftovers, OS and editor files
 *.log
+*.err
 npm-debug.log*
 .DS_Store
 Thumbs.db
