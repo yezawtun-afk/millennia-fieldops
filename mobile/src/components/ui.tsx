@@ -166,10 +166,14 @@ export function Input({
 }) {
   const [focused, setFocused] = useState(false);
   const styles = useThemedStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const field = (
     <TextInput
       placeholderTextColor={colors.faint}
+      // Native chrome is not themed by the stylesheet: a white keyboard and a
+      // default-coloured caret would give dark mode away on the first tap.
+      keyboardAppearance={isDark ? "dark" : "light"}
+      selectionColor={colors.primary}
       {...props}
       onFocus={(event) => {
         setFocused(true);

@@ -102,7 +102,7 @@ const makeStyles = ({ colors, type }: ThemeScale) =>
     triggerText: { fontSize: 12, fontWeight: "600" },
     backdrop: {
       flex: 1,
-      backgroundColor: "rgba(15, 32, 24, 0.35)",
+      backgroundColor: colors.scrim,
       justifyContent: "flex-end",
       padding: spacing.lg,
     },

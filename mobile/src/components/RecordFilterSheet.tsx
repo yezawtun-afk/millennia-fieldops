@@ -188,7 +188,7 @@ const makeStyles = ({ colors, type }: ThemeScale) =>
   StyleSheet.create({
     backdrop: {
       flex: 1,
-      backgroundColor: "rgba(15, 32, 24, 0.35)",
+      backgroundColor: colors.scrim,
       justifyContent: "flex-end",
       padding: spacing.lg,
     },

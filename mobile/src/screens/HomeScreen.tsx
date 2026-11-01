@@ -230,7 +230,15 @@ export function HomeScreen({ navigation }: Props) {
       style={styles.screen}
       contentContainerStyle={styles.content}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          // iOS takes tintColor, Android the spinner colours plus the disc
+          // behind them, which is white by default and glaring at night.
+          tintColor={colors.primary}
+          colors={[colors.primary]}
+          progressBackgroundColor={colors.card}
+        />
       }
     >
       <View style={styles.header}>

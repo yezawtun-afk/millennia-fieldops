@@ -446,7 +446,9 @@ export function Sidebar({
                     onValueChange={(next) => setMode(next ? "dark" : "light")}
                     accessibilityLabel={t("Dark mode")}
                     trackColor={{ false: colors.control, true: colors.primary }}
-                    thumbColor={colors.card}
+                    // The thumb is the light element in both palettes: `card`
+                    // would be near-black at night and vanish into the track.
+                    thumbColor={isDark ? colors.ink : colors.card}
                     ios_backgroundColor={colors.control}
                   />
                 }
@@ -615,7 +617,7 @@ const makeStyles = ({ colors, type }: ThemeScale) =>
       right: 0,
       bottom: 0,
       left: 0,
-      backgroundColor: "rgba(15, 32, 24, 0.4)",
+      backgroundColor: colors.scrim,
     },
     panel: {
       position: "absolute",

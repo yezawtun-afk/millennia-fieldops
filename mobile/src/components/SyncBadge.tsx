@@ -194,10 +194,10 @@ const makeStyles = ({ colors, type }: ThemeScale) =>
     syncIcon: {
       width: 34,
       height: 34,
-      borderRadius: radius.full,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: "rgba(255,255,255,0.55)",
+      // No disc behind the icon: a white wash read as a light-mode leftover on
+      // the dark card. The tinted card already carries the state.
     },
     syncTitle: { fontSize: 15, fontWeight: "600" },
     syncDetail: { fontSize: 13, marginTop: 1, lineHeight: 18 },

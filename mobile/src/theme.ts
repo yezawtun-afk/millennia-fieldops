@@ -65,6 +65,11 @@ const light = {
 
   // Text on a filled accent surface.
   onTint: "#FFFFFF",
+
+  // The wash behind a sliding panel or a sheet. It has to darken what it covers,
+  // so it is not one value for both palettes: 35% of a dark green dims a white
+  // page and does almost nothing to a night one.
+  scrim: "#0F201859",
 };
 
 /** Every colour the app draws, in one flat record of names. */
@@ -126,6 +131,10 @@ export const darkColors: Palette = {
 
   // Filled accent surfaces are light tints here, so their label is ink.
   onTint: "#0E1512",
+
+  // Heavier than the light scrim: black over a near-black page still has to
+  // read as "this sheet is in front", and the panel edge alone was not enough.
+  scrim: "#000000A6",
 };
 
 export const spacing = {
