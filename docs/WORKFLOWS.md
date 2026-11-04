@@ -29,6 +29,12 @@ Notes:
   directly under the field that owns it, and the screen scrolls to the first one. The
   field keeps the message until it is filled in. Drafts skip this check: an unfinished
   record is what a draft is for.
+- Photos on the phone are deleted as soon as their record uploads, so the only copies that
+  stay are the ones no record points at: shots from a form that was abandoned, or left
+  behind when the app was killed between capture and save. **Profile → On this phone**
+  counts them, shows how much room they take next to the copies that are still needed, and
+  deletes the leftovers on request. It never removes a file a draft or queued record
+  still needs, and it never reaches the server.
 
 ## The repair loop (approved hazards)
 

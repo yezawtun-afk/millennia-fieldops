@@ -626,4 +626,20 @@ export const ms: Record<string, string> = {
   "Not available offline": "Tidak tersedia di luar talian",
   "Call {number} now? This dials the national emergency line. Use it only for a real emergency.":
     "Hubungi {number} sekarang? Ini menghubungi talian kecemasan kebangsaan. Gunakan hanya untuk kecemasan sebenar.",
+
+  // Profile: what the photos on this phone take up, and clearing leftovers.
+  "On this phone": "Pada telefon ini",
+  "{count} photos on this phone": "{count} foto pada telefon ini",
+  "{count} kept for unfinished records": "{count} disimpan untuk rekod yang belum siap",
+  "{count} leftover from records never saved":
+    "{count} tinggal daripada rekod yang tidak disimpan",
+  "Clear {count} leftover photos": "Bersihkan {count} foto lebihan",
+  "Nothing to clean up": "Tiada apa untuk dibersihkan",
+  "Uploaded photos leave the phone as soon as they reach the server.":
+    "Foto yang dimuat naik dipadam daripada telefon sebaik sahaja sampai ke pelayan.",
+  "Clear leftover photos?": "Bersihkan foto lebihan?",
+  Clear: "Bersihkan",
+  "These photos are not attached to any record. The copies on the server are not touched.":
+    "Foto ini tidak dilampirkan pada mana-mana rekod. Salinan pada pelayan tidak disentuh.",
+  "Freed {size}.": "{size} telah dilepaskan.",
 };

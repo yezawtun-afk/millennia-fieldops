@@ -25,6 +25,7 @@ import { useI18n } from "../i18n";
 import { completeRecord, fetchRecord, signPhotoUrls } from "../lib/api";
 import { captureFromCamera, deletePhoto, pickFromLibrary } from "../lib/photos";
 import { removeRecordPhotos, uploadRecordPhoto } from "../lib/upload";
+import { holdPhotos } from "../lib/storage";
 import { useOnlineStatus } from "../lib/network";
 import { Banner, Button, Card, Input, Pill, SectionTitle } from "../components/ui";
 import { radius, spacing, type ThemeScale } from "../theme";
@@ -70,6 +71,13 @@ export function CompleteJobScreen({ route, navigation }: Props) {
 
   useEffect(() => {
     photosRef.current = photos;
+  }, [photos]);
+
+  // These photos belong to no record until the job is filed, so the storage
+  // cleaner has to know they are in use while this screen is open.
+  useEffect(() => {
+    holdPhotos("complete-job", photos);
+    return () => holdPhotos("complete-job", []);
   }, [photos]);
 
   useEffect(

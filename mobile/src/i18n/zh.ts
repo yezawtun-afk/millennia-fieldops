@@ -577,4 +577,19 @@ export const zh: Record<string, string> = {
   "Not available offline": "离线时不可用",
   "Call {number} now? This dials the national emergency line. Use it only for a real emergency.":
     "现在拨打 {number}？此号码为国家紧急热线，仅在真正紧急时使用。",
+
+  // Profile: what the photos on this phone take up, and clearing leftovers.
+  "On this phone": "本机存储",
+  "{count} photos on this phone": "本机共 {count} 张照片",
+  "{count} kept for unfinished records": "{count} 张为未完成的记录保留",
+  "{count} leftover from records never saved": "{count} 张来自未保存记录的残留",
+  "Clear {count} leftover photos": "清理 {count} 张残留照片",
+  "Nothing to clean up": "没有需要清理的内容",
+  "Uploaded photos leave the phone as soon as they reach the server.":
+    "照片上传到服务器后即从手机删除。",
+  "Clear leftover photos?": "删除残留照片？",
+  Clear: "清理",
+  "These photos are not attached to any record. The copies on the server are not touched.":
+    "这些照片不属于任何记录，服务器上的副本不会受到影响。",
+  "Freed {size}.": "已释放 {size}。",
 };

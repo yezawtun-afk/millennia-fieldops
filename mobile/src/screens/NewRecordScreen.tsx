@@ -56,6 +56,7 @@ import {
   type CapturedPhoto,
 } from "../lib/photos";
 import { findZoneForPoint } from "../lib/zones";
+import { formatBytes, holdPhotos } from "../lib/storage";
 import { GROWTH_STAGES, HAZARD_TYPES, HEALTH_CONDITIONS, READING_TYPES } from "../lib/format";
 import type { HazardSeverity, OutboxRecord, RecordType, Zone } from "../lib/types";
 import type { TabScreenProps } from "../navigation/types";
@@ -100,12 +101,6 @@ const FIELD_ORDER: FieldKey[] = [
 // What "repeat last" copies: a submitted record without its local queue id.
 type Observation = Omit<OutboxRecord, "localId">;
 
-function formatBytes(bytes: number): string {
-  if (!bytes || bytes <= 0) return "0 KB";
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 export function NewRecordScreen({ navigation, route }: Props) {
   const { profile, session } = useAuth();
   const { t } = useI18n();
@@ -126,6 +121,14 @@ export function NewRecordScreen({ navigation, route }: Props) {
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [gpsBusy, setGpsBusy] = useState(false);
   const [speciesPickerOpen, setSpeciesPickerOpen] = useState(false);
+
+  // The form holds photos that belong to no record yet. Tell the storage
+  // cleaner they are spoken for, so "clear leftover photos" cannot take one
+  // out from under the worker.
+  useEffect(() => {
+    holdPhotos("new-record", photos);
+    return () => holdPhotos("new-record", []);
+  }, [photos]);
 
   // AI photo assist
   const [aiBusy, setAiBusy] = useState(false);

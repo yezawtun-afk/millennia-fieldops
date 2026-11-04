@@ -57,6 +57,11 @@ Demo accounts and a full end-of-project snapshot live in
   app says so and asks you to use **Save as draft** (the "Save record" button needs a
   connection); a draft is opened from My Records and submitted later. Records already
   queued upload automatically when a connection returns ("Sync now" also available).
+- **Profile → On this phone** shows what the stored photos take up, split into the ones a
+  draft or queued record still needs and the **leftovers** (shots from a form that was
+  abandoned, or left behind when the app was killed mid-capture). One button deletes only
+  the leftovers; the server copies are never touched. A photo leaves the phone by itself
+  as soon as its record uploads.
 - A **sync badge** on Home shows the truth at a glance: synced, syncing… (with the
   number left), offline (number queued), plus an amber **needs retry** state and a
   relative "last upload" time.
@@ -206,7 +211,8 @@ millennia-fieldops/
     App.tsx                 Theme provider, splash hold, fonts, navigation tree
     src/theme.ts            Colour palettes, spacing, radius, type scale, shadows
     src/screens/            One file per screen
-    src/components/         Framed sheets, fields, map WebView, sidebar, sync badge
+    src/components/         Framed sheets, fields, map WebView, sidebar, sync badge,
+                            storage card
     src/navigation/         Tab bar, stack, headers
     src/context/            Auth and sync providers
     src/i18n/               EN / MS / ZH dictionaries

@@ -20,6 +20,7 @@ import { changePassword, updateDisplayName } from "../lib/api";
 import { formatDate, ROLE_LABELS } from "../lib/format";
 import { Banner, Button, Card, Input, ListRow, Pill, SectionTitle } from "../components/ui";
 import { PasswordInput } from "../components/PasswordInput";
+import { StorageCard } from "../components/StorageCard";
 import { radius, spacing, type ThemeScale } from "../theme";
 import { useTheme, useThemedStyles } from "../lib/useTheme";
 
@@ -260,6 +261,12 @@ export function ProfileScreen() {
             loading={savingPassword}
           />
         </Card>
+
+        <View style={styles.gap} />
+
+        <SectionTitle>{t("On this phone")}</SectionTitle>
+        <View style={styles.titleGap} />
+        <StorageCard />
       </ScrollView>
     </KeyboardAvoidingView>
   );

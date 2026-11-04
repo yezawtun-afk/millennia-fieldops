@@ -147,6 +147,12 @@ connection exists. This is what makes the app genuinely usable on the ridge with
   queued uploads automatically when connectivity returns (with a manual "Sync now"), and
   the signed-in profile is cached on the device so a cold start offline still works.
   Unfinished records park as *drafts* and can be completed later.
+- **Storage on the phone** (Profile → On this phone): the card reads the photo folder and
+  reports how much room it takes, split into the copies a draft or queued record still
+  needs and the *leftovers* - shots taken in a form that was abandoned or lost when the app
+  was killed. One button deletes only the leftovers, after a confirmation that says the
+  server copies are untouched. Uploaded photos already delete themselves (the sync engine
+  removes each file once its record lands), so the number returns to zero on its own.
 - My Records shows each record's review status and the supervisor's comment.
 - The worker can **delete their own record while it is still pending** (before review),
   and cancel anything still queued for upload. Once a supervisor has reviewed a record
