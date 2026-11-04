@@ -249,7 +249,7 @@ export function ProfileScreen() {
           ) : null}
 
           {passwordNotice ? (
-            <View style={styles.notice}>
+            <View style={[styles.notice, styles.noticeFlush]}>
               <Banner kind={passwordNotice.kind}>{passwordNotice.text}</Banner>
             </View>
           ) : null}
@@ -259,6 +259,7 @@ export function ProfileScreen() {
             onPress={() => void savePassword()}
             disabled={password.length === 0 || confirm.length === 0}
             loading={savingPassword}
+            style={styles.submit}
           />
         </Card>
 
@@ -298,7 +299,11 @@ const makeStyles = ({ colors, type }: ThemeScale) =>
     note: { ...type.caption, marginTop: spacing.sm, lineHeight: 17 },
     hint: { ...type.caption, lineHeight: 17, marginTop: 6, marginBottom: spacing.md },
     notice: { marginTop: spacing.md, marginBottom: spacing.md },
-    mismatch: { ...type.caption, color: colors.rejectedInk, marginTop: 6, marginBottom: spacing.md },
+    mismatch: { ...type.caption, color: colors.rejectedInk, marginTop: 6, marginBottom: 0 },
+    // The button owns the gap above it. Without this, a card whose last row is
+    // an input leaves the button touching the field (no helper text between).
+    submit: { marginTop: spacing.md },
+    noticeFlush: { marginBottom: 0 },
     gap: { height: spacing.xl },
     titleGap: { height: 6 },
   
