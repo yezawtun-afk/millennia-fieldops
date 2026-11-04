@@ -592,4 +592,11 @@ export const zh: Record<string, string> = {
   "These photos are not attached to any record. The copies on the server are not touched.":
     "这些照片不属于任何记录，服务器上的副本不会受到影响。",
   "Freed {size}.": "已释放 {size}。",
+
+  // Side panel: which JavaScript is running (see lib/updates.ts).
+  Bundle: "更新包",
+  "Built-in": "内置",
+  "Updates off": "更新已关闭",
+  "Update {when}": "更新 {when}",
+  "Downloaded update": "已下载的更新",
 };

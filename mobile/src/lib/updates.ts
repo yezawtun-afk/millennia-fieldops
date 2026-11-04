@@ -27,20 +27,25 @@ export function appVersion(): string {
   return Constants.expoConfig?.version ?? "unknown";
 }
 
-/**
- * Which bundle is actually running: the one baked into the APK, or an
- * over-the-air update that has since been downloaded. Shown on the Home card so
- * an update landing can be seen without guessing.
- */
-export function runningBundle(): string {
-  if (!Updates.isEnabled) return "development build (updates off)";
-  if (!Updates.updateId) return "built-in bundle";
+export type BundleState = {
+  /** `builtin`: the JavaScript that shipped inside the APK. `update`: newer
+   * JavaScript downloaded from EAS. `dev`: updates are off in this build. */
+  kind: "builtin" | "update" | "dev";
+  /** Local date of the downloaded update, already shortened for the panel. */
+  when: string | null;
+};
+
+// Which JavaScript is actually running. The native version number cannot answer
+// that: it stays the same across over-the-air updates, which is exactly how a
+// missing update hides. The side panel shows this next to the version.
+export function bundleState(): BundleState {
+  if (!Updates.isEnabled) return { kind: "dev", when: null };
+  if (!Updates.updateId) return { kind: "builtin", when: null };
   const when = Updates.createdAt;
-  if (!when) return "downloaded update";
-  return `downloaded update of ${when.toLocaleDateString()} ${when.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  })}`;
+  if (!when) return { kind: "update", when: null };
+  const day = when.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+  const time = when.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return { kind: "update", when: `${day} ${time}` };
 }
 
 /** Asks the update server whether a newer bundle exists. Downloads nothing. */

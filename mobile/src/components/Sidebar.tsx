@@ -39,7 +39,7 @@ import {
   cacheSupervisors,
   readCachedSupervisors,
 } from "../lib/contacts";
-import { appVersion, applyUpdate, checkForUpdate } from "../lib/updates";
+import { appVersion, applyUpdate, bundleState, checkForUpdate } from "../lib/updates";
 import { LOCALES, useI18n } from "../i18n";
 import { ROLE_LABELS } from "../lib/format";
 import { useReduceMotion } from "../lib/useReduceMotion";
@@ -90,6 +90,10 @@ export function Sidebar({
   const [summary, setSummary] = useState<SidebarSummary | null>(null);
   const [supervisors, setSupervisors] = useState<SupervisorContact[]>([]);
   const [checking, setChecking] = useState(false);
+
+  // Read once per render: which JavaScript is running, for the row under the
+  // version. Cheap (no I/O), so it needs no state.
+  const bundle = bundleState();
 
   const isReviewer = profile?.role === "supervisor" || profile?.role === "admin";
   const initial = profile?.full_name?.trim().charAt(0).toUpperCase() || "?";
@@ -521,6 +525,23 @@ export function Sidebar({
                 </Text>
                 <Ionicons name="chevron-forward" size={15} color={colors.faint} />
               </Pressable>
+              <View style={styles.hairline} />
+              {/* The version above cannot say which JavaScript is running - it
+                  is the same before and after an over-the-air update. This row
+                  can, so "my update did not arrive" becomes visible. */}
+              <View style={styles.footerRow}>
+                <Ionicons name="cube-outline" size={18} color={colors.muted} />
+                <Text style={styles.footerLabel}>{t("Bundle")}</Text>
+                <Text style={styles.footerValue} numberOfLines={1}>
+                  {bundle.kind === "dev"
+                    ? t("Updates off")
+                    : bundle.kind === "builtin"
+                      ? t("Built-in")
+                      : bundle.when
+                        ? t("Update {when}", { when: bundle.when })
+                        : t("Downloaded update")}
+                </Text>
+              </View>
               <View style={styles.hairline} />
               <Pressable
                 onPress={confirmLogout}

@@ -642,4 +642,11 @@ export const ms: Record<string, string> = {
   "These photos are not attached to any record. The copies on the server are not touched.":
     "Foto ini tidak dilampirkan pada mana-mana rekod. Salinan pada pelayan tidak disentuh.",
   "Freed {size}.": "{size} telah dilepaskan.",
+
+  // Side panel: which JavaScript is running (see lib/updates.ts).
+  Bundle: "Bendel",
+  "Built-in": "Terbina dalam",
+  "Updates off": "Kemas kini dimatikan",
+  "Update {when}": "Kemas kini {when}",
+  "Downloaded update": "Kemas kini dimuat turun",
 };
