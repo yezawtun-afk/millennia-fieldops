@@ -67,7 +67,11 @@ export function AiSuggestionSheet({
         </View>
 
         <FadeInCard style={styles.sheetBody}>
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+          >
           {photoUri ? <Image source={{ uri: photoUri }} style={styles.photo} /> : null}
 
           <View style={styles.confidenceRow}>
@@ -239,8 +243,16 @@ const makeStyles = ({ colors, type }: ThemeScale) =>
       borderWidth: 1,
       borderColor: colors.control,
     },
-    content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
-    sheetBody: { marginTop: 6 },
+    content: {
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.xl,
+      gap: spacing.md,
+    },
+    // The card takes the height left between the title and the buttons, so the
+    // buttons always sit on screen and the long notes scroll inside the card
+    // instead of pushing them off the bottom of the sheet.
+    sheetBody: { flex: 1, marginTop: 6 },
+    scroll: { flex: 1 },
     photo: {
       width: "100%",
       height: 190,
