@@ -285,7 +285,7 @@ export function CompleteJobScreen({ route, navigation }: Props) {
 
         <Text style={styles.title}>{record.title}</Text>
         <Text style={styles.meta}>
-          {record.zone?.name ?? t("No zone")} Â· {t("Approved")}{" "}
+          {record.zone?.name ?? t("No zone")} · {t("Approved")}{" "}
           {record.reviewed_at ? formatDate(record.reviewed_at) : ""}
         </Text>
 

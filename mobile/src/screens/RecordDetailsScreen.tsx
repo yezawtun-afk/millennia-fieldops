@@ -196,7 +196,7 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
 
       <Text style={styles.title}>{record.title}</Text>
       <Text style={styles.meta}>
-        {record.zone?.name ?? t("No zone")} Â·{" "}
+        {record.zone?.name ?? t("No zone")} ·{" "}
         {t("observed {date}", { date: formatDate(record.observed_date) })}
       </Text>
 

@@ -288,7 +288,7 @@ export function MapScreen({ navigation }: Props) {
           lng: record.longitude as number,
           color: tones.type[record.type].fg,
           label: record.title,
-          sub: `${record.zone?.name ?? t("No zone")} Â· ${t(STATUS_LABELS[record.status])}`,
+          sub: `${record.zone?.name ?? t("No zone")} · ${t(STATUS_LABELS[record.status])}`,
         })),
     [records, filter, mineOnly, userId, t]
   );

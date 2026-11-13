@@ -176,7 +176,7 @@ export function MyRecordsScreen({ navigation }: Props) {
               : t("Due {date}", { date: formatDueDate(record.due_on) })
       );
     }
-    return parts.join(" Â· ");
+    return parts.join(" · ");
   }
 
   const drafts = showLocal ? localRows.filter((row) => row.status === "draft") : [];
@@ -333,7 +333,7 @@ export function MyRecordsScreen({ navigation }: Props) {
       <View style={styles.header}>
         <Text style={styles.title}>{t("My records")}</Text>
         <Text style={styles.subhead}>
-          {t("{submitted} submitted Â· {local} on this phone", {
+          {t("{submitted} submitted · {local} on this phone", {
             submitted: records.length,
             local: outbox.length,
           })}
@@ -480,7 +480,7 @@ export function MyRecordsScreen({ navigation }: Props) {
                   <ListRow
                     key={record.id}
                     title={record.title}
-                    meta={`${record.zone?.name ?? t("No zone")} Â· ${t("Approved")} ${formatDate(
+                    meta={`${record.zone?.name ?? t("No zone")} · ${t("Approved")} ${formatDate(
                       record.reviewed_at ?? record.observed_date
                     )}`}
                     last={index === ownJobs.length - 1}
@@ -500,7 +500,7 @@ export function MyRecordsScreen({ navigation }: Props) {
                   <ListRow
                     key={row.localId}
                     title={row.payload.title}
-                    meta={t("Not finished Â· started {date}", {
+                    meta={t("Not finished · started {date}", {
                       date: formatDate(row.createdAt),
                     })}
                     last={index === drafts.length - 1}
@@ -535,7 +535,7 @@ export function MyRecordsScreen({ navigation }: Props) {
                     meta={
                       row.status === "error" && row.error
                         ? row.error
-                        : t("Queued Â· {date}", {
+                        : t("Queued · {date}", {
                             date: formatDate(row.payload.observed_date),
                           })
                     }
@@ -595,7 +595,7 @@ export function MyRecordsScreen({ navigation }: Props) {
                     <ListRow
                       key={record.id}
                       title={record.title}
-                      meta={`${record.zone?.name ?? t("No zone")} Â· ${formatDate(
+                      meta={`${record.zone?.name ?? t("No zone")} · ${formatDate(
                         record.observed_date
                       )}`}
                       last={index === submitted.length - 1}

@@ -179,8 +179,8 @@ export function ReviewRecordScreen({ route, navigation }: Props) {
 
       <Text style={styles.title}>{record.title}</Text>
       <Text style={styles.meta}>
-        {t("By {name}", { name: record.submitter?.full_name ?? t("Unknown submitter") })} Â·{" "}
-        {record.zone?.name ?? t("No zone")} Â· {t("observed {date}", { date: formatDate(record.observed_date) })}
+        {t("By {name}", { name: record.submitter?.full_name ?? t("Unknown submitter") })} ·{" "}
+        {record.zone?.name ?? t("No zone")} · {t("observed {date}", { date: formatDate(record.observed_date) })}
       </Text>
 
       {error ? <Banner kind="error">{error}</Banner> : null}
