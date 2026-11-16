@@ -1,13 +1,13 @@
 ﻿import React, { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, Image, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { deleteRecord, fetchRecord, signPhotoUrls } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../i18n";
-import { openInOpenStreetMap } from "../lib/location";
 import { Button, Card, Pill, SectionTitle } from "../components/ui";
+import { RecordLocationMap } from "../components/RecordLocationMap";
 import { radius, spacing, type ThemeScale } from "../theme";
 import { useTheme, useThemedStyles } from "../lib/useTheme";
 import {
@@ -240,13 +240,7 @@ export function RecordDetailsScreen({ route, navigation }: Props) {
 
       {record.latitude != null && record.longitude != null ? (
         <View style={{ marginTop: spacing.lg }}>
-          <Button
-            title={t("Open location in OpenStreetMap")}
-            variant="secondary"
-            onPress={() =>
-              Linking.openURL(openInOpenStreetMap(record.latitude as number, record.longitude as number))
-            }
-          />
+          <RecordLocationMap record={record} />
         </View>
       ) : null}
 

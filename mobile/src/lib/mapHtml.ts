@@ -266,8 +266,12 @@ ${chromeCss}
     marker.bindPopup(
       '<strong>' + escapeHtml(point.label) + '</strong>' +
       '<div class="popup-sub">' + escapeHtml(point.sub) + '</div>' +
-      '<a class="popup-open" href="#" onclick="openRecord(\\'' + escapeHtml(point.id) + '\\');return false;">' +
-      escapeHtml(DATA.openLabel) + '</a>'
+      // A single-record map passes no label: the link would only reopen the
+      // screen it is already on.
+      (DATA.openLabel
+        ? '<a class="popup-open" href="#" onclick="openRecord(\\'' + escapeHtml(point.id) + '\\');return false;">' +
+          escapeHtml(DATA.openLabel) + '</a>'
+        : '')
     );
     recordLayer.addLayer(marker);
     bounds.push([point.lat, point.lng]);

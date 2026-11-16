@@ -228,6 +228,7 @@ export const zh: Record<string, string> = {
   "See all": "查看全部",
   "Send request": "发送申请",
   Severity: "严重程度",
+  "Show my location": "显示我的位置",
   "Show password": "显示密码",
   "Sign in": "登录",
   "Sign out of Millennia FieldOps on this phone?": "要在此手机上退出 Millennia FieldOps 吗？",

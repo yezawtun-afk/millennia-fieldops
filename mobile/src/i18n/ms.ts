@@ -250,6 +250,7 @@ export const ms: Record<string, string> = {
   "See all": "Lihat semua",
   "Send request": "Hantar permohonan",
   Severity: "Keterukan",
+  "Show my location": "Tunjukkan lokasi saya",
   "Show password": "Tunjukkan kata laluan",
   "Sign in": "Log masuk",
   "Sign out of Millennia FieldOps on this phone?":
