@@ -194,7 +194,6 @@ export const ms: Record<string, string> = {
   "observed {date}": "diperhati {date}",
   Offline: "Luar talian",
   Online: "Dalam talian",
-  "Open location in OpenStreetMap": "Buka lokasi dalam OpenStreetMap",
   "Open record": "Buka rekod",
   "Open review queue": "Buka baris gilir semakan",
   "Open settings": "Buka tetapan",

@@ -177,7 +177,6 @@ export const zh: Record<string, string> = {
   "observed {date}": "观察日期 {date}",
   Offline: "离线",
   Online: "在线",
-  "Open location in OpenStreetMap": "在 OpenStreetMap 中打开位置",
   "Open record": "打开记录",
   "Open review queue": "打开审核队列",
   "Open settings": "打开设置",

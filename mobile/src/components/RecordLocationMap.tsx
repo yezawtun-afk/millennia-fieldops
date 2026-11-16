@@ -74,9 +74,6 @@ export function RecordLocationMap({ record }: { record: FieldRecord }) {
     [zones, record.zone_id]
   );
 
-  const accuracy =
-    userLocation?.accuracy != null ? ` · ±${Math.round(userLocation.accuracy)} m` : "";
-
   return (
     <Card padded>
       <SectionTitle>{t("Location")}</SectionTitle>
@@ -95,7 +92,6 @@ export function RecordLocationMap({ record }: { record: FieldRecord }) {
 
       <Text style={styles.coords}>
         {latitude.toFixed(5)}, {longitude.toFixed(5)}
-        {accuracy}
       </Text>
 
       {locationState !== "tracking" ? (

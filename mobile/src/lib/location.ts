@@ -29,10 +29,6 @@ export async function getCurrentCoordinates(): Promise<Coordinates | null> {
   };
 }
 
-export function openInOpenStreetMap(latitude: number, longitude: number): string {
-  return `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=17/${latitude}/${longitude}`;
-}
-
 // trueHeading is -1 when the device cannot calculate it. Magnetic north is a
 // useful fallback for phones without a GPS-derived heading.
 export function bestHeading(trueHeading: number, magHeading: number): number | null {

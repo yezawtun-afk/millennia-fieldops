@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,9 +14,9 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { fetchRecord, reviewRecord, signPhotoUrls } from "../lib/api";
-import { openInOpenStreetMap } from "../lib/location";
 import { useI18n } from "../i18n";
 import { Banner, Button, Card, Input, Pill, SectionTitle } from "../components/ui";
+import { RecordLocationMap } from "../components/RecordLocationMap";
 import { radius, spacing, type ThemeScale } from "../theme";
 import { useTheme, useThemedStyles } from "../lib/useTheme";
 import {
@@ -225,13 +224,7 @@ export function ReviewRecordScreen({ route, navigation }: Props) {
 
       {record.latitude != null && record.longitude != null ? (
         <View style={{ marginTop: spacing.lg }}>
-          <Button
-            title={t("Open location in OpenStreetMap")}
-            variant="secondary"
-            onPress={() =>
-              Linking.openURL(openInOpenStreetMap(record.latitude as number, record.longitude as number))
-            }
-          />
+          <RecordLocationMap record={record} />
         </View>
       ) : null}
 
