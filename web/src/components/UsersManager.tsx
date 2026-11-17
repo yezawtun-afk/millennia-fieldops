@@ -221,7 +221,7 @@ export function UsersManager({
                       type="button"
                       disabled={pending}
                       onClick={() => decide(user, "approved")}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-control bg-primary px-2.5 text-[12px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-control bg-primary px-2.5 text-[12px] font-medium text-sheet transition-colors hover:bg-primary-hover disabled:opacity-50"
                     >
                       <Check className="h-3.5 w-3.5" strokeWidth={2} />
                       {t("Approve")}

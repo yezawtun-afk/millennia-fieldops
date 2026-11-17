@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/supabase/server";
 import { getNews } from "@/lib/data";
 import { getSiteWeather } from "@/lib/weather";
+import { getTheme } from "@/lib/theme-server";
 import { AppShell } from "@/components/AppShell";
 
 // Every page inside (app) requires a signed-in, active user.
@@ -25,6 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // paint. The fetch is cached for ten minutes, so this costs one request per
   // ten minutes however many people are watching.
   const weather = await getSiteWeather();
+  const theme = await getTheme();
 
   return (
     <AppShell
@@ -32,6 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       news={news}
       seenAt={seenUser === profile.id ? seenAt : null}
       weather={weather}
+      theme={theme}
     >
       {children}
     </AppShell>

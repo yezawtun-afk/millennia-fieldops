@@ -21,12 +21,14 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { NewsBell } from "@/components/NewsBell";
 import { WeatherPill } from "@/components/WeatherPill";
 import { ROLE_LABELS } from "@/lib/format";
 import type { News, Profile } from "@/lib/types";
 import type { SiteWeather } from "@/lib/weather";
+import type { ThemePref } from "@/lib/theme";
 
 type NavItem = {
   href: string;
@@ -234,12 +236,14 @@ export function AppShell({
   news,
   seenAt,
   weather,
+  theme,
   children,
 }: {
   profile: Profile;
   news: News;
   seenAt: string | null;
   weather: SiteWeather | null;
+  theme: ThemePref;
   children: React.ReactNode;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -284,6 +288,7 @@ export function AppShell({
             <AutoRefresh />
             <WeatherPill weather={weather} />
             <TopSearch />
+            <ThemeSwitcher pref={theme} />
             <LanguageSwitcher compact />
             <NewsBell profile={profile} news={news} seenAt={seenAt} />
           </div>
@@ -303,7 +308,7 @@ export function AppShell({
           <button
             type="button"
             aria-label={t("Close menu")}
-            className="absolute inset-0 bg-ink/40"
+            className="absolute inset-0 bg-scrim"
             onClick={() => setDrawerOpen(false)}
           />
           <div className="drawer-in absolute inset-y-0 left-0 w-[260px] max-w-[85%] border-r border-line bg-frame">

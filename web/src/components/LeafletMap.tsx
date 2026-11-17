@@ -9,6 +9,7 @@ import { ZoneDrawTool } from "./ZoneDrawTool";
 import { ZonePopupActions } from "./ZonePopupActions";
 import { useI18n } from "@/i18n";
 import { useUserLocation } from "@/hooks/useUserLocation";
+import { useResolvedTheme } from "@/hooks/useResolvedTheme";
 import { FlyToUser, UserLocationLayer } from "./UserLocationLayer";
 
 export interface MapMarker {
@@ -129,6 +130,9 @@ export function LeafletMap({
   // The visitor's own position. It lives here rather than in MapView so every
   // map on the site - overview, full map, single record - behaves the same.
   const { location, state: locationState, start: startLocation } = useUserLocation();
+  // Leaflet takes literal colours and a tile URL, so the basemap follows the
+  // theme here rather than through a CSS variable.
+  const theme = useResolvedTheme();
   const [centerRequest, setCenterRequest] = useState(0);
   const [note, setNote] = useState<string | null>(null);
   // A press that had to ask permission still centres once the first fix lands.
@@ -173,9 +177,22 @@ export function LeafletMap({
         style={{ height: "100%", width: "100%" }}
         scrollWheelZoom={scrollWheelZoom}
       >
+        {/* Two basemaps, one per theme. Esri's dark canvas is keyless, so the
+            map keeps working without an account or a token in the bundle; it
+            stops at level 16 and Leaflet scales the last tiles beyond that. */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          key={theme}
+          attribution={
+            theme === "dark"
+              ? 'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          }
+          url={
+            theme === "dark"
+              ? "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+              : "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          }
+          maxNativeZoom={theme === "dark" ? 16 : undefined}
         />
 
         {fitZones ? (

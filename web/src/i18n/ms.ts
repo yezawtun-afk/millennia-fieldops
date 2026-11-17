@@ -62,6 +62,7 @@ export const ms: Record<string, string> = {
   "Check for update": "Semak kemas kini",
   "Check your connection. Only your own records that are still pending can be deleted.":
     "Periksa sambungan anda. Hanya rekod sendiri yang masih menunggu boleh dipadam.",
+  "Change theme": "Tukar tema",
   Checking: "Menyemak",
   "Choose a hazard type - or save it as a draft.":
     "Pilih jenis bahaya - atau simpan sebagai draf.",
@@ -73,6 +74,7 @@ export const ms: Record<string, string> = {
     "Pilih tahap keterukan - atau simpan sebagai draf.",
   "Comment: {comment}": "Komen: {comment}",
   Coordinates: "Koordinat",
+  Dark: "Gelap",
   "Could not delete": "Tidak dapat memadam",
   "Could not load the review queue. Check your connection and pull down to retry.":
     "Tidak dapat memuatkan baris gilir semakan. Periksa sambungan dan tarik ke bawah untuk mencuba lagi.",
@@ -137,6 +139,7 @@ export const ms: Record<string, string> = {
   Language: "Bahasa",
   "Last upload {when}": "Muat naik terakhir {when}",
   Later: "Kemudian",
+  Light: "Cerah",
   Location: "Lokasi",
   "Location unavailable": "Lokasi tidak tersedia",
   "Location permission is off. Allow it in your browser, then try again.":
@@ -238,6 +241,7 @@ export const ms: Record<string, string> = {
   Synced: "Disegerakkan",
   Syncing: "Menyegerakkan",
   "Syncing...": "Menyegerakkan...",
+  System: "Ikut sistem",
   "Take photo": "Ambil foto",
   "The decision could not be saved. Check your connection and try again.":
     "Keputusan tidak dapat disimpan. Periksa sambungan dan cuba lagi.",
@@ -255,6 +259,7 @@ export const ms: Record<string, string> = {
     "Rekod ini tidak dapat dimuatkan. Anda mungkin di luar talian.",
   "This record is kept as a draft on this phone. Open My records to finish it and submit it when you have signal.":
     "Rekod ini disimpan sebagai draf pada telefon ini. Buka Rekod saya untuk menyiapkannya dan hantar apabila ada isyarat.",
+  Theme: "Tema",
   Title: "Tajuk",
   Today: "Hari ini",
   Unit: "Unit",

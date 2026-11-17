@@ -78,7 +78,7 @@ export function SeverityBadge({ severity }: { severity: HazardSeverity | null })
 const ROLE_STYLES: Record<UserRole, string> = {
   field_worker: "bg-accent-soft text-accent",
   supervisor: "bg-water-soft text-water",
-  admin: "bg-ink text-white",
+  admin: "bg-ink text-sheet",
 };
 
 export function RolePill({ role }: { role: UserRole }) {

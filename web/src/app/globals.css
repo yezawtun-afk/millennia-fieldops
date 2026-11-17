@@ -54,6 +54,32 @@
   --color-sev-medium: #c2410c;
   --color-sev-critical: #991b1b;
 
+  /* Chart colours. Kept apart from the data hues above because a donut slice is
+     a large area and a text label is a small one: the same hue that reads as
+     ink on white is too dark once it fills a ring on a dark panel. */
+  --chart-flora: #1f6b4a;
+  --chart-water: #2b6cb0;
+  --chart-hazard: #c4242a;
+  --chart-sev-low: #8a6516;
+  --chart-sev-medium: #c2410c;
+  --chart-sev-critical: #991b1b;
+  --chart-approved: #247b50;
+  --chart-pending: #92400e;
+  --chart-rejected: #c4242a;
+  --chart-ramp-1: #0e3a2a;
+  --chart-ramp-2: #1f6b4a;
+  --chart-ramp-3: #3c8a63;
+  --chart-ramp-4: #69a585;
+  --chart-ramp-5: #9bc7b1;
+  --chart-muted: #a6b4aa;
+  --chart-hue: #1f6b4a;
+  --chart-good: #247b50;
+  --chart-warning: #92400e;
+  --chart-unknown: #6b6f6a;
+
+  /* The dim layer behind a drawer or a dialog. */
+  --color-scrim: rgb(20 24 27 / 0.42);
+
   /* Names still used by a few panels, mapped onto the palette above. */
   --color-page: #f7f8f6;
   --color-primary-soft: #eaf1ec;
@@ -76,9 +102,106 @@
   --font-mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace;
 }
 
+/* The dark theme. The same framed-sheet language, lit from the other side: a
+   green-black frame, a sheet one tone up, and text that still clears 4.5:1.
+   Every component reads these variables, so this block flips the whole
+   interface instead of patching screens one at a time.
+   
+   Two roles deliberately invert rather than darken. The one action becomes a
+   mint chip with the sheet's ink on it, because a near-black button has nothing
+   to sit against here; and the data hues brighten so a donut slice or a status
+   word stays legible on a dark panel. */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --color-frame: #0e1311;
+  --color-frame-soft: #151c18;
+  --color-sheet: #161d19;
+  --color-ground: #121813;
+  --color-panel: #1b231e;
+  --color-page: #121813;
+
+  /* Lines */
+  --color-line: #2b352f;
+  --color-rule: #232c26;
+  --color-control: #52645a;
+
+  /* Text: 14:1, 7.9:1 and 5.6:1 against the sheet */
+  --color-ink: #e8ede9;
+  --color-muted: #a9b2aa;
+  --color-faint: #939d95;
+
+  /* The action and the accent */
+  --color-primary: #7fd3a3;
+  --color-primary-hover: #9adfb8;
+  --color-primary-soft: #17281f;
+  --color-primary-dark: #cfe9da;
+  --color-accent: #7fd3a3;
+  --color-accent-soft: #16251e;
+  --color-forest: #dfeae2;
+  --color-forest-soft: #1b2620;
+
+  /* Status */
+  --color-positive: #6fd6a0;
+  --color-positive-soft: #12261b;
+  --color-positive-ink: #c9f5df;
+  --color-negative: #ff8f89;
+  --color-negative-soft: #2b1514;
+  --color-negative-ink: #ffd6d3;
+  --color-warning: #eec06a;
+  --color-warning-soft: #2a2114;
+  --color-warning-ink: #ffe7bd;
+
+  /* Data */
+  --color-flora: #7fd3a3;
+  --color-flora-soft: #17281f;
+  --color-water: #8ec0f2;
+  --color-water-soft: #142232;
+  --color-hazard: #ff8f89;
+  --color-hazard-soft: #2b1514;
+  --color-sev-low: #e8bb63;
+  --color-sev-medium: #ffa06a;
+  --color-sev-critical: #ff918b;
+  --color-pending: #eec06a;
+  --color-pending-soft: #2a2114;
+  --color-approved: #6fd6a0;
+  --color-approved-soft: #12261b;
+  --color-rejected: #ff8f89;
+  --color-rejected-soft: #2b1514;
+
+  /* Charts: the ramp runs brightest-first, so the biggest share still carries
+     the most weight instead of disappearing into the panel. */
+  --chart-flora: #7fd3a3;
+  --chart-water: #8ec0f2;
+  --chart-hazard: #ff9a94;
+  --chart-sev-low: #e8bb63;
+  --chart-sev-medium: #ffa06a;
+  --chart-sev-critical: #ff918b;
+  --chart-approved: #74d6a2;
+  --chart-pending: #eec06a;
+  --chart-rejected: #ff8f88;
+  --chart-ramp-1: #b7e6cb;
+  --chart-ramp-2: #8fd3ae;
+  --chart-ramp-3: #6bb98f;
+  --chart-ramp-4: #4b9a72;
+  --chart-ramp-5: #2e7a57;
+  --chart-muted: #6d7a70;
+  --chart-hue: #7fd3a3;
+  --chart-good: #74d6a2;
+  --chart-warning: #eec06a;
+  --chart-unknown: #8b968d;
+
+  --color-scrim: rgb(0 0 0 / 0.62);
+}
+
 html,
 body {
   height: 100%;
+}
+
+:root {
+  color-scheme: light;
 }
 
 body {
@@ -140,19 +263,49 @@ table,
   font-weight: 600;
 }
 
-.leaflet-control-zoom a {
+/* Esri's dark canvas is the darkest keyless basemap, but its ground is still a
+   neutral mid grey next to the green-black sheet. Dimming the tile pane (not the
+   pins, which live in the overlay pane) and warming it a few degrees toward the
+   product's forest cast settles the map into the frame while leaving the street
+   labels readable. */
+[data-theme="dark"] .leaflet-tile-pane {
+  filter: brightness(0.82) contrast(1.05) sepia(0.3) hue-rotate(74deg) saturate(1.35);
+}
+
+/* Leaflet paints its own controls white, and leaflet.css can land after this
+   file, so the map's controls are matched with an extra class of specificity
+   rather than by source order. */
+.leaflet-container .leaflet-bar a {
   background: var(--color-sheet);
   color: var(--color-ink);
   border-color: var(--color-line);
 }
 
-.leaflet-control-zoom a:hover {
+.leaflet-container .leaflet-bar a:hover,
+.leaflet-container .leaflet-bar a:focus {
   background: var(--color-panel);
+  color: var(--color-ink);
+}
+
+.leaflet-container .leaflet-bar a.leaflet-disabled {
+  background: var(--color-panel);
+  color: var(--color-faint);
+}
+
+.leaflet-container.leaflet-touch .leaflet-bar {
+  border-color: var(--color-line);
+  box-shadow: 0 6px 18px rgb(20 24 27 / 0.12);
 }
 
 .leaflet-control-attribution {
   background: rgb(255 255 255 / 0.78) !important;
   color: var(--color-faint) !important;
+}
+
+/* The attribution bar is drawn by Leaflet with its own white, so it needs the
+   dark equivalent spelled out rather than inherited from a token. */
+[data-theme="dark"] .leaflet-control-attribution {
+  background: rgb(22 29 25 / 0.82) !important;
 }
 
 .leaflet-control-attribution a {
@@ -230,7 +383,7 @@ dialog.fieldops-dialog {
 }
 
 dialog.fieldops-dialog::backdrop {
-  background: rgb(20 24 27 / 0.45);
+  background: rgb(0 0 0 / 0.55);
 }
 
 /* The visitor's own position: an 18 px gold dot with a dark ring and a white

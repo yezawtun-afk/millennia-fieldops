@@ -58,7 +58,7 @@ export function ZoneBoard({
 
             <span className="mt-1.5 block h-[2px] overflow-hidden rounded-full bg-panel">
               <span
-                className={`block h-full rounded-full ${row.open > 0 ? "bg-ink/50" : ""}`}
+                className={`block h-full rounded-full ${row.open > 0 ? "bg-control" : ""}`}
                 style={{ width: `${max > 0 ? (row.open / max) * 100 : 0}%` }}
               />
             </span>

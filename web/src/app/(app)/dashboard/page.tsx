@@ -33,6 +33,7 @@ import { ZoneBoard, type ZoneRow } from "@/components/overview/ZoneBoard";
 import {
   HAZARD_MIX_RAMP,
   HAZARD_TYPES,
+  MAP_MARKER_COLORS,
   SEVERITY_CHART_COLORS,
   SEVERITY_LABELS,
   TYPE_CHART_COLORS,
@@ -300,7 +301,7 @@ export default async function DashboardPage() {
     lng: record.longitude as number,
     // The same three type hues as the Site map page; severity is carried by the
     // pulse and the legend, so the two maps never disagree.
-    color: TYPE_CHART_COLORS[record.type],
+    color: MAP_MARKER_COLORS[record.type],
     label: record.title,
     sub: `${record.zone?.name ?? t("No zone")} · ${elapsedLabel(t, record.created_at)}`,
     href: `/records/${record.id}`,

@@ -54,6 +54,7 @@ export const zh: Record<string, string> = {
   "Check for update": "检查更新",
   "Check your connection. Only your own records that are still pending can be deleted.":
     "请检查网络连接。只能删除自己提交且仍在待审核状态的记录。",
+  "Change theme": "切换主题",
   Checking: "检查中",
   "Choose a hazard type - or save it as a draft.": "请选择隐患类型，或保存为草稿。",
   "Choose a password of at least 6 characters.": "请设置至少 6 个字符的密码。",
@@ -61,6 +62,7 @@ export const zh: Record<string, string> = {
   "Choose a severity - or save it as a draft.": "请选择严重程度，或保存为草稿。",
   "Comment: {comment}": "备注：{comment}",
   Coordinates: "坐标",
+  Dark: "深色",
   "Could not delete": "无法删除",
   "Could not load the review queue. Check your connection and pull down to retry.":
     "无法加载审核队列。请检查网络连接，下拉重试。",
@@ -121,6 +123,7 @@ export const zh: Record<string, string> = {
   Language: "语言",
   "Last upload {when}": "上次上传：{when}",
   Later: "稍后",
+  Light: "浅色",
   Location: "位置",
   "Location unavailable": "无法获取位置",
   "Location permission is off. Allow it in your browser, then try again.":
@@ -216,6 +219,7 @@ export const zh: Record<string, string> = {
   Synced: "已同步",
   Syncing: "同步中",
   "Syncing...": "同步中……",
+  System: "跟随系统",
   "Take photo": "拍照",
   "The decision could not be saved. Check your connection and try again.":
     "无法保存审核决定。请检查网络连接后重试。",
@@ -231,6 +235,7 @@ export const zh: Record<string, string> = {
   "This record could not be loaded. You may be offline.": "无法加载此记录，你可能处于离线状态。",
   "This record is kept as a draft on this phone. Open My records to finish it and submit it when you have signal.":
     "此记录已作为草稿保存在手机上。请在“我的记录”中完成，并在有信号时提交。",
+  Theme: "主题",
   Title: "标题",
   Today: "今天",
   Unit: "单位",

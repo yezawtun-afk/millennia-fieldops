@@ -2,7 +2,7 @@ import { getZones, queryRecords } from "@/lib/data";
 import { getProfile } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui";
 import { MapView } from "@/components/MapView";
-import { STATUS_LABELS, TYPE_CHART_COLORS } from "@/lib/format";
+import { STATUS_LABELS, MAP_MARKER_COLORS, TYPE_CHART_COLORS } from "@/lib/format";
 import { getT } from "@/i18n/server";
 import type { MapMarker } from "@/components/MapView";
 
@@ -16,7 +16,7 @@ export default async function MapPage() {
       id: r.id,
       lat: r.latitude as number,
       lng: r.longitude as number,
-      color: TYPE_CHART_COLORS[r.type],
+      color: MAP_MARKER_COLORS[r.type],
       label: r.title,
       sub: `${r.zone?.name ?? t("No zone")} - ${t(STATUS_LABELS[r.status])}`,
       href: `/records/${r.id}`,

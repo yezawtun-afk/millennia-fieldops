@@ -77,7 +77,7 @@ export function ReviewPanel({
           type="button"
           onClick={() => decide("approved")}
           disabled={busy}
-          className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-control bg-accent px-3 text-[13px] font-medium text-white transition-colors hover:bg-primary disabled:opacity-60"
+          className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-control bg-primary px-3 text-[13px] font-medium text-sheet transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           <Check className="h-4 w-4" strokeWidth={2} /> {t("Approve")}
         </button>

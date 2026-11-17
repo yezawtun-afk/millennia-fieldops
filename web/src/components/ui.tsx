@@ -9,7 +9,7 @@ import { TYPE_DOT_CLASSES } from "@/lib/format";
 // inventing their own buttons.
 
 export const btnPrimary =
-  "inline-flex h-9 items-center justify-center gap-2 rounded-control bg-primary px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex h-9 items-center justify-center gap-2 rounded-control bg-primary px-3.5 text-[13px] font-medium text-sheet transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50";
 
 export const btnSecondary =
   "inline-flex h-9 items-center justify-center gap-2 rounded-control border border-control bg-sheet px-3.5 text-[13px] font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50";

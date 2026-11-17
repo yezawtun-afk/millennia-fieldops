@@ -99,7 +99,7 @@ export function DeleteRecordButton({
         type="button"
         onClick={remove}
         disabled={busy}
-        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-control bg-negative px-2.5 text-[12px] font-medium text-white hover:opacity-90 disabled:opacity-60"
+        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-control bg-negative px-2.5 text-[12px] font-medium text-sheet hover:opacity-90 disabled:opacity-60"
       >
         {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
         {busy ? t("Deleting...") : t("Delete")}

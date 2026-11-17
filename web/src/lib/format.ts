@@ -81,44 +81,63 @@ export const PRIORITY_ORDER: Record<RemediationPriority, number> = {
   low: 2,
 };
 
+// Chart colours are CSS variables so one definition serves the light and dark
+// themes. Anything drawing with them must put them in CSS (style or a class),
+// never into a canvas or a Leaflet option - see MAP_MARKER_COLORS below.
 export const TYPE_CHART_COLORS: Record<RecordType, string> = {
-  flora: "#1F6B4A",
-  soil_water: "#2B6CB0",
-  hazard: "#C4242A",
+  flora: "var(--chart-flora)",
+  soil_water: "var(--chart-water)",
+  hazard: "var(--chart-hazard)",
 };
 
 export const SEVERITY_CHART_COLORS: Record<HazardSeverity, string> = {
-  low: "#8A6516",
-  medium: "#C2410C",
-  critical: "#991B1B",
+  low: "var(--chart-sev-low)",
+  medium: "var(--chart-sev-medium)",
+  critical: "var(--chart-sev-critical)",
 };
 
 // The weekly stacked chart reads bottom to top: approved, pending, rejected.
 export const STATUS_CHART_COLORS: Record<RecordStatus, string> = {
-  approved: "#247B50",
-  pending: "#92400E",
-  rejected: "#C4242A",
+  approved: "var(--chart-approved)",
+  pending: "var(--chart-pending)",
+  rejected: "var(--chart-rejected)",
 };
 
 // The hazard categories are a composition, not an alarm: one green ramp from
 // deep forest to a soft sage. The mix is sorted biggest-share-first, so the
-// darkest slice is always the one that matters most and the ring never turns
+// strongest slice is always the one that matters most and the ring never turns
 // into a rainbow. The legend carries the names; the shades only separate.
-export const HAZARD_MIX_RAMP = ["#0E3A2A", "#1F6B4A", "#3C8A63", "#69A585", "#9BC7B1"];
+export const HAZARD_MIX_RAMP = [
+  "var(--chart-ramp-1)",
+  "var(--chart-ramp-2)",
+  "var(--chart-ramp-3)",
+  "var(--chart-ramp-4)",
+  "var(--chart-ramp-5)",
+];
 
-export const UNCATEGORISED_COLOR = "#A6B4AA";
+export const UNCATEGORISED_COLOR = "var(--chart-muted)";
 
 // The health score's three bands, and the neutral used before there is enough
 // data to judge.
 export const SCORE_BAND_COLORS: Record<string, string> = {
-  good: "#247B50",
-  warning: "#92400E",
-  critical: "#C4242A",
-  unknown: "#6B6F6A",
+  good: "var(--chart-good)",
+  warning: "var(--chart-warning)",
+  critical: "var(--chart-hazard)",
+  unknown: "var(--chart-unknown)",
 };
 
 // The single chart hue, and the ramp used where severity has to advance.
-export const CHART_HUE = "#1F6B4A";
+export const CHART_HUE = "var(--chart-hue)";
+
+// Leaflet writes colours straight into SVG attributes and cannot resolve a CSS
+// variable, so map pins get literal mid-tones chosen to read on both the light
+// OSM tiles and the dark basemap. They are deliberately a little softer than
+// the chart hues, because a pin sits on terrain rather than on a flat panel.
+export const MAP_MARKER_COLORS: Record<RecordType, string> = {
+  flora: "#3fae7c",
+  soil_water: "#4f9fe0",
+  hazard: "#e2555b",
+};
 
 export const GROWTH_STAGES = ["Not specified", "Seedling", "Sapling", "Mature"];
 export const HEALTH_CONDITIONS = ["Healthy", "Stressed", "Diseased", "Dying", "Dead"];

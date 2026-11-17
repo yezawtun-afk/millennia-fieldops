@@ -181,7 +181,7 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
                     id: record.id,
                     lat: record.latitude,
                     lng: record.longitude,
-                    color: record.type === "hazard" ? "#C4242A" : "#1F6B4A",
+                    color: record.type === "hazard" ? "#e2555b" : "#3fae7c",
                     label: record.title,
                   },
                 ]}

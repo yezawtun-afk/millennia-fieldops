@@ -63,7 +63,7 @@ export function DonutChart({
                 cy="50"
                 r={RADIUS}
                 fill="none"
-                stroke={slice.color}
+                style={{ stroke: slice.color }}
                 strokeWidth="9"
                 strokeDasharray={`${visible} ${CIRCUMFERENCE - visible}`}
                 strokeDashoffset={-offset}
