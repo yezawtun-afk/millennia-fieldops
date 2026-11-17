@@ -177,8 +177,9 @@ sequenceDiagram
 | Mark an assigned hazard as fixed (note + 1-3 after photos) | Yes (if assigned, or own) | Yes (if assigned, or own) | Yes (if assigned, or own) |
 | Verify & close a fix, or send it back | No | Yes | Yes |
 | Delete a record | Yes (own, while pending) | No | Yes |
-| Manage zones | No | No | Yes |
+| Manage zones (add, move, delete) | No | Yes | Yes |
 | Manage users / roles / deactivation | No | No | Yes |
+| Read the activity log | No | No | Yes |
 | Export CSV / PDF | No | Yes | Yes |
 
 The worker who holds a job is the assignee; when nobody was assigned, it stays

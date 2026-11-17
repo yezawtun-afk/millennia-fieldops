@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Millennia FieldOps - Roles and permissions</title>
+    <!--
+      Source of docs/ROLES.pdf. Re-print after a permission change:
+
+        "C:\Program Files\Google\Chrome\Application\chrome.exe" --headless=new ^
+          --disable-gpu --no-pdf-header-footer ^
+          --print-to-pdf="docs\ROLES.pdf" "docs\roles-table.html"
+
+      Keep the cells in step with supabase/02_policies.sql (review, delete,
+      zones, profiles), 09_delete_own_pending.sql, 10_audit_logs.sql and
+      13_remediation.sql (assign, complete, verify).
+    -->
+    <style>
+      @page {
+        size: A4;
+        margin: 15mm 14mm 13mm;
+      }
+
+      :root {
+        --ink: #14181b;
+        --muted: #5b615c;
+        --faint: #8b908b;
+        --line: #e2e7e0;
+        --rule: #f1f3ef;
+        --panel: #f7f8f6;
+        --accent: #1f6b4a;
+        --accent-soft: #eaf1ec;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #fff;
+      }
+
+      body {
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        color: var(--ink);
+        font-size: 11.5pt;
+        line-height: 1.5;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .eyebrow {
+        font-size: 8pt;
+        font-weight: 650;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      h1 {
+        margin: 5px 0 0;
+        font-size: 21pt;
+        line-height: 1.12;
+        font-weight: 650;
+        letter-spacing: -0.01em;
+      }
+
+      .meta {
+        margin-top: 7px;
+        font-size: 10pt;
+        color: var(--muted);
+      }
+
+      .meta span + span::before {
+        content: "·";
+        padding: 0 7px;
+        color: var(--faint);
+      }
+
+      .rule {
+        height: 2px;
+        margin: 13px 0 15px;
+        background: var(--accent);
+        border-radius: 2px;
+      }
+
+      .roles {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+        border-collapse: separate;
+        border-spacing: 8px 0;
+        margin: 0 -8px 16px;
+      }
+
+      .role {
+        display: table-cell;
+        width: 33.33%;
+        padding: 9px 11px 10px;
+        border: 1px solid var(--line);
+        border-top: 2px solid var(--accent);
+        border-radius: 5px;
+        background: var(--panel);
+        vertical-align: top;
+      }
+
+      .role h2 {
+        margin: 0;
+        font-size: 10.5pt;
+        font-weight: 650;
+      }
+
+      .role p {
+        margin: 4px 0 0;
+        font-size: 9.2pt;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        page-break-inside: avoid;
+      }
+
+      thead th {
+        padding: 7px 8px;
+        font-size: 8.6pt;
+        font-weight: 650;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        text-align: center;
+        color: var(--accent);
+        background: var(--accent-soft);
+        border-bottom: 1px solid var(--line);
+      }
+
+      thead th.action {
+        text-align: left;
+      }
+
+      thead th:first-child {
+        border-top-left-radius: 5px;
+      }
+
+      thead th:last-child {
+        border-top-right-radius: 5px;
+      }
+
+      tbody td {
+        padding: 8px 9px;
+        border-bottom: 1px solid var(--rule);
+        vertical-align: middle;
+      }
+
+      tbody tr:nth-child(even) td {
+        background: #fbfcfa;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: 1px solid var(--line);
+      }
+
+      td.mark {
+        width: 19%;
+        text-align: center;
+        font-size: 11pt;
+        font-weight: 650;
+      }
+
+      td.yes {
+        color: var(--accent);
+      }
+
+      td.no {
+        color: #b6bbb5;
+      }
+
+      .qual {
+        display: block;
+        margin-top: 1px;
+        font-size: 7.6pt;
+        font-weight: 400;
+        line-height: 1.3;
+        color: var(--muted);
+      }
+
+      .notes {
+        margin-top: 13px;
+        padding-top: 10px;
+        border-top: 1px solid var(--line);
+        font-size: 8.8pt;
+        line-height: 1.55;
+        color: var(--muted);
+      }
+
+      .notes p {
+        margin: 0 0 3px;
+      }
+
+      .notes b {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      .foot {
+        margin-top: 12px;
+        padding-top: 8px;
+        border-top: 1px solid var(--rule);
+        display: flex;
+        justify-content: space-between;
+        font-size: 7.6pt;
+        color: var(--faint);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="eyebrow">Millennia FieldOps</div>
+    <h1>Roles and permissions</h1>
+    <div class="meta">
+      <span>Millennia Village field data capture</span>
+      <span>17 November 2026</span>
+      <span>3 roles</span>
+    </div>
+    <div class="rule"></div>
+
+    <div class="roles">
+      <div class="role">
+        <h2>Field worker</h2>
+        <p>
+          Captures records on the phone and finishes the remediation work a supervisor assigns
+          to them. Sees the whole site read-only.
+        </p>
+      </div>
+      <div class="role">
+        <h2>Supervisor</h2>
+        <p>
+          Reviews submissions, assigns and verifies remediation work, keeps the monitoring zones,
+          and exports reports.
+        </p>
+      </div>
+      <div class="role">
+        <h2>Admin</h2>
+        <p>
+          Everything a supervisor can do, plus deleting records, managing accounts and roles, and
+          reading the activity log.
+        </p>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th class="action">Action</th>
+          <th>Field worker</th>
+          <th>Supervisor</th>
+          <th>Admin</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Sign in, mobile and web</td>
+          <td class="mark yes">✓</td>
+          <td class="mark yes">✓</td>
+          <td class="mark yes">✓</td>
+        </tr>
+        <tr>
+          <td>Create a record</td>
+          <td class="mark yes">✓<span class="qual">as themselves</span></td>
+          <td class="mark yes">✓<span class="qual">as themselves</span></td>
+          <td class="mark yes">✓<span class="qual">as themselves</span></td>
+        </tr>
+        <tr>
+          <td>Read every record, zone and map</td>
+          <td class="mark yes">✓</td>
+          <td class="mark yes">✓</td>
+          <td class="mark yes">✓</td>
+        </tr>
+        <tr>
+          <td>Approve or reject a record</td>
+          <td class="mark no">—</td>
+          <td class="mark yes">✓</td>
+          <td class="mark yes">✓</td>
+        </tr>
+        <tr>
+          <td>Assign remediation work (worker, priority, due date)</td>
+          <td class="mark no">—</td>
+          <td class="mark yes">✓</td>
+          <td class="mark yes">✓</td>
+        </tr>
+        <tr>
+          <td>Mark a job fixed (note and 1–3 after photos)</td>
+          <td class="mark yes">✓<span class="qual">assignee or reporter</span></td>
+          <td class="mark yes">✓<span class="qual">assignee or reporter</span></td>
+          <td class="mark yes">✓<span class="qual">assignee or reporter</span></td>
+        </tr>
+        <tr>
+          <td>Verify and close a fix, or send it back</td>
+          <td class="mark no">—</td>
+          <td class="mark yes">✓</td>
+          <td class="mark yes">✓</td>
+        </tr>
+        <tr>
+          <td>Delete a record</td>
+          <td class="mark yes">✓<span class="qual">own, while pending</span></td>
+          <td class="mark no">—</td>
+          <td class="mark yes">✓<span class="qual">any record</span></td>
+        </tr>
+        <tr>
+          <td>Manage zones (add, move, delete)</td>
+          <td class="mark no">—</td>
+          <td class="mark yes">✓</td>
+          <td class="mark yes">✓</td>
+        </tr>
+        <tr>
+          <td>Manage accounts, roles and deactivation</td>
+          <td class="mark no">—</td>
+          <td class="mark no">—</td>
+          <td class="mark yes">✓</td>
+        </tr>
+        <tr>
+          <td>Read the activity log</td>
+          <td class="mark no">—</td>
+          <td class="mark no">—</td>
+          <td class="mark yes">✓</td>
+        </tr>
+        <tr>
+          <td>Export CSV and PDF reports</td>
+          <td class="mark no">—</td>
+          <td class="mark yes">✓</td>
+          <td class="mark yes">✓</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="notes">
+      <p>
+        <b>Where capture happens.</b> Records are created in the mobile app. Supervisors and
+        admins can sign in there with the same account, so the web dashboard is a review and
+        reporting surface rather than a capture form.
+      </p>
+      <p>
+        <b>Deleting.</b> An admin may delete any record. Everyone else may withdraw their own,
+        and only while it is still pending — once reviewed, it stays.
+      </p>
+      <p>
+        <b>Fixes.</b> The job holder is the assigned worker, or the reporter when nobody was
+        assigned. Only a supervisor or admin can verify the fix and close it, and closing it is
+        what moves the Village Health Score.
+      </p>
+    </div>
+
+    <div class="foot">
+      <span>Rules enforced in the database by row level security, not only by the interface.</span>
+      <span>docs/ROLES.pdf</span>
+    </div>
+  </body>
+</html>
