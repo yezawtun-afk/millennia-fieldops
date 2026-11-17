@@ -47,6 +47,10 @@ In the Supabase dashboard, open **SQL Editor -> New query**. Run these files fro
     zone) and `02_policies.sql` (supervisors can add and delete zones, not just
     administrators), so it is not part of `setup_all.sql`. Safe to run again if
     you are following an older copy of this guide.
+12. `14_inti_campus.sql` - **optional second demo site**: three zones and ten
+    records around the INTI International University campus in Nilai, about 18 km
+    from the village. It adds to the village data and leaves it alone; re-running
+    it refreshes only its own ten records. Needs an approved field worker account.
 
 The generated `setup_all.sql` bundles `01`-`06`, `09`, `10`, `12` and `13` in one
 paste; the two optional files are kept separate because they change data, and `11` is
