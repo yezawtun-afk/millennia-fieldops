@@ -20,6 +20,9 @@ export const ms: Record<string, string> = {
   "{count}m ago": "{count} min lalu",
   "{submitted} submitted · {local} on this phone":
     "{submitted} dihantar · {local} pada telefon ini",
+  "{temp}°C · Rain unlikely": "{temp}°C · Hujan tidak dijangka",
+  "{temp}°C · Rain {chance}% from {time}": "{temp}°C · Hujan {chance}% mulai {time}",
+  "{temp}°C · Rain {chance}% later": "{temp}°C · Hujan {chance}% kemudian",
   "{unread} unread · {total} total": "{unread} belum dibaca · {total} jumlah",
   "A comment helps the field worker. It is required when you reject a record.":
     "Komen membantu petugas lapangan. Komen diperlukan apabila anda menolak rekod.",
@@ -171,6 +174,7 @@ export const ms: Record<string, string> = {
   "Open record": "Buka rekod",
   "Open review queue": "Buka baris gilir semakan",
   Password: "Kata laluan",
+  Paused: "Dijeda",
   "Phone number": "Nombor telefon",
   "Photo compressed for upload ({size})": "Foto dimampatkan untuk muat naik ({size})",
   "Photo compressed: {from} → {to}": "Foto dimampatkan: {from} → {to}",
@@ -194,6 +198,7 @@ export const ms: Record<string, string> = {
     "Rekod yang menunggu keputusan penyelia akan muncul di sini.",
   "Records you capture appear here once they upload.":
     "Rekod yang anda rakam akan muncul di sini selepas dimuat naik.",
+  "Refreshing in {seconds}s…": "Menyegarkan dalam {seconds}s…",
   Reject: "Tolak",
   "Reject this record?": "Tolak rekod ini?",
   Rejected: "Ditolak",
@@ -260,6 +265,8 @@ export const ms: Record<string, string> = {
   "Update available": "Kemas kini tersedia",
   "Update GPS location": "Kemas kini lokasi GPS",
   "Update now": "Kemas kini sekarang",
+  "Updated just now": "Baru dikemas kini",
+  "Updating...": "Mengemas kini…",
   "Uploaded {count} records.": "{count} rekod dimuat naik.",
   Value: "Nilai",
   Version: "Versi",

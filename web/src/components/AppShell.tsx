@@ -23,8 +23,10 @@ import { useI18n } from "@/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { NewsBell } from "@/components/NewsBell";
+import { WeatherPill } from "@/components/WeatherPill";
 import { ROLE_LABELS } from "@/lib/format";
 import type { News, Profile } from "@/lib/types";
+import type { SiteWeather } from "@/lib/weather";
 
 type NavItem = {
   href: string;
@@ -212,7 +214,7 @@ function TopSearch() {
         const term = q.trim();
         router.push(term ? `/records?q=${encodeURIComponent(term)}` : "/records");
       }}
-      className="relative hidden w-full max-w-[320px] sm:block"
+      className="relative hidden min-w-0 max-w-[320px] flex-1 sm:block"
       role="search"
     >
       <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" strokeWidth={1.7} />
@@ -231,11 +233,13 @@ export function AppShell({
   profile,
   news,
   seenAt,
+  weather,
   children,
 }: {
   profile: Profile;
   news: News;
   seenAt: string | null;
+  weather: SiteWeather | null;
   children: React.ReactNode;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -278,6 +282,7 @@ export function AppShell({
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <AutoRefresh />
+            <WeatherPill weather={weather} />
             <TopSearch />
             <LanguageSwitcher compact />
             <NewsBell profile={profile} news={news} seenAt={seenAt} />
