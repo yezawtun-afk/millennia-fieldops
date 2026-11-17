@@ -1,12 +1,15 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import L from "leaflet";
+import { LocateFixed, Loader2 } from "lucide-react";
 import { Circle, CircleMarker, MapContainer, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { ZoneDrawTool } from "./ZoneDrawTool";
 import { ZonePopupActions } from "./ZonePopupActions";
 import { useI18n } from "@/i18n";
+import { useUserLocation } from "@/hooks/useUserLocation";
+import { FlyToUser, UserLocationLayer } from "./UserLocationLayer";
 
 export interface MapMarker {
   id: string;
@@ -38,11 +41,26 @@ const SITE_ZOOM = 16;
 
 // The overview map frames the monitoring zones rather than a fixed point: the
 // site has grown eastwards, so the old centre clipped the newest zones.
+//
+// The page refreshes itself every ten seconds, so the zones array is new on
+// every render even when the data is identical. Framing again each time would
+// throw away wherever the reader had panned to - and pull the map back after
+// the locate button centred on them - so the bounds are only applied when they
+// actually change.
+function zonesKey(zones: MapZone[]) {
+  return zones.map((zone) => `${zone.id}:${zone.lat}:${zone.lng}:${zone.radius}`).join("|");
+}
+
 function FitZones({ zones }: { zones: MapZone[] }) {
   const map = useMap();
+  const fittedRef = useRef("");
 
   useEffect(() => {
     if (zones.length === 0) return;
+    const key = zonesKey(zones);
+    if (key === fittedRef.current) return;
+    fittedRef.current = key;
+
     const bounds = L.latLngBounds([]);
     for (const zone of zones) {
       const latDelta = zone.radius / 111_320;
@@ -62,9 +80,14 @@ function FitZones({ zones }: { zones: MapZone[] }) {
 // site centre. With no zones to frame, follow the pins instead.
 function FitMarkers({ markers }: { markers: MapMarker[] }) {
   const map = useMap();
+  const fittedRef = useRef("");
 
   useEffect(() => {
     if (markers.length === 0) return;
+    const key = markers.map((marker) => `${marker.id}:${marker.lat}:${marker.lng}`).join("|");
+    if (key === fittedRef.current) return;
+    fittedRef.current = key;
+
     const bounds = L.latLngBounds(
       markers.map((marker) => [marker.lat, marker.lng] as [number, number])
     );
@@ -103,6 +126,40 @@ export function LeafletMap({
   const [radius, setRadius] = useState(150);
   const [colour, setColour] = useState("#1f6b4a");
 
+  // The visitor's own position. It lives here rather than in MapView so every
+  // map on the site - overview, full map, single record - behaves the same.
+  const { location, state: locationState, start: startLocation } = useUserLocation();
+  const [centerRequest, setCenterRequest] = useState(0);
+  const [note, setNote] = useState<string | null>(null);
+  // A press that had to ask permission still centres once the first fix lands.
+  const pendingCenterRef = useRef(false);
+
+  useEffect(() => {
+    if (!location || !pendingCenterRef.current) return;
+    pendingCenterRef.current = false;
+    setCenterRequest((current) => current + 1);
+  }, [location]);
+
+  // Say why nothing happened, then get out of the way.
+  useEffect(() => {
+    if (locationState !== "denied" && locationState !== "unavailable") return;
+    setNote(
+      locationState === "denied"
+        ? t("Location permission is off. Allow it in your browser, then try again.")
+        : t("Location unavailable")
+    );
+    const timer = window.setTimeout(() => setNote(null), 6_000);
+    return () => window.clearTimeout(timer);
+  }, [locationState, t]);
+
+  function handleLocate() {
+    if (locationState === "requesting") return;
+    // Resuming after a hidden tab needs the watcher back, not just a re-centre.
+    if (locationState !== "tracking") startLocation();
+    if (location) setCenterRequest((current) => current + 1);
+    else pendingCenterRef.current = true;
+  }
+
   function endDrawing() {
     setDrawing(false);
     setCentre(null);
@@ -126,6 +183,9 @@ export function LeafletMap({
         ) : zones.length === 0 && markers.length > 0 ? (
           <FitMarkers markers={markers} />
         ) : null}
+
+        <UserLocationLayer location={location} />
+        <FlyToUser location={location} request={centerRequest} />
 
         {zones.map((z) => (
           <Circle
@@ -205,6 +265,37 @@ export function LeafletMap({
           </>
         ) : null}
       </MapContainer>
+
+      {/* Bottom-left, clear of the attribution bar and of the row of buttons on
+          the right. It only appears when the browser said no or could not say
+          where we are; the message fades on its own. */}
+      {note ? (
+        <p
+          role="status"
+          className="absolute bottom-8 left-3 z-[900] max-w-[240px] rounded-card border border-line bg-sheet px-2.5 py-2 text-[12px] leading-snug text-ink shadow-lg"
+        >
+          {note}
+        </p>
+      ) : null}
+
+      <button
+        type="button"
+        onClick={handleLocate}
+        disabled={locationState === "requesting"}
+        aria-label={t("Show my location")}
+        title={t("Show my location")}
+        className="absolute bottom-8 right-3 z-[900] flex h-9 w-9 items-center justify-center rounded-full border border-control bg-sheet text-ink shadow-sm transition-colors hover:border-accent hover:text-accent disabled:cursor-progress"
+      >
+        {locationState === "requesting" ? (
+          <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden="true" />
+        ) : (
+          <LocateFixed
+            className={locationState === "tracking" ? "h-4 w-4 text-accent" : "h-4 w-4"}
+            strokeWidth={1.8}
+            aria-hidden="true"
+          />
+        )}
+      </button>
 
       {canManageZones ? (
         <ZoneDrawTool

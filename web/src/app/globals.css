@@ -28,6 +28,10 @@
   --color-accent: #1f6b4a;
   --color-accent-soft: #eaf1ec;
 
+  /* The visitor's own position, the same gold as the phone's map dots */
+  --color-location: #ffd400;
+  --color-location-ink: #7a5d00;
+
   /* Status: pale tint + dark ink of the same hue */
   --color-positive: #247b50;
   --color-positive-soft: #dcfae5;
@@ -227,6 +231,26 @@ dialog.fieldops-dialog {
 
 dialog.fieldops-dialog::backdrop {
   background: rgb(20 24 27 / 0.45);
+}
+
+/* The visitor's own position: an 18 px gold dot with a dark ring and a white
+   halo, deliberately unlike every record pin so it cannot be mistaken for one.
+   Leaflet's divIcon wrapper is transparent and stops being a box of its own. */
+.map-user-location {
+  background: transparent;
+  border: 0;
+}
+
+.map-user-dot {
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border: 2.5px solid var(--color-ink);
+  border-radius: 50%;
+  background: var(--color-location);
+  box-shadow:
+    0 0 0 2px var(--color-sheet),
+    0 2px 8px rgb(20 24 27 / 0.4);
 }
 
 /* An open critical hazard pulses slowly on the overview map; nothing else on

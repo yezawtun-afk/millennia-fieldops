@@ -120,6 +120,8 @@ export const zh: Record<string, string> = {
   Later: "稍后",
   Location: "位置",
   "Location unavailable": "无法获取位置",
+  "Location permission is off. Allow it in your browser, then try again.":
+    "定位权限已关闭。请在浏览器中允许定位，然后重试。",
   "Log out": "退出登录",
   "Mark all read": "全部标为已读",
   "Mark read": "标为已读",
@@ -199,6 +201,7 @@ export const zh: Record<string, string> = {
   "Send request": "发送申请",
   Severity: "严重程度",
   "Show password": "显示密码",
+  "Show my location": "显示我的位置",
   "Sign in": "登录",
   "Sign out of Millennia FieldOps on this phone?": "要在此手机上退出 Millennia FieldOps 吗？",
   Species: "物种",

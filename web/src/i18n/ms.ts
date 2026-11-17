@@ -136,6 +136,8 @@ export const ms: Record<string, string> = {
   Later: "Kemudian",
   Location: "Lokasi",
   "Location unavailable": "Lokasi tidak tersedia",
+  "Location permission is off. Allow it in your browser, then try again.":
+    "Kebenaran lokasi dimatikan. Benarkannya dalam pelayar anda, kemudian cuba lagi.",
   "Log out": "Log keluar",
   "Mark all read": "Tanda semua dibaca",
   "Mark read": "Tanda dibaca",
@@ -220,6 +222,7 @@ export const ms: Record<string, string> = {
   "Send request": "Hantar permohonan",
   Severity: "Keterukan",
   "Show password": "Tunjukkan kata laluan",
+  "Show my location": "Tunjukkan lokasi saya",
   "Sign in": "Log masuk",
   "Sign out of Millennia FieldOps on this phone?":
     "Log keluar dari Millennia FieldOps pada telefon ini?",
