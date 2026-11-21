@@ -36,6 +36,8 @@ export const zh: Record<string, string> = {
   All: "全部",
   "All records uploaded": "所有记录已上传",
   "Allow location access to record GPS coordinates.": "请允许定位权限以记录 GPS 坐标。",
+  "Allow notifications for Millennia FieldOps in your phone settings, then come back.":
+    "请在手机设置中允许 Millennia FieldOps 发送通知，然后返回。",
   "Anything worth remembering about this observation...": "关于此次观察的任何备注……",
   App: "应用",
   Approve: "批准",
@@ -61,6 +63,7 @@ export const zh: Record<string, string> = {
   "Check for update": "检查更新",
   "Check your connection. Only your own records that are still pending can be deleted.":
     "请检查网络连接。只能删除自己提交且仍在待审核状态的记录。",
+  "Check your connection and try again.": "请检查网络连接后重试。",
   Checking: "检查中",
   "Choose a hazard type - or save it as a draft.": "请选择隐患类型，或保存为草稿。",
   "Choose a password of at least 6 characters.": "请设置至少 6 个字符的密码。",
@@ -76,6 +79,7 @@ export const zh: Record<string, string> = {
     "无法加载地图。请检查网络连接后重试。",
   "Could not load the review queue. Check your connection and pull down to retry.":
     "无法加载审核队列。请检查网络连接，下拉重试。",
+  "Could not open the record": "无法打开记录",
   "Could not restore your session.": "无法恢复登录状态。",
   "Could not save the draft.": "无法保存草稿。",
   "Could not save the record.": "无法保存记录。",
@@ -106,6 +110,7 @@ export const zh: Record<string, string> = {
   "Email (optional)": "电子邮箱（可选）",
   "Email or phone number": "电子邮箱或手机号码",
   "Emergency hotline": "紧急热线",
+  Enable: "开启",
   "Enable location access in Settings to show your position on the map.":
     "请在设置中允许定位访问，以便在地图上显示您的位置。",
   "Enable phone alerts": "启用手机通知",
@@ -123,6 +128,7 @@ export const zh: Record<string, string> = {
   "Finish the draft": "完成草稿",
   "From library": "从相册选择",
   "Full name": "姓名",
+  "Get a buzz on this phone when a record is reviewed.": "记录审核后，这台手机会收到提醒。",
   "Give the record a short title - or save it as a draft.": "请填写简短标题，或保存为草稿。",
   "Growth stage": "生长阶段",
   "Hazard type": "隐患类型",
@@ -154,6 +160,7 @@ export const zh: Record<string, string> = {
   "Monitoring zone": "监测区域",
   "My location": "我的位置",
   "My records": "我的记录",
+  "Needs attention": "需要处理",
   "Needs retry": "需要重试",
   "New accounts are reviewed by an administrator before they can sign in. You join as a field worker; a supervisor or administrator widens the role from the web dashboard.":
     "新账号需要管理员审核后才能登录。你将以外勤人员身份加入；主管或管理员可在网页后台扩大权限。",
@@ -180,7 +187,9 @@ export const zh: Record<string, string> = {
   "Open record": "打开记录",
   "Open review queue": "打开审核队列",
   "Open settings": "打开设置",
+  "Opening...": "正在打开……",
   Password: "密码",
+  "Phone alerts are off": "手机通知已关闭",
   "Phone number": "手机号码",
   "Photo compressed for upload ({size})": "照片已压缩以供上传（{size}）",
   "Photo compressed: {from} → {to}": "照片已压缩：{from} → {to}",
@@ -191,6 +200,7 @@ export const zh: Record<string, string> = {
   "Queued · {date}": "排队中 · {date}",
   Read: "已读",
   "Reading type": "读数类型",
+  "Recent activity": "最近动态",
   "Recent records": "最近记录",
   Record: "记录",
   "Record type": "记录类型",
@@ -203,6 +213,7 @@ export const zh: Record<string, string> = {
   Reject: "拒绝",
   "Reject this record?": "拒绝这条记录？",
   Rejected: "已拒绝",
+  "Rejected record": "被退回的记录",
   "Rejecting...": "正在拒绝……",
   'Remove "{title}" from the upload queue? It has not reached the server yet.':
     "从上传队列中移除“{title}”？它尚未到达服务器。",
@@ -212,6 +223,9 @@ export const zh: Record<string, string> = {
   "Request sent. An administrator will review it, and you can sign in with your phone number once it is approved.":
     "申请已发送。管理员将进行审核，批准后即可使用手机号码登录。",
   "Repeat last observation": "重复上一次观察",
+  Replace: "替换",
+  "Replace the unfinished record?": "替换未完成的记录？",
+  Resubmit: "重新提交",
   "Retype password": "重新输入密码",
   Review: "审核",
   "Review queue": "审核队列",
@@ -226,6 +240,7 @@ export const zh: Record<string, string> = {
   "Saving...": "正在保存……",
   "See all": "查看全部",
   "Send request": "发送申请",
+  "Sent back for changes": "已退回，需修改",
   Severity: "严重程度",
   "Show my location": "显示我的位置",
   "Show password": "显示密码",
@@ -239,6 +254,7 @@ export const zh: Record<string, string> = {
   Synced: "已同步",
   Syncing: "同步中",
   "Syncing...": "同步中……",
+  "Take a new photo, then save this as a new record.": "请重新拍照，然后作为新记录保存。",
   "Take photo": "拍照",
   "The decision could not be saved. Check your connection and try again.":
     "无法保存审核决定。请检查网络连接后重试。",
@@ -251,6 +267,8 @@ export const zh: Record<string, string> = {
   "The record is stored on this phone and will upload automatically when you have a connection.":
     "记录已保存在此手机上，联网后会自动上传。",
   "The record was uploaded for review.": "记录已上传，等待审核。",
+  "The rejected report will replace what is on the form now.":
+    "被退回的记录将替换当前表单中的内容。",
   "This account has been deactivated. Ask an administrator to reactivate it.":
     "此账号已停用，请联系管理员重新启用。",
   "This phone could not open the dialler.": "此手机无法打开拨号程序。",

@@ -44,6 +44,8 @@ export const ms: Record<string, string> = {
   "All records uploaded": "Semua rekod telah dimuat naik",
   "Allow location access to record GPS coordinates.":
     "Benarkan akses lokasi untuk merekod koordinat GPS.",
+  "Allow notifications for Millennia FieldOps in your phone settings, then come back.":
+    "Benarkan makluman untuk Millennia FieldOps dalam tetapan telefon anda, kemudian kembali.",
   "Anything worth remembering about this observation...":
     "Apa-apa yang perlu diingat tentang pemerhatian ini...",
   App: "Aplikasi",
@@ -70,6 +72,7 @@ export const ms: Record<string, string> = {
   "Check for update": "Semak kemas kini",
   "Check your connection. Only your own records that are still pending can be deleted.":
     "Periksa sambungan anda. Hanya rekod sendiri yang masih menunggu boleh dipadam.",
+  "Check your connection and try again.": "Periksa sambungan anda dan cuba lagi.",
   Checking: "Menyemak",
   "Choose a hazard type - or save it as a draft.":
     "Pilih jenis bahaya - atau simpan sebagai draf.",
@@ -89,6 +92,7 @@ export const ms: Record<string, string> = {
     "Tidak dapat memuatkan peta. Periksa sambungan dan cuba lagi.",
   "Could not load the review queue. Check your connection and pull down to retry.":
     "Tidak dapat memuatkan baris gilir semakan. Periksa sambungan dan tarik ke bawah untuk mencuba lagi.",
+  "Could not open the record": "Tidak dapat membuka rekod",
   "Could not restore your session.": "Tidak dapat memulihkan sesi anda.",
   "Could not save the draft.": "Tidak dapat menyimpan draf.",
   "Could not save the record.": "Tidak dapat menyimpan rekod.",
@@ -120,6 +124,7 @@ export const ms: Record<string, string> = {
   "Email (optional)": "E-mel (pilihan)",
   "Email or phone number": "E-mel atau nombor telefon",
   "Emergency hotline": "Talian kecemasan",
+  Enable: "Dayakan",
   "Enable location access in Settings to show your position on the map.":
     "Benarkan akses lokasi dalam Tetapan untuk menunjukkan kedudukan anda pada peta.",
   "Enable phone alerts": "Dayakan makluman telefon",
@@ -138,6 +143,8 @@ export const ms: Record<string, string> = {
   "Finish the draft": "Siapkan draf",
   "From library": "Dari galeri",
   "Full name": "Nama penuh",
+  "Get a buzz on this phone when a record is reviewed.":
+    "Dapatkan makluman pada telefon ini apabila rekod disemak.",
   "Give the record a short title - or save it as a draft.":
     "Berikan tajuk ringkas - atau simpan sebagai draf.",
   "Growth stage": "Peringkat pertumbuhan",
@@ -171,6 +178,7 @@ export const ms: Record<string, string> = {
   "Monitoring zone": "Zon pemantauan",
   "My location": "Lokasi saya",
   "My records": "Rekod saya",
+  "Needs attention": "Perlu tindakan",
   "Needs retry": "Perlu cuba semula",
   "New accounts are reviewed by an administrator before they can sign in. You join as a field worker; a supervisor or administrator widens the role from the web dashboard.":
     "Akaun baharu disemak oleh pentadbir sebelum boleh log masuk. Anda menyertai sebagai petugas lapangan; penyelia atau pentadbir boleh meluaskan peranan dari papan pemuka web.",
@@ -197,7 +205,9 @@ export const ms: Record<string, string> = {
   "Open record": "Buka rekod",
   "Open review queue": "Buka baris gilir semakan",
   "Open settings": "Buka tetapan",
+  "Opening...": "Membuka...",
   Password: "Kata laluan",
+  "Phone alerts are off": "Makluman telefon dimatikan",
   "Phone number": "Nombor telefon",
   "Photo compressed for upload ({size})": "Foto dimampatkan untuk muat naik ({size})",
   "Photo compressed: {from} → {to}": "Foto dimampatkan: {from} → {to}",
@@ -210,6 +220,7 @@ export const ms: Record<string, string> = {
   "Queued · {date}": "Dalam baris gilir · {date}",
   Read: "Dibaca",
   "Reading type": "Jenis bacaan",
+  "Recent activity": "Aktiviti terkini",
   "Recent records": "Rekod terkini",
   Record: "Rekod",
   "Record type": "Jenis rekod",
@@ -225,6 +236,7 @@ export const ms: Record<string, string> = {
   Reject: "Tolak",
   "Reject this record?": "Tolak rekod ini?",
   Rejected: "Ditolak",
+  "Rejected record": "Rekod ditolak",
   "Rejecting...": "Menolak...",
   'Remove "{title}" from the upload queue? It has not reached the server yet.':
     'Buang "{title}" dari baris gilir muat naik? Ia belum sampai ke pelayan.',
@@ -234,6 +246,9 @@ export const ms: Record<string, string> = {
   "Request sent. An administrator will review it, and you can sign in with your phone number once it is approved.":
     "Permohonan dihantar. Pentadbir akan menyemaknya, dan anda boleh log masuk dengan nombor telefon anda setelah diluluskan.",
   "Repeat last observation": "Ulang pemerhatian terakhir",
+  Replace: "Ganti",
+  "Replace the unfinished record?": "Ganti rekod yang belum siap?",
+  Resubmit: "Hantar semula",
   "Retype password": "Taip semula kata laluan",
   Review: "Semakan",
   "Review queue": "Baris gilir semakan",
@@ -248,6 +263,7 @@ export const ms: Record<string, string> = {
   "Saving...": "Menyimpan...",
   "See all": "Lihat semua",
   "Send request": "Hantar permohonan",
+  "Sent back for changes": "Dihantar balik untuk pembetulan",
   Severity: "Keterukan",
   "Show my location": "Tunjukkan lokasi saya",
   "Show password": "Tunjukkan kata laluan",
@@ -262,6 +278,8 @@ export const ms: Record<string, string> = {
   Synced: "Disegerakkan",
   Syncing: "Menyegerakkan",
   "Syncing...": "Menyegerakkan...",
+  "Take a new photo, then save this as a new record.":
+    "Ambil foto baharu, kemudian simpan sebagai rekod baharu.",
   "Take photo": "Ambil foto",
   "The decision could not be saved. Check your connection and try again.":
     "Keputusan tidak dapat disimpan. Periksa sambungan dan cuba lagi.",
@@ -275,6 +293,8 @@ export const ms: Record<string, string> = {
   "The record is stored on this phone and will upload automatically when you have a connection.":
     "Rekod disimpan pada telefon ini dan akan dimuat naik secara automatik apabila anda mempunyai sambungan.",
   "The record was uploaded for review.": "Rekod telah dimuat naik untuk semakan.",
+  "The rejected report will replace what is on the form now.":
+    "Rekod yang ditolak akan menggantikan apa yang ada pada borang sekarang.",
   "This account has been deactivated. Ask an administrator to reactivate it.":
     "Akaun ini telah dinyahaktifkan. Minta pentadbir mengaktifkannya semula.",
   "This phone could not open the dialler.":

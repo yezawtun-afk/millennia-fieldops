@@ -169,12 +169,16 @@ export function NewRecordScreen({ navigation, route }: Props) {
   const scrollY = useRef(0);
   // Set when the form is editing an unfinished draft (opened from My records).
   const [draftId, setDraftId] = useState<string | null>(null);
+  // Set when the form was opened from a rejection. The comment is what the last
+  // supervisor asked for, and it stays at the top of the form until save.
+  const [sentBack, setSentBack] = useState<{ comment: string | null } | null>(null);
   // Kept so a draft remembers when the observation was actually made.
   const [observedDate, setObservedDate] = useState(() => new Date().toISOString());
   // The last record submitted from this phone, for "Repeat last observation".
   const [lastObservation, setLastObservation] = useState<Observation | null>(null);
 
   const draftParam = route.params?.draftId;
+  const prefillParam = route.params?.prefill;
 
   // Invalidate an in-flight AI request and drop any suggestion on screen.
   function clearAi() {
@@ -189,11 +193,97 @@ export function NewRecordScreen({ navigation, route }: Props) {
     if (!route.params?.draftId && route.params?.type) setType(route.params.type);
   }, [route.params?.type, route.params?.draftId]);
 
+  // A rejected report comes back through "Resubmit": the answers travel, the
+  // photos do not (a retake is usually the whole point), and the supervisor's
+  // comment rides along so the worker can see what to fix while shooting.
+  useEffect(() => {
+    if (!prefillParam) return;
+
+    const apply = () => {
+      clearAi();
+      setType(prefillParam.type);
+      setTitle(prefillParam.title ?? "");
+      setNotes(prefillParam.notes ?? "");
+      setPhotos([]);
+      setPhotoNote(null);
+      setCoords(
+        prefillParam.latitude !== null &&
+          prefillParam.latitude !== undefined &&
+          prefillParam.longitude !== null &&
+          prefillParam.longitude !== undefined
+          ? {
+              latitude: prefillParam.latitude,
+              longitude: prefillParam.longitude,
+              accuracy: null,
+            }
+          : null
+      );
+      setSpecies(prefillParam.speciesName ?? "");
+      setGrowthStage(prefillParam.growthStage ?? null);
+      setHealthCondition(prefillParam.healthCondition ?? null);
+      setEstimatedCount(
+        prefillParam.estimatedCount === null || prefillParam.estimatedCount === undefined
+          ? ""
+          : String(prefillParam.estimatedCount)
+      );
+      setHazardType(prefillParam.hazardType ?? null);
+      setSeverity(prefillParam.severity ?? null);
+      setReadingType(prefillParam.readingType ?? null);
+      setReadingValue(
+        prefillParam.readingValue === null || prefillParam.readingValue === undefined
+          ? ""
+          : String(prefillParam.readingValue)
+      );
+      setReadingUnit(prefillParam.readingUnit ?? defaultUnitFor(prefillParam.readingType ?? null));
+      setZoneId(prefillParam.zoneId ?? null);
+      setDraftId(null);
+      setErrors({});
+      setObservedDate(new Date().toISOString());
+      setSentBack({ comment: prefillParam.feedback?.trim() || null });
+      // Clear the parameter so coming back to the tab starts a blank record.
+      navigation.setParams({ prefill: undefined });
+    };
+
+    // The New tab keeps whatever was half-typed when the worker wandered off to
+    // check alerts. Starting a resubmit would silently replace that work, so ask
+    // first when the form is not empty.
+    const hasWork =
+      title.trim().length > 0 ||
+      notes.trim().length > 0 ||
+      photos.length > 0 ||
+      coords !== null ||
+      species.trim().length > 0 ||
+      estimatedCount.trim().length > 0 ||
+      readingValue.trim().length > 0 ||
+      growthStage !== null ||
+      healthCondition !== null ||
+      hazardType !== null ||
+      severity !== null ||
+      readingType !== null;
+
+    if (!hasWork) {
+      apply();
+      return;
+    }
+
+    Alert.alert(
+      t("Replace the unfinished record?"),
+      t("The rejected report will replace what is on the form now."),
+      [
+        {
+          text: t("Cancel"),
+          style: "cancel",
+          onPress: () => navigation.setParams({ prefill: undefined }),
+        },
+        { text: t("Replace"), style: "destructive", onPress: apply },
+      ]
+    );
+  }, [prefillParam, navigation, t]);
+
   // Open a draft chosen in "My records" and fill the form with what was saved.
   useEffect(() => {
     let active = true;
     if (!draftParam) return;
-
     (async () => {
       const row = await getOutbox(draftParam).catch(() => null);
       if (!active || !row) return;
@@ -271,6 +361,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
     setReadingUnit("");
     setZoneId(null);
     setDraftId(null);
+    setSentBack(null);
     setErrors({});
     setObservedDate(new Date().toISOString());
   }
@@ -733,6 +824,21 @@ export function NewRecordScreen({ navigation, route }: Props) {
             {t("Saved on the phone first. It uploads by itself when there is signal.")}
           </Text>
         </View>
+
+        {sentBack ? (
+          <View style={styles.sentBack}>
+            <View style={styles.sentBackHead}>
+              <Ionicons name="alert-circle" size={15} color={colors.rejected} />
+              <Text style={styles.sentBackTitle}>{t("Sent back for changes")}</Text>
+            </View>
+            {sentBack.comment ? (
+              <Text style={styles.sentBackText}>{sentBack.comment}</Text>
+            ) : null}
+            <Text style={styles.sentBackHint}>
+              {t("Take a new photo, then save this as a new record.")}
+            </Text>
+          </View>
+        ) : null}
 
         {canRepeat && lastObservation ? (
           <Pressable
@@ -1226,6 +1332,22 @@ const makeStyles = ({ colors, type }: ThemeScale) =>
     repeatBody: { flex: 1, minWidth: 0 },
     repeatTitle: { fontSize: 13, fontWeight: "600", color: colors.ink },
     repeatMeta: { fontSize: 12, color: colors.muted, marginTop: 2 },
+    // The supervisor's reason for sending a record back, at the top of the
+    // rebuilt form. It is the one thing the worker needs while retaking the shot.
+    sentBack: {
+      marginBottom: spacing.lg,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 10,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: colors.rejectedSoft,
+      backgroundColor: colors.rejectedSoft,
+      gap: 4,
+    },
+    sentBackHead: { flexDirection: "row", alignItems: "center", gap: 6 },
+    sentBackTitle: { fontSize: 13, fontWeight: "600", color: colors.rejectedInk },
+    sentBackText: { fontSize: 13, lineHeight: 19, color: colors.rejectedInk },
+    sentBackHint: { fontSize: 12, lineHeight: 17, color: colors.rejectedInk, opacity: 0.85 },
     zoneSuggestion: {
       flexDirection: "row",
       alignItems: "flex-start",

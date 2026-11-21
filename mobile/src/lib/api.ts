@@ -179,6 +179,14 @@ export async function reviewRecord(
   if (error) throw new Error(error.message);
 }
 
+// The columns a notification needs from the record it points at.
+type NotificationRecord = {
+  id: string;
+  status: RecordStatus;
+  title: string;
+  supervisor_feedback: string | null;
+};
+
 export async function fetchNotifications(userId: string): Promise<AppNotification[]> {
   const { data, error } = await supabase
     .from("notifications")
@@ -186,7 +194,32 @@ export async function fetchNotifications(userId: string): Promise<AppNotificatio
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
-  return (data as AppNotification[]) ?? [];
+
+  const rows = (data as AppNotification[]) ?? [];
+
+  // A notification says what happened, never what to do about it: the review
+  // status and the supervisor's comment live on the record. One extra read
+  // fills both in, so the list can lift a rejected report to the top with the
+  // reason attached instead of showing it as one more line in the diary.
+  const ids = [...new Set(rows.map((row) => row.record_id).filter((id): id is string => !!id))];
+  if (ids.length > 0) {
+    const { data: records } = await supabase
+      .from("records")
+      .select("id, status, title, supervisor_feedback")
+      .in("id", ids);
+    const byId = new Map(
+      ((records ?? []) as NotificationRecord[]).map((record) => [record.id, record] as const)
+    );
+    for (const row of rows) {
+      const record = row.record_id ? byId.get(row.record_id) : undefined;
+      if (!record) continue;
+      row.record_status = record.status;
+      row.record_title = record.title;
+      row.supervisor_feedback = record.supervisor_feedback;
+    }
+  }
+
+  return rows;
 }
 
 // Turns stored photo paths into temporary signed URLs for display.

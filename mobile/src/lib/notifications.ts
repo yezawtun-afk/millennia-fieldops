@@ -64,6 +64,20 @@ export async function ensureNotificationPermission(): Promise<boolean> {
   }
 }
 
+// Whether phone alerts are already allowed, without asking for them. `null`
+// means this build cannot do it at all (Expo Go on Android has no native
+// module), so the screen should not offer a button that cannot work.
+export async function notificationPermission(): Promise<boolean | null> {
+  const notifications = await loadNotifications();
+  if (!notifications) return null;
+  try {
+    const current = await notifications.getPermissionsAsync();
+    return current.granted;
+  } catch {
+    return null;
+  }
+}
+
 // Fetches unread notifications and shows a local notification for each.
 export async function presentUnreadNotifications(userId: string): Promise<AppNotification[]> {
   const { data, error } = await supabase

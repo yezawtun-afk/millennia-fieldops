@@ -108,6 +108,13 @@ export interface AppNotification {
   kind: string;
   read_at: string | null;
   created_at: string;
+
+  // Filled in by fetchNotifications from the linked record. A notification says
+  // what happened; the record says whether there is anything to do about it,
+  // which is what the list sorts on.
+  record_status?: RecordStatus | null;
+  record_title?: string | null;
+  supervisor_feedback?: string | null;
 }
 
 // What we store locally (in SQLite) before a record is uploaded.
