@@ -36,14 +36,26 @@ export function WeekBars({
   return (
     <div>
       <div className="relative" style={{ height }}>
-        {/* Gridlines first, so the bars sit on top of them. */}
+        {/* Gridlines first, so the bars sit on top of them. The rules are dashed
+            because a row of solid lines over near-zero bars reads as a chart
+            that failed to draw; a dotted rule reads as graph paper. */}
         <div className="absolute inset-0 flex flex-col justify-between" aria-hidden="true">
           {ticks.map((tick) => (
             <div key={tick} className="flex items-center gap-2.5">
               <span className="num w-5 shrink-0 text-right text-[10px] leading-none text-faint">
                 {tick}
               </span>
-              <span className={`h-px flex-1 ${tick === 0 ? "bg-control" : "bg-rule"}`} />
+              <span
+                className={`h-px flex-1 ${tick === 0 ? "bg-control" : ""}`}
+                style={
+                  tick === 0
+                    ? undefined
+                    : {
+                        backgroundImage:
+                          "repeating-linear-gradient(to right, var(--color-rule) 0 3px, transparent 3px 6px)",
+                      }
+                }
+              />
             </div>
           ))}
         </div>
@@ -55,11 +67,18 @@ export function WeekBars({
             return (
               <div key={day.label} className="flex h-full flex-1 items-end justify-center">
                 {day.value === 0 ? (
+                  // A zero day keeps its slot: a faint dashed stub on the
+                  // baseline says "measured, nothing here" instead of leaving a
+                  // bare rule that looks like a missing bar.
                   <span
                     role="img"
                     aria-label={reading}
                     title={reading}
-                    className="h-px w-full max-w-[38px] bg-control"
+                    className={`h-2.5 w-full max-w-[38px] rounded-t-[3px] border border-dashed ${
+                      day.today
+                        ? "border-accent/45 bg-accent-soft/70"
+                        : "border-control/80 bg-panel/70"
+                    }`}
                   />
                 ) : (
                   <span

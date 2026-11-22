@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, TriangleAlert } from "lucide-react";
+import { ArrowRight, Check, TriangleAlert } from "lucide-react";
 import {
   countRecords,
   countRemediation,
@@ -12,7 +12,6 @@ import {
 import { getProfile } from "@/lib/supabase/server";
 import { signPhotoUrls, stripBucket } from "@/lib/photos";
 import {
-  EmptyState,
   Kpi,
   KpiBadge,
   KpiStrip,
@@ -23,11 +22,12 @@ import {
 import { DonutChart } from "@/components/DonutChart";
 import { MapView } from "@/components/MapView";
 import { ReviewDialog } from "@/components/ReviewDialog";
-import { RecordRow } from "@/components/RecordRow";
 import { FreshRow } from "@/components/FreshRow";
 import { FreshRows } from "@/components/FreshRows";
 import { HealthBreakdown } from "@/components/overview/HealthBreakdown";
-import { RemediationQueue, type RepairRow } from "@/components/overview/RemediationQueue";
+import { MarkFixedButton } from "@/components/overview/MarkFixedButton";
+import { RemediationQueue } from "@/components/overview/RemediationQueue";
+import { ScoreInfo } from "@/components/overview/ScoreInfo";
 import { WeekBars } from "@/components/overview/WeekBars";
 import { ZoneBoard, type ZoneRow } from "@/components/overview/ZoneBoard";
 import {
@@ -40,7 +40,7 @@ import {
   UNCATEGORISED_COLOR,
   formatDateTime,
 } from "@/lib/format";
-import { HEALTH_BAND_LABELS, scoreVillage } from "@/lib/health";
+import { HEALTH_BAND_LABELS, WATER_THRESHOLDS, scoreVillage } from "@/lib/health";
 import { getLocale, getT, type ServerTranslate } from "@/i18n/server";
 import type { FieldRecord } from "@/lib/types";
 
@@ -268,23 +268,25 @@ export default async function DashboardPage() {
   const triage = urgent.length > 0 ? urgent : queue;
   const triageIsCritical = urgent.length > 0;
 
-  // The list is capped at three rows, so the subtitle says so rather than
-  // implying the three rows are the whole queue.
-  const triageHint = triageIsCritical
-    ? urgentTotal > triage.length
-      ? t("Showing {shown} of {total} critical hazards", {
-          shown: triage.length,
-          total: urgentTotal,
-        })
-      : t("{count} critical hazards need a decision", { count: urgentTotal })
-    : pending > triage.length
-      ? t("Showing {shown} of {total} records waiting", {
-          shown: triage.length,
-          total: pending,
-        })
-      : pending > 0
-        ? t("{count} records need a decision", { count: pending })
-        : t("Nothing is waiting for review");
+  // The block shows at most two review rows, so the subtitle says what it is
+  // leaving out rather than implying two rows are the whole queue.
+  const reviewShown = Math.min(triage.length, 2);
+  const triageHint =
+    reviewShown === 0
+      ? ""
+      : triageIsCritical
+        ? urgentTotal > reviewShown
+          ? t("Showing {shown} of {total} critical hazards", {
+              shown: reviewShown,
+              total: urgentTotal,
+            })
+          : t("{count} critical hazards need a decision", { count: urgentTotal })
+        : pending > reviewShown
+          ? t("Showing {shown} of {total} records waiting", {
+              shown: reviewShown,
+              total: pending,
+            })
+          : t("{count} records need a decision", { count: pending });
 
   // Every open critical hazard earns a pin; recent submissions fill the rest, so
   // the pulse count on the map is always the whole truth.
@@ -329,15 +331,57 @@ export default async function DashboardPage() {
     ? Math.round((decidedWithinDay.length / decided.length) * 100)
     : null;
 
-  const recent = records.slice(0, 5);
-  const signed = await signPhotoUrls(
-    [...recent, ...triage].flatMap((record) => (record.photos?.[0] ? [record.photos[0]] : []))
-  );
+  // Two sets of photos are signed on the server: the first photo of each record
+  // in the review queue, and the after photo of each fix waiting to be checked.
+  // "Mark fixed" shows that evidence in its dialog, so closing a job never asks
+  // a supervisor to trust a thumbnail.
+  const signed = await signPhotoUrls([
+    ...triage.flatMap((record) => (record.photos?.[0] ? [record.photos[0]] : [])),
+    ...verification.flatMap((record) =>
+      record.completion_photos?.[0] ? [record.completion_photos[0]] : []
+    ),
+  ]);
   const photoUrl = (path: string | undefined) => {
     if (!path) return null;
     if (path.startsWith("http")) return path;
     return signed[`${BUCKET}/${stripBucket(path)}`] ?? null;
   };
+
+  // What sits in "Waiting on you": fixes the supervisor can close right now,
+  // then the review queue. Two of each, so neither kind can crowd out the other
+  // (the header still shows the true totals, and "View all" reaches the rest).
+  const waiting = [
+    ...verification.slice(0, 2).map((record) => ({ record, kind: "verify" as const })),
+    ...triage.slice(0, 2).map((record) => ({ record, kind: "review" as const })),
+  ];
+
+  // The review sentence above only counts decisions; a fix that is waiting to
+  // be checked is also work the supervisor is holding, so it is named too.
+  const verifyShort =
+    repairs.awaiting === 1
+      ? t("1 fix to verify")
+      : t("{count} fixes to verify", { count: repairs.awaiting });
+  const verifyLong =
+    repairs.awaiting === 1
+      ? t("1 fix waiting for verification")
+      : t("{count} fixes waiting for verification", { count: repairs.awaiting });
+  const waitingHint =
+    repairs.awaiting > 0
+      ? triageHint
+        ? `${triageHint} · ${verifyShort}`
+        : verifyLong
+      : triageHint;
+
+  // The sentence that used to sit under the score as fine print, kept word for
+  // word but moved behind the [?] in the card header.
+  const scoreHelp = t(
+    "Every term is a rate, so a bigger village is never punished for having more records. Only pH and turbidity can be judged without a local baseline: pH {min}-{max}, turbidity up to {turbidity} NTU.",
+    {
+      min: WATER_THRESHOLDS.phMin,
+      max: WATER_THRESHOLDS.phMax,
+      turbidity: WATER_THRESHOLDS.turbidityMaxNtu,
+    }
+  );
 
   const finding =
     pending > 0
@@ -347,15 +391,6 @@ export default async function DashboardPage() {
       : t("Nothing is waiting for review. Everything captured has a decision.");
 
   const lastRecord = records[0]?.created_at ?? null;
-
-  // What is fixed and waiting for a decision. The row says who did the work and
-  // how long ago, so an ageing fix is visible without opening the record.
-  const repairRows: RepairRow[] = verification.map((record) => ({
-    id: record.id,
-    title: record.title,
-    worker: record.completer?.full_name ?? null,
-    finishedLabel: record.completed_at ? agoLabel(t, record.completed_at) : "",
-  }));
 
   return (
     <div>
@@ -440,16 +475,18 @@ export default async function DashboardPage() {
           />
         </SectionCard>
 
-        {/* The one block with a job in it: its rows stretch to close the row. */}
+        {/* The one block with a job in it: its rows stretch to close the row.
+            Each row carries the action that retires it, so a fix can be closed
+            and a pending record reviewed without opening anything else. */}
         <section className="flex h-full flex-col rounded-card border border-line bg-sheet">
           <header className="flex items-start justify-between gap-3 border-b border-rule px-4 py-3">
             <div className="min-w-0">
               <h2 className="text-[14px] font-semibold leading-5 text-ink">{t("Waiting on you")}</h2>
-              <p className="mt-0.5 text-[12px] leading-snug text-muted">{triageHint}</p>
+              <p className="mt-0.5 text-[12px] leading-snug text-muted">{waitingHint}</p>
             </div>
-            {pending > 0 ? (
+            {pending > 0 || repairs.awaiting > 0 ? (
               <Link
-                href="/records?status=pending"
+                href={pending > 0 ? "/records?status=pending" : "/records?completion=verify"}
                 className="shrink-0 whitespace-nowrap text-[12px] font-medium text-accent hover:underline"
               >
                 {t("View all")}
@@ -457,17 +494,25 @@ export default async function DashboardPage() {
             ) : null}
           </header>
 
-          {triage.length === 0 ? (
+          {waiting.length === 0 ? (
             <div className="flex flex-1 items-center px-4 py-6">
               <p className="text-[13px] text-muted">
                 {t("Nothing is waiting for review. Everything captured has a decision.")}
               </p>
             </div>
           ) : (
-            <FreshRows ids={triage.map((record) => record.id)}>
+            <FreshRows ids={waiting.map((row) => row.record.id)}>
               <ul className="flex flex-1 flex-col divide-y divide-rule">
-                {triage.map((record) => {
-                  const photo = photoUrl(record.photos?.[0]);
+                {waiting.map(({ record, kind }) => {
+                  const isFix = kind === "verify";
+                  // A fix shows the after photo: it is the evidence for closing.
+                  const photo = isFix
+                    ? (photoUrl(record.completion_photos?.[0]) ?? photoUrl(record.photos?.[0]))
+                    : photoUrl(record.photos?.[0]);
+                  const finishedLabel = record.completed_at
+                    ? agoLabel(t, record.completed_at)
+                    : "";
+
                   return (
                     <li key={record.id} className="flex flex-1 flex-col">
                       <FreshRow id={record.id} className="flex flex-1 items-center gap-3 px-4 py-3">
@@ -483,8 +528,18 @@ export default async function DashboardPage() {
                               className="h-10 w-10 shrink-0 rounded-[6px] border border-line object-cover"
                             />
                           ) : (
-                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] bg-negative-soft text-negative-ink">
-                              <TriangleAlert className="h-[18px] w-[18px]" strokeWidth={1.7} />
+                            <span
+                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] ${
+                                isFix
+                                  ? "bg-positive-soft text-positive-ink"
+                                  : "bg-negative-soft text-negative-ink"
+                              }`}
+                            >
+                              {isFix ? (
+                                <Check className="h-[18px] w-[18px]" strokeWidth={2} />
+                              ) : (
+                                <TriangleAlert className="h-[18px] w-[18px]" strokeWidth={1.7} />
+                              )}
                             </span>
                           )}
                           <span className="min-w-0 flex-1">
@@ -492,24 +547,41 @@ export default async function DashboardPage() {
                               {record.title}
                             </span>
                             <span className="mt-0.5 block truncate text-[11px] leading-4 text-faint">
-                              {record.zone?.name ?? t("No zone")} ·{" "}
-                              {ageLabel(t, record.created_at)}
+                              {isFix
+                                ? t("Fixed {when} by {name}", {
+                                    when: finishedLabel,
+                                    name: record.completer?.full_name ?? t("a field worker"),
+                                  })
+                                : `${record.zone?.name ?? t("No zone")} · ${ageLabel(
+                                    t,
+                                    record.created_at
+                                  )}`}
                             </span>
                           </span>
                         </Link>
                         {isReviewer ? (
-                          <ReviewDialog
-                            tone={triageIsCritical ? "critical" : "neutral"}
-                            record={{
-                              id: record.id,
-                              title: record.title,
-                              zoneName: record.zone?.name ?? null,
-                              severity: record.severity,
-                              notes: record.notes,
-                              photoUrl: photo,
-                              ageLabel: ageLabel(t, record.created_at),
-                            }}
-                          />
+                          isFix ? (
+                            <MarkFixedButton
+                              recordId={record.id}
+                              title={record.title}
+                              worker={record.completer?.full_name ?? null}
+                              finishedLabel={finishedLabel}
+                              photoUrl={photo}
+                            />
+                          ) : (
+                            <ReviewDialog
+                              tone={triageIsCritical ? "critical" : "neutral"}
+                              record={{
+                                id: record.id,
+                                title: record.title,
+                                zoneName: record.zone?.name ?? null,
+                                severity: record.severity,
+                                notes: record.notes,
+                                photoUrl: photo,
+                                ageLabel: ageLabel(t, record.created_at),
+                              }}
+                            />
+                          )
                         ) : (
                           <Link
                             href={`/records/${record.id}`}
@@ -549,7 +621,6 @@ export default async function DashboardPage() {
               inProgress={repairs.assigned}
               awaiting={repairs.awaiting}
               overdue={repairs.overdue}
-              rows={repairRows}
               t={t}
             />
           </SectionCard>
@@ -596,7 +667,12 @@ export default async function DashboardPage() {
           </p>
         </section>
 
-        <SectionCard title={t("How the score reads")} hint={t("What takes points away")} bodyClassName="p-0">
+        <SectionCard
+          title={t("How the score reads")}
+          hint={t("What takes points away")}
+          bodyClassName="p-0"
+          action={<ScoreInfo label={t("How the score reads")} body={scoreHelp} />}
+        >
           <HealthBreakdown
             result={health}
             review={{ percent: decidedWithinDayPercent, decided: decided.length }}
@@ -681,36 +757,16 @@ export default async function DashboardPage() {
         </SectionCard>
       </div>
 
-      <div className="mt-4">
-        <SectionCard
-          title={t("Recent submissions")}
-          bodyClassName="p-0"
-          action={
-            <Link href="/records" className="text-[12px] font-medium text-accent hover:underline">
-              {t("All records")}
-            </Link>
-          }
-        >
-          {recent.length === 0 ? (
-            <div className="p-4">
-              <EmptyState
-                title={t("No records yet")}
-                hint={t("Records captured in the mobile app appear here once they sync.")}
-              />
-            </div>
-          ) : (
-            <div>
-              {recent.map((record) => (
-                <RecordRow
-                  key={record.id}
-                  record={record}
-                  photoUrl={photoUrl(record.photos?.[0])}
-                />
-              ))}
-            </div>
-          )}
-        </SectionCard>
-      </div>
+      {/* The overview stops at the trends; the full list lives on its own page
+          (the sidebar's Records), so the end here is one door to it rather than
+          five rows that only repeat that page. */}
+      <Link
+        href="/records"
+        className="mt-4 flex items-center justify-between gap-3 rounded-card border border-line bg-sheet px-4 py-3 text-[13px] font-medium text-ink transition-colors hover:border-control hover:bg-panel"
+      >
+        <span>{t("View all {count} records", { count: total.toLocaleString("en-GB") })}</span>
+        <ArrowRight className="h-4 w-4 shrink-0 text-accent" strokeWidth={1.8} />
+      </Link>
     </div>
   );
 }

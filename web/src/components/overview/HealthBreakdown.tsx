@@ -5,7 +5,6 @@ import { SCORE_BAND_COLORS } from "@/lib/format";
 import {
   BACKLOG_DAYS,
   HEALTH_BAND_LABELS,
-  WATER_THRESHOLDS,
   type HealthScore,
 } from "@/lib/health";
 import type { ServerTranslate } from "@/i18n/server";
@@ -92,17 +91,6 @@ export function HealthBreakdown({
               : t("{count} decided", { count: review.decided })}
           </span>
         </span>
-      </p>
-
-      <p className="mt-3 border-t border-rule pt-2.5 text-[11px] leading-relaxed text-faint">
-        {t(
-          "Every term is a rate, so a bigger village is never punished for having more records. Only pH and turbidity can be judged without a local baseline: pH {min}-{max}, turbidity up to {turbidity} NTU.",
-          {
-            min: WATER_THRESHOLDS.phMin,
-            max: WATER_THRESHOLDS.phMax,
-            turbidity: WATER_THRESHOLDS.turbidityMaxNtu,
-          }
-        )}
       </p>
     </div>
   );
