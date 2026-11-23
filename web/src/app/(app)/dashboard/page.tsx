@@ -19,25 +19,24 @@ import {
   SectionCard,
   btnPrimary,
 } from "@/components/ui";
-import { DonutChart } from "@/components/DonutChart";
 import { MapView } from "@/components/MapView";
 import { ReviewDialog } from "@/components/ReviewDialog";
 import { FreshRow } from "@/components/FreshRow";
 import { FreshRows } from "@/components/FreshRows";
+import {
+  HazardPipeline,
+  type PipelineStage,
+  type PipelineTypeRow,
+} from "@/components/overview/HazardPipeline";
 import { HealthBreakdown } from "@/components/overview/HealthBreakdown";
 import { MarkFixedButton } from "@/components/overview/MarkFixedButton";
-import { RemediationQueue } from "@/components/overview/RemediationQueue";
 import { ScoreInfo } from "@/components/overview/ScoreInfo";
 import { WeekBars } from "@/components/overview/WeekBars";
 import { ZoneBoard, type ZoneRow } from "@/components/overview/ZoneBoard";
 import {
-  HAZARD_MIX_RAMP,
   HAZARD_TYPES,
   MAP_MARKER_COLORS,
   SEVERITY_CHART_COLORS,
-  SEVERITY_LABELS,
-  TYPE_CHART_COLORS,
-  UNCATEGORISED_COLOR,
   formatDateTime,
 } from "@/lib/format";
 import { HEALTH_BAND_LABELS, WATER_THRESHOLDS, scoreVillage } from "@/lib/health";
@@ -202,55 +201,90 @@ export default async function DashboardPage() {
   const quietZones = zones.length - activeZones;
   const openIssuesTotal = zoneRows.reduce((sum, zone) => sum + zone.open, 0);
 
-  // ---- Hazard mix -------------------------------------------------------------
+  // ---- Hazard pipeline --------------------------------------------------------
   // A rejected record is not a hazard (the same rule the health score uses), so
-  // the ring, the severity strip and the KPI all count the same 18 records.
+  // the funnel, the type cards and the KPI all count the same records. Every
+  // hazard sits in exactly one stage, so the five counts add up to the total.
   const hazards = records.filter(
     (record) => record.type === "hazard" && record.status !== "rejected"
   );
-  // Ranked biggest-share-first, so the darkest ink is always the category that
-  // dominates the mix; an uncategorised remainder stays pale and last in tone.
-  const categoryCounts = HAZARD_TYPES.map((name) => ({
-    label: t(name),
-    value: hazards.filter((record) => record.hazard_type === name).length,
-    uncategorised: false,
-  })).filter((slice) => slice.value > 0);
-  const uncategorisedHazards = hazards.filter((record) => !record.hazard_type).length;
-  if (uncategorisedHazards > 0) {
-    categoryCounts.push({
-      label: t("No category"),
-      value: uncategorisedHazards,
-      uncategorised: true,
-    });
-  }
-  let rampStep = 0;
-  const byCategory = categoryCounts
-    .sort((a, b) => b.value - a.value)
-    .map((slice) => ({
-      label: slice.label,
-      value: slice.value,
-      color: slice.uncategorised
-        ? UNCATEGORISED_COLOR
-        : HAZARD_MIX_RAMP[Math.min(rampStep++, HAZARD_MIX_RAMP.length - 1)],
-    }));
 
-  // The second cut of the same records: how bad they are. A hazard with no
-  // severity yet is shown rather than hidden, so the strip adds up to the ring.
-  const bySeverity = (["critical", "medium", "low"] as const)
-    .map((severity) => ({
-      label: t(SEVERITY_LABELS[severity]),
-      value: hazards.filter((record) => record.severity === severity).length,
-      color: SEVERITY_CHART_COLORS[severity],
-    }))
-    .filter((slice) => slice.value > 0);
-  const unratedHazards = hazards.filter((record) => !record.severity).length;
-  const ratedHazards = hazards.length - unratedHazards;
-  if (unratedHazards > 0) {
-    bySeverity.push({
-      label: t("No severity"),
-      value: unratedHazards,
-      color: UNCATEGORISED_COLOR,
-    });
+  // Which stage of the loop a hazard is in. Closed wins over everything: a job
+  // that was fixed and closed has left the pipeline even if it was never assigned.
+  const stageOf = (record: FieldRecord): PipelineStage => {
+    if (record.status === "pending") return "pending";
+    if (record.closed_at) return "closed";
+    if (record.completed_at) return "verify";
+    if (record.assigned_to) return "inRepair";
+    return "toAssign";
+  };
+
+  const stageCount: Record<PipelineStage, number> = {
+    pending: 0,
+    toAssign: 0,
+    inRepair: 0,
+    verify: 0,
+    closed: 0,
+  };
+  for (const record of hazards) stageCount[stageOf(record)] += 1;
+
+  const pipelineStages = [
+    { key: "pending" as const, value: stageCount.pending, href: "/records?type=hazard&status=pending" },
+    { key: "toAssign" as const, value: stageCount.toAssign, href: "/records?type=hazard&completion=open" },
+    { key: "inRepair" as const, value: stageCount.inRepair, href: "/records?type=hazard&completion=open" },
+    { key: "verify" as const, value: stageCount.verify, href: "/records?type=hazard&completion=verify" },
+    { key: "closed" as const, value: stageCount.closed, href: "/records?type=hazard&completion=done" },
+  ];
+
+  // One card per threat. "Open" means approved and not yet closed - the hazards
+  // that can still hurt someone - so pending reports are counted in the funnel
+  // but not in the cards until a supervisor accepts them.
+  const summarizeType = (
+    name: string,
+    inType: FieldRecord[],
+    uncategorised = false
+  ): PipelineTypeRow => {
+    const openRows = inType.filter(
+      (record) => record.status === "approved" && !record.closed_at
+    );
+    const zones = new Map<string, number>();
+    for (const record of openRows) {
+      if (!record.zone?.name) continue;
+      zones.set(record.zone.name, (zones.get(record.zone.name) ?? 0) + 1);
+    }
+    const topZone = [...zones.entries()].sort(
+      (a, b) => b[1] - a[1] || a[0].localeCompare(b[0])
+    )[0];
+    const worst =
+      (["critical", "medium", "low"] as const).find((severity) =>
+        openRows.some((record) => record.severity === severity)
+      ) ?? null;
+
+    return {
+      key: name,
+      name,
+      total: inType.length,
+      open: openRows.length,
+      critical: openRows.filter((record) => record.severity === "critical").length,
+      worst,
+      closed: inType.filter((record) => record.closed_at).length,
+      zone: topZone?.[0] ?? null,
+      extraZones: Math.max(zones.size - 1, 0),
+      uncategorised,
+    };
+  };
+
+  // Worst first: threats holding critical work, then the busiest, then the rest.
+  // Types with nothing open stay on the board so coverage is visible.
+  const hazardTypeRows = HAZARD_TYPES.map((name) =>
+    summarizeType(name, hazards.filter((record) => record.hazard_type === name))
+  ).sort((a, b) => b.critical - a.critical || b.open - a.open || b.total - a.total);
+
+  // Hazards captured without a category still happened; they get a muted card
+  // rather than vanishing from the board.
+  const uncategorisedHazards = hazards.filter((record) => !record.hazard_type);
+  if (uncategorisedHazards.length > 0) {
+    hazardTypeRows.push(summarizeType("Uncategorised", uncategorisedHazards, true));
   }
 
   // ---- Triage and the map -----------------------------------------------------
@@ -600,32 +634,29 @@ export default async function DashboardPage() {
         </section>
       </div>
 
-      {isReviewer ? (
-        <div className="mt-4">
-          <SectionCard
-            title={t("Remediation")}
-            hint={t("Work in the field, and fixes waiting for your decision")}
-            bodyClassName="p-0"
-            action={
-              <Link
-                href="/records?completion=verify"
-                className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[12px] font-medium text-accent hover:underline"
-              >
-                {t("Review fixes")}
-                <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.8} />
-              </Link>
-            }
-          >
-            <RemediationQueue
-              toAssign={repairs.unassigned}
-              inProgress={repairs.assigned}
-              awaiting={repairs.awaiting}
-              overdue={repairs.overdue}
-              t={t}
-            />
-          </SectionCard>
-        </div>
-      ) : null}
+      {/* The pipeline replaces both the old category donut and the three-number
+          remediation strip: they were the same objects counted three ways. */}
+      <div className="mt-4">
+        <SectionCard
+          title={t("Hazard pipeline")}
+          hint={t("Where every hazard sits, from report to fix")}
+          bodyClassName="p-0"
+          action={
+            <span className="whitespace-nowrap num text-[12px] text-muted">
+              {hazards.length}
+              <span className="ml-1.5 font-sans text-[11px] text-faint">{t("tracked")}</span>
+            </span>
+          }
+        >
+          <HazardPipeline
+            stages={pipelineStages}
+            rows={hazardTypeRows}
+            total={hazards.length}
+            overdue={isReviewer ? repairs.overdue : 0}
+            t={t}
+          />
+        </SectionCard>
+      </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <section className="flex h-full flex-col rounded-card border border-line bg-sheet">
@@ -681,7 +712,7 @@ export default async function DashboardPage() {
         </SectionCard>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="mt-4">
         <SectionCard
           title={t("Zones")}
           hint={t("Open issues and the last report from each zone")}
@@ -694,66 +725,6 @@ export default async function DashboardPage() {
           }
         >
           <ZoneBoard rows={zoneRows} t={t} emptyLabel={t("No zones are drawn on the map yet.")} />
-        </SectionCard>
-
-        <SectionCard
-          title={t("Hazard mix")}
-          hint={t("By category, most common first")}
-          bodyClassName="p-0"
-          action={
-            <span className="whitespace-nowrap num text-[12px] text-muted">
-              {hazards.length}
-              <span className="ml-1.5 font-sans text-[11px] text-faint">{t("hazards")}</span>
-            </span>
-          }
-        >
-          <DonutChart
-            data={byCategory}
-            centerValue={hazards.length}
-            centerLabel={t("hazards")}
-            unit={t("hazards")}
-            emptyLabel={t("No hazards recorded yet.")}
-            size={160}
-          />
-
-          {hazards.length > 0 ? (
-            <div className="border-t border-rule px-4 py-3">
-              <div className="flex items-baseline justify-between gap-3">
-                <p className="text-[12px] text-muted">{t("How bad they are")}</p>
-                <p className="num text-[11px] text-faint">
-                  {ratedHazards} / {hazards.length} {t("rated")}
-                </p>
-              </div>
-
-              <div className="mt-2 flex h-[6px] gap-[2px] overflow-hidden rounded-full bg-panel">
-                {bySeverity.map((slice) => (
-                  <span
-                    key={slice.label}
-                    style={{
-                      background: slice.color,
-                      width: `${(slice.value / hazards.length) * 100}%`,
-                    }}
-                    title={`${slice.label}: ${slice.value}`}
-                    aria-hidden="true"
-                  />
-                ))}
-              </div>
-
-              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] leading-4">
-                {bySeverity.map((slice) => (
-                  <li key={slice.label} className="flex items-center gap-1.5">
-                    <span
-                      className="h-1.5 w-1.5 rounded-full"
-                      style={{ background: slice.color }}
-                      aria-hidden="true"
-                    />
-                    <span className="text-muted">{slice.label}</span>
-                    <span className="num text-ink">{slice.value}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
         </SectionCard>
       </div>
 
