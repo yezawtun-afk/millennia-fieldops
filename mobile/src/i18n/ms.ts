@@ -647,6 +647,11 @@ export const ms: Record<string, string> = {
   "Call {number} now? This dials the national emergency line. Use it only for a real emergency.":
     "Hubungi {number} sekarang? Ini menghubungi talian kecemasan kebangsaan. Gunakan hanya untuk kecemasan sebenar.",
 
+  // Profile: the vibration that confirms a photo, a save or a warning.
+  "Feedback": "Maklum balas",
+  "Haptic feedback": "Maklum balas haptik",
+  "Confirm actions with a short vibration": "Sahkan tindakan dengan getaran pendek",
+
   // Profile: what the photos on this phone take up, and clearing leftovers.
   "On this phone": "Pada telefon ini",
   "{count} photos on this phone": "{count} foto pada telefon ini",

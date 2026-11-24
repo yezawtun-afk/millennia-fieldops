@@ -10,12 +10,15 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
+import { useHaptics } from "../context/HapticsContext";
 import { useI18n } from "../i18n";
+import { tap as tapHaptic } from "../lib/haptics";
 import { changePassword, updateDisplayName } from "../lib/api";
 import { formatDate, ROLE_LABELS } from "../lib/format";
 import { Banner, Button, Card, Input, ListRow, Pill, SectionTitle } from "../components/ui";
@@ -31,6 +34,7 @@ type Notice = { kind: "success" | "error"; text: string } | null;
 export function ProfileScreen() {
   const { profile, session, refreshProfile } = useAuth();
   const { t } = useI18n();
+  const { enabled: hapticsEnabled, setEnabled: setHapticsEnabled } = useHaptics();
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
 
@@ -262,6 +266,34 @@ export function ProfileScreen() {
             style={styles.submit}
           />
         </Card>
+
+        <View style={styles.gap} />
+
+        <SectionTitle>{t("Feedback")}</SectionTitle>
+        <View style={styles.titleGap} />
+        <Card>
+          <ListRow
+            title={t("Haptic feedback")}
+            right={
+              <Switch
+                value={hapticsEnabled}
+                onValueChange={(next) => {
+                  setHapticsEnabled(next);
+                  // Flipping it on should demonstrate what it does.
+                  if (next) tapHaptic();
+                }}
+                trackColor={{ false: colors.control, true: colors.primary }}
+                thumbColor={colors.card}
+                ios_backgroundColor={colors.control}
+                accessibilityLabel={t("Haptic feedback")}
+              />
+            }
+            last
+          />
+        </Card>
+        <Text style={styles.note}>
+          {t("Confirm actions with a short vibration")}
+        </Text>
 
         <View style={styles.gap} />
 

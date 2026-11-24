@@ -56,6 +56,12 @@ import {
   type CapturedPhoto,
 } from "../lib/photos";
 import { findZoneForPoint } from "../lib/zones";
+import {
+  error as errorHaptic,
+  success as successHaptic,
+  tap as tapHaptic,
+  warning as warningHaptic,
+} from "../lib/haptics";
 import { formatBytes, holdPhotos } from "../lib/storage";
 import { GROWTH_STAGES, HAZARD_TYPES, HEALTH_CONDITIONS, READING_TYPES } from "../lib/format";
 import type { HazardSeverity, OutboxRecord, RecordType, Zone } from "../lib/types";
@@ -371,6 +377,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
       source === "camera" ? await captureFromCamera() : await pickFromLibrary();
     if (!captured) return;
 
+    tapHaptic();
     clearAi();
     setPhotos((prev) => [...prev, captured.uri]);
     setPhotoNote(
@@ -448,6 +455,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
     setAiBusy(false);
 
     if (!result.ok) {
+      errorHaptic();
       setAiPhotoUri(null);
       setMessage({ kind: "error", text: t(result.message) });
       return;
@@ -455,6 +463,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
 
     const suggestion = result.suggestion;
     if (!hasAnyAiSuggestion(suggestion)) {
+      warningHaptic();
       setAiPhotoUri(null);
       setMessage({
         kind: "warning",
@@ -463,6 +472,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
       return;
     }
 
+    successHaptic();
     setAiSuggestion(suggestion);
     setAiSheetOpen(true);
   }
@@ -669,6 +679,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
 
     try {
       await saveDraft(buildPayload(), draftId ?? undefined);
+      tapHaptic();
       reset();
       setBusy(false);
       Alert.alert(
@@ -691,6 +702,9 @@ export function NewRecordScreen({ navigation, route }: Props) {
     const problems = validateForm();
     const first = FIELD_ORDER.find((key) => problems[key]);
     if (first) {
+      // A reading outside its safe range is the one problem worth feeling: the
+      // worker may not read the red hint in time to stop and re-measure.
+      if (first === "readingValue") warningHaptic();
       setErrors(problems);
       setMessage(null);
       revealField(first);
@@ -731,6 +745,10 @@ export function NewRecordScreen({ navigation, route }: Props) {
         await enqueueRecord(payload);
       }
 
+      // The record is on the phone now, which is the promise this button makes.
+      // Buzzing here (not after the upload) keeps it to one buzz per save.
+      successHaptic();
+
       // Remember it for "Repeat last observation". A local storage failure must
       // not cost the worker the record they just filed.
       await rememberObservation(payload).catch(() => undefined);
@@ -754,6 +772,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
       navigation.navigate("Records");
     } catch (error) {
       setBusy(false);
+      errorHaptic();
       setMessage({
         kind: "error",
         text: error instanceof Error ? error.message : t("Could not save the record."),

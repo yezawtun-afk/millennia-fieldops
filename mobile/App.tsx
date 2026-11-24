@@ -8,6 +8,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { DarkTheme, DefaultTheme, NavigationContainer } from "@react-navigation/native";
 import { I18nProvider } from "./src/i18n";
 import { AuthProvider } from "./src/context/AuthContext";
+import { HapticsProvider } from "./src/context/HapticsContext";
 import { SyncProvider } from "./src/context/SyncContext";
 import { ThemeProvider, useTheme } from "./src/lib/useTheme";
 import { RootNavigator } from "./src/navigation/RootNavigator";
@@ -53,13 +54,15 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <I18nProvider>
-            <AuthProvider>
-              <SyncProvider>
-                <Shell />
-              </SyncProvider>
-            </AuthProvider>
-          </I18nProvider>
+          <HapticsProvider>
+            <I18nProvider>
+              <AuthProvider>
+                <SyncProvider>
+                  <Shell />
+                </SyncProvider>
+              </AuthProvider>
+            </I18nProvider>
+          </HapticsProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

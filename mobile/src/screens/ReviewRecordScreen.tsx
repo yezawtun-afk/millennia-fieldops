@@ -20,6 +20,11 @@ import { RecordLocationMap } from "../components/RecordLocationMap";
 import { radius, spacing, type ThemeScale } from "../theme";
 import { useTheme, useThemedStyles } from "../lib/useTheme";
 import {
+  error as errorHaptic,
+  success as successHaptic,
+  warning as warningHaptic,
+} from "../lib/haptics";
+import {
   STATUS_LABELS,
   TYPE_LABELS,
   formatDate,
@@ -94,8 +99,13 @@ export function ReviewRecordScreen({ route, navigation }: Props) {
     setError(null);
     try {
       await reviewRecord(record.id, decision, feedback);
+      // An approval is the good news; a rejection is a decision the supervisor
+      // should feel they actually made, not a failure.
+      if (decision === "approved") successHaptic();
+      else warningHaptic();
       navigation.goBack();
     } catch (caught) {
+      errorHaptic();
       setError(
         caught instanceof Error
           ? caught.message

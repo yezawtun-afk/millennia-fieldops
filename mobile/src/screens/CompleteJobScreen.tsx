@@ -26,6 +26,11 @@ import { completeRecord, fetchRecord, signPhotoUrls } from "../lib/api";
 import { captureFromCamera, deletePhoto, pickFromLibrary } from "../lib/photos";
 import { removeRecordPhotos, uploadRecordPhoto } from "../lib/upload";
 import { holdPhotos } from "../lib/storage";
+import {
+  error as errorHaptic,
+  success as successHaptic,
+  tap as tapHaptic,
+} from "../lib/haptics";
 import { useOnlineStatus } from "../lib/network";
 import { Banner, Button, Card, Input, Pill, SectionTitle } from "../components/ui";
 import { radius, spacing, type ThemeScale } from "../theme";
@@ -114,6 +119,7 @@ export function CompleteJobScreen({ route, navigation }: Props) {
     try {
       const captured = source === "camera" ? await captureFromCamera() : await pickFromLibrary();
       if (!captured) return;
+      tapHaptic();
       setPhotos((prev) =>
         prev.length >= MAX_PHOTOS ? prev : [...prev, captured.uri]
       );
@@ -165,6 +171,7 @@ export function CompleteJobScreen({ route, navigation }: Props) {
       }
     } catch {
       await removeRecordPhotos(uploaded);
+      errorHaptic();
       setBusy(false);
       setError(t("Could not upload the photos. Try again."));
       return;
@@ -176,6 +183,7 @@ export function CompleteJobScreen({ route, navigation }: Props) {
       // a weak connection. Check before deleting files the row may now point at.
       const current = await fetchRecord(record.id).catch(() => null);
       if (current?.completed_at) {
+        successHaptic();
         keepLocalPhotos.current = true;
         for (const uri of photos) {
           await deletePhoto(uri);
@@ -186,6 +194,7 @@ export function CompleteJobScreen({ route, navigation }: Props) {
       }
       await removeRecordPhotos(uploaded);
       setBusy(false);
+      errorHaptic();
       setError(
         /already (complete|closed)/i.test(result.error)
           ? t("This job is already complete.")
@@ -198,6 +207,7 @@ export function CompleteJobScreen({ route, navigation }: Props) {
     for (const uri of photos) {
       await deletePhoto(uri);
     }
+    successHaptic();
     setBusy(false);
     navigation.goBack();
   }

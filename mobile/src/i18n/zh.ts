@@ -596,6 +596,11 @@ export const zh: Record<string, string> = {
   "Call {number} now? This dials the national emergency line. Use it only for a real emergency.":
     "现在拨打 {number}？此号码为国家紧急热线，仅在真正紧急时使用。",
 
+  // Profile: the vibration that confirms a photo, a save or a warning.
+  "Feedback": "反馈",
+  "Haptic feedback": "触感反馈",
+  "Confirm actions with a short vibration": "用短促振动确认操作",
+
   // Profile: what the photos on this phone take up, and clearing leftovers.
   "On this phone": "本机存储",
   "{count} photos on this phone": "本机共 {count} 张照片",
