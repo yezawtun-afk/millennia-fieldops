@@ -273,6 +273,11 @@ export const ms: Record<string, string> = {
   "Site map": "Peta tapak",
   Species: "Spesies",
   "Species name": "Nama spesies",
+  // The invasive check shown beside a species name.
+  Native: "Asli",
+  Introduced: "Diperkenalkan",
+  Invasive: "Invasif",
+  "Invasive check": "Semakan invasif",
   Submitted: "Dihantar",
   "Sync now": "Segerakkan sekarang",
   Synced: "Disegerakkan",

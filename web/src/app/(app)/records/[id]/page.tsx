@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 import { ChevronLeft } from "lucide-react";
 import { getProfile } from "@/lib/supabase/server";
 import { getFieldWorkers, getProfileNames, getRecord } from "@/lib/data";
 import { signPhotoUrls } from "@/lib/photos";
-import { Card, PageHeader } from "@/components/ui";
+import { Card, KpiBadge, PageHeader } from "@/components/ui";
 import { SeverityBadge, StatusBadge, TypePill, WorkPill } from "@/components/Pills";
 import { formatDate, formatDateTime, workStage } from "@/lib/format";
+import { SPECIES_STATUS_LABELS, speciesStatusFor } from "@/lib/species";
 import { ReviewPanel } from "@/components/ReviewPanel";
 import { RemediationCard, type AttemptView } from "@/components/RemediationCard";
 import { DeleteRecordButton } from "@/components/DeleteRecordButton";
@@ -74,6 +76,10 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
             },
           ];
 
+  const floraStatus = record.type === "flora" ? speciesStatusFor(record.species_name) : null;
+  const statusTone =
+    floraStatus === "native" ? "positive" : floraStatus === "invasive" ? "negative" : "neutral";
+
   return (
     <div>
       <Link
@@ -120,6 +126,17 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ i
                 .map((fact) => (
                   <DetailRow key={fact.label} label={t(fact.label)} value={fact.value} />
                 ))}
+              {floraStatus ? (
+                <DetailRow
+                  label={t("Invasive check")}
+                  value={null}
+                  badge={
+                    <KpiBadge tone={statusTone}>
+                      {t(SPECIES_STATUS_LABELS[floraStatus])}
+                    </KpiBadge>
+                  }
+                />
+              ) : null}
               <DetailRow label={t("Observed")} value={formatDate(record.observed_date)} />
               <DetailRow label={t("Zone")} value={record.zone?.name ?? t("No zone")} />
               {record.latitude != null && record.longitude != null ? (
@@ -270,16 +287,18 @@ function DetailRow({
   label,
   value,
   mono = false,
+  badge,
 }: {
   label: string;
   value: string | null;
   mono?: boolean;
+  badge?: ReactNode;
 }) {
   return (
     <div className="border-b border-rule py-2.5 last:border-b-0">
       <dt className="text-[12px] text-muted">{label}</dt>
       <dd className={`mt-0.5 text-[14px] text-ink ${mono ? "num text-[13px]" : ""}`}>
-        {value || <span className="text-faint">-</span>}
+        {badge ?? (value || <span className="text-faint">-</span>)}
       </dd>
     </div>
   );

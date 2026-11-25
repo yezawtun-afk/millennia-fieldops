@@ -236,6 +236,11 @@ export const ms: Record<string, string> = {
     "Log keluar dari Millennia FieldOps pada telefon ini?",
   Species: "Spesies",
   "Species name": "Nama spesies",
+  // The invasive check shown beside a species name.
+  Native: "Asli",
+  Introduced: "Diperkenalkan",
+  Invasive: "Invasif",
+  "Invasive check": "Semakan invasif",
   Submitted: "Dihantar",
   "Sync now": "Segerakkan sekarang",
   Synced: "Disegerakkan",

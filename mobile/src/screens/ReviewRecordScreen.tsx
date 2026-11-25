@@ -17,6 +17,8 @@ import { fetchRecord, reviewRecord, signPhotoUrls } from "../lib/api";
 import { useI18n } from "../i18n";
 import { Banner, Button, Card, Input, Pill, SectionTitle } from "../components/ui";
 import { RecordLocationMap } from "../components/RecordLocationMap";
+import { SpeciesStatusPill } from "../components/SpeciesStatusPill";
+import { speciesStatusFor } from "../lib/species";
 import { radius, spacing, type ThemeScale } from "../theme";
 import { useTheme, useThemedStyles } from "../lib/useTheme";
 import {
@@ -211,6 +213,12 @@ export function ReviewRecordScreen({ route, navigation }: Props) {
               <Text style={styles.factValue}>{fact.value}</Text>
             </View>
           ))}
+        {record.type === "flora" && speciesStatusFor(record.species_name) ? (
+          <View style={styles.factRow}>
+            <Text style={styles.factLabel}>{t("Invasive check")}</Text>
+            <SpeciesStatusPill name={record.species_name} />
+          </View>
+        ) : null}
         {record.latitude != null && record.longitude != null ? (
           <View style={[styles.factRow, styles.factRowLast]}>
             <Text style={styles.factLabel}>{t("Coordinates")}</Text>

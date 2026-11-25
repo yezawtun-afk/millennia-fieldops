@@ -7,8 +7,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useI18n } from "../i18n";
 import { SEVERITY_LABELS } from "../lib/format";
+import { speciesStatusFor } from "../lib/species";
 import type { AiSuggestion } from "../lib/ai";
 import { Banner, Button, Card } from "./ui";
+import { SpeciesStatusPill } from "./SpeciesStatusPill";
 import { radius, spacing, type ThemeScale } from "../theme";
 import { useTheme, useThemedStyles } from "../lib/useTheme";
 import { FadeInCard } from "./FadeInCard";
@@ -114,6 +116,13 @@ export function AiSuggestionSheet({
               />
             ))}
           </Card>
+
+          {suggestion.recordType === "flora" && speciesStatusFor(suggestion.species_name) ? (
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>{t("Invasive check")}</Text>
+              <SpeciesStatusPill name={suggestion.species_name} />
+            </View>
+          ) : null}
 
           <Text style={styles.helper}>
             {t("AI can be wrong. Check the photo and every field before saving.")}
@@ -277,6 +286,14 @@ const makeStyles = ({ colors, type }: ThemeScale) =>
     rowValue: { ...type.body, fontSize: 15 },
     rowMuted: { color: colors.muted, fontStyle: "italic" },
     helper: { ...type.caption, lineHeight: 17 },
+    statusRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+      paddingHorizontal: spacing.xs,
+    },
+    statusLabel: { ...type.caption, color: colors.muted },
     footer: {
       flexDirection: "row",
       gap: spacing.sm,

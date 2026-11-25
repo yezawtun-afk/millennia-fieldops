@@ -18,6 +18,7 @@ import { useSync } from "../context/SyncContext";
 import { useI18n } from "../i18n";
 import { Banner, Button, Card, ChipGroup, Field, Input, SectionTitle } from "../components/ui";
 import { SpeciesPicker } from "../components/SpeciesPicker";
+import { SpeciesStatusPill } from "../components/SpeciesStatusPill";
 import { AIAnalyzingPulse } from "../components/AIAnalyzingPulse";
 import { AiSuggestionSheet } from "../components/AiSuggestionSheet";
 import {
@@ -992,6 +993,7 @@ export function NewRecordScreen({ navigation, route }: Props) {
                 <Text style={styles.helper}>
                   {t("Pick from the site catalog or type a name.")}
                 </Text>
+                <SpeciesStatusPill name={species} style={styles.speciesStatus} />
               </Field>
               <Field label={t("Growth stage")}>
                 <ChipGroup
@@ -1336,6 +1338,7 @@ const makeStyles = ({ colors, type }: ThemeScale) =>
       backgroundColor: colors.panel,
     },
     catalogText: { fontSize: 12, fontWeight: "600", color: colors.primaryDark },
+    speciesStatus: { marginTop: spacing.sm, alignItems: "flex-start" },
     repeatRow: {
       flexDirection: "row",
       alignItems: "center",

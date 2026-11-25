@@ -214,6 +214,11 @@ export const zh: Record<string, string> = {
   "Sign out of Millennia FieldOps on this phone?": "要在此手机上退出 Millennia FieldOps 吗？",
   Species: "物种",
   "Species name": "物种名称",
+  // The invasive check shown beside a species name.
+  Native: "原生",
+  Introduced: "引入",
+  Invasive: "入侵",
+  "Invasive check": "入侵性检查",
   Submitted: "已提交",
   "Sync now": "立即同步",
   Synced: "已同步",
