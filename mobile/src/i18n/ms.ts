@@ -271,6 +271,8 @@ export const ms: Record<string, string> = {
   "Sign out of Millennia FieldOps on this phone?":
     "Log keluar dari Millennia FieldOps pada telefon ini?",
   "Site map": "Peta tapak",
+  Street: "Jalan",
+  Satellite: "Satelit",
   Species: "Spesies",
   "Species name": "Nama spesies",
   // The invasive check shown beside a species name.

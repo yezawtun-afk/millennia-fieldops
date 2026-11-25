@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import L from "leaflet";
-import { LocateFixed, Loader2 } from "lucide-react";
+import { LocateFixed, Loader2, Map as MapIcon, Satellite } from "lucide-react";
 import { Circle, CircleMarker, MapContainer, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { ZoneDrawTool } from "./ZoneDrawTool";
@@ -39,6 +39,31 @@ export interface MapZone {
 // to be the average of the pins, so one far-away GPS reading cannot drag it off.
 export const SITE_CENTER: [number, number] = [2.752615639977973, 101.90646329852517];
 const SITE_ZOOM = 16;
+
+// Basemaps. All three are keyless so the bundle carries no token: OpenStreetMap
+// for the light street map, Esri's dark canvas for the dark theme, and Esri
+// World Imagery when the reader asks for satellite. The imagery has no dark
+// variant and no street names, which is exactly why street stays the default.
+const OSM_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const DARK_ATTRIBUTION =
+  'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const IMAGERY_ATTRIBUTION =
+  'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community';
+
+const STREET_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+const DARK_URL =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}";
+const SATELLITE_URL =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+
+// Imagery stops around level 19 in rural Malaysia; letting Leaflet upscale the
+// last tiles is better than showing empty grey squares past the limit.
+const SATELLITE_MAX_NATIVE_ZOOM = 19;
+
+type BaseLayer = "street" | "satellite";
+
+const BASEMAP_KEY = "millennia.basemap";
 
 // The overview map frames the monitoring zones rather than a fixed point: the
 // site has grown eastwards, so the old centre clipped the newest zones.
@@ -135,6 +160,9 @@ export function LeafletMap({
   const theme = useResolvedTheme();
   const [centerRequest, setCenterRequest] = useState(0);
   const [note, setNote] = useState<string | null>(null);
+  // The reader's basemap choice, restored after mount so the server-rendered
+  // markup and the first client render agree.
+  const [baseLayer, setBaseLayer] = useState<BaseLayer>("street");
   // A press that had to ask permission still centres once the first fix lands.
   const pendingCenterRef = useRef(false);
 
@@ -155,6 +183,25 @@ export function LeafletMap({
     const timer = window.setTimeout(() => setNote(null), 6_000);
     return () => window.clearTimeout(timer);
   }, [locationState, t]);
+
+  // Restore the saved basemap once, on the client, then keep the two in step.
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(BASEMAP_KEY);
+      if (saved === "street" || saved === "satellite") setBaseLayer(saved);
+    } catch {
+      // Storage can be blocked; street stays for this visit.
+    }
+  }, []);
+
+  function chooseBaseLayer(next: BaseLayer) {
+    setBaseLayer(next);
+    try {
+      window.localStorage.setItem(BASEMAP_KEY, next);
+    } catch {
+      // Not remembered, still works for this visit.
+    }
+  }
 
   function handleLocate() {
     if (locationState === "requesting") return;
@@ -177,22 +224,29 @@ export function LeafletMap({
         style={{ height: "100%", width: "100%" }}
         scrollWheelZoom={scrollWheelZoom}
       >
-        {/* Two basemaps, one per theme. Esri's dark canvas is keyless, so the
-            map keeps working without an account or a token in the bundle; it
-            stops at level 16 and Leaflet scales the last tiles beyond that. */}
+        {/* Street follows the theme: OpenStreetMap when light, Esri's dark
+            canvas when dark (it stops at level 16 and Leaflet scales the last
+            tiles beyond that). Satellite is one picture for both themes,
+            because Esri publishes no dark imagery. */}
         <TileLayer
-          key={theme}
+          key={`${theme}-${baseLayer}`}
           attribution={
-            theme === "dark"
-              ? 'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            baseLayer === "satellite"
+              ? IMAGERY_ATTRIBUTION
+              : theme === "dark"
+                ? DARK_ATTRIBUTION
+                : OSM_ATTRIBUTION
           }
           url={
-            theme === "dark"
-              ? "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-              : "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            baseLayer === "satellite"
+              ? SATELLITE_URL
+              : theme === "dark"
+                ? DARK_URL
+                : STREET_URL
           }
-          maxNativeZoom={theme === "dark" ? 16 : undefined}
+          maxNativeZoom={
+            baseLayer === "satellite" ? SATELLITE_MAX_NATIVE_ZOOM : theme === "dark" ? 16 : undefined
+          }
         />
 
         {fitZones ? (
@@ -294,6 +348,40 @@ export function LeafletMap({
           {note}
         </p>
       ) : null}
+
+      {/* Top-right, opposite Leaflet's zoom control. Street is the default so
+          the map still reads like a map; satellite is one tap away when the
+          question is about terrain, water or a rock face. */}
+      <div
+        role="group"
+        aria-label={t("Map style")}
+        className="absolute right-3 top-3 z-[900] flex divide-x divide-line overflow-hidden rounded-full border border-control bg-sheet shadow-sm"
+      >
+        <button
+          type="button"
+          onClick={() => chooseBaseLayer("street")}
+          aria-pressed={baseLayer === "street"}
+          aria-label={t("Street")}
+          title={t("Street")}
+          className={`flex h-8 w-9 items-center justify-center transition-colors ${
+            baseLayer === "street" ? "bg-accent-soft text-accent" : "text-muted hover:text-ink"
+          }`}
+        >
+          <MapIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={() => chooseBaseLayer("satellite")}
+          aria-pressed={baseLayer === "satellite"}
+          aria-label={t("Satellite")}
+          title={t("Satellite")}
+          className={`flex h-8 w-9 items-center justify-center transition-colors ${
+            baseLayer === "satellite" ? "bg-accent-soft text-accent" : "text-muted hover:text-ink"
+          }`}
+        >
+          <Satellite className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+        </button>
+      </div>
 
       <button
         type="button"

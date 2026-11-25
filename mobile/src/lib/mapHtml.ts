@@ -204,11 +204,40 @@ ${chromeCss}
   var map = L.map("map", { zoomControl: false });
   L.control.zoom({ position: "bottomright" }).addTo(map);
 
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  var streetLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     minZoom: 4,
     attribution: "&copy; OpenStreetMap contributors"
-  }).addTo(map);
+  });
+
+  // Esri World Imagery: keyless, like the dark canvas the website uses.
+  // Imagery stops around level 19 in the Malaysian countryside, so Leaflet
+  // upscales the last tiles instead of showing empty grey squares.
+  var satelliteLayer = L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    {
+      maxZoom: 19,
+      minZoom: 4,
+      maxNativeZoom: 19,
+      attribution:
+        'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+    }
+  );
+
+  streetLayer.addTo(map);
+
+  // The toggle is a native button in the app, so the page is never rebuilt (a
+  // rebuild would throw away the zoom and the pan). The app pushes the choice
+  // in here; Leaflet swaps the attribution text by itself.
+  window.setBaseLayer = function (name) {
+    if (name === "satellite") {
+      if (map.hasLayer(streetLayer)) map.removeLayer(streetLayer);
+      if (!map.hasLayer(satelliteLayer)) satelliteLayer.addTo(map);
+    } else {
+      if (map.hasLayer(satelliteLayer)) map.removeLayer(satelliteLayer);
+      if (!map.hasLayer(streetLayer)) streetLayer.addTo(map);
+    }
+  };
 
   var bounds = [];
 

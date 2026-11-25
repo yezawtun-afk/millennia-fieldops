@@ -4,14 +4,21 @@
 //
 // The page itself lives in lib/mapHtml.ts.
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Linking, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { WebView } from "react-native-webview";
 import { buildMapHtml } from "../lib/mapHtml";
 import type { MapPoint, MapZone, UserLocation } from "../lib/mapHtml";
+import { useI18n } from "../i18n";
 import { Button } from "./ui";
-import { spacing, type ThemeScale } from "../theme";
+import { radius, shadow, spacing, type ThemeScale } from "../theme";
 import { useTheme, useThemedStyles } from "../lib/useTheme";
+
+// A base map is a preference, not a per-visit choice: a worker who reads
+// terrain better on imagery should not have to switch again after a restart.
+const BASEMAP_KEY = "millennia-fieldops.basemap";
+type BaseLayer = "street" | "satellite";
 
 export function RecordMap({
   points,
@@ -36,10 +43,12 @@ export function RecordMap({
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [detail, setDetail] = useState<string | null>(null);
+  const [baseLayer, setBaseLayer] = useState<BaseLayer>("street");
   const webViewRef = useRef<WebView<object> | null>(null);
   const handledCenterRef = useRef(0);
   const styles = useThemedStyles(makeStyles);
   const { colors, isDark } = useTheme();
+  const { t } = useI18n();
 
   // A stable HTML string keeps the WebView from reloading on unrelated
   // re-renders (a sync tick, for example). It changes with the data, the
@@ -86,6 +95,35 @@ export function RecordMap({
     handledCenterRef.current = centerRequest;
     webViewRef.current?.injectJavaScript("window.centerOnUser && window.centerOnUser(); true;");
   }, [ready, userLocation, centerRequest]);
+
+  // Restore the saved basemap once, then follow the choice from then on.
+  useEffect(() => {
+    let active = true;
+    AsyncStorage.getItem(BASEMAP_KEY)
+      .then((saved) => {
+        if (!active) return;
+        if (saved === "street" || saved === "satellite") setBaseLayer(saved);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Injected rather than rebuilt into the HTML: a rebuild would reload the page
+  // and lose the zoom and the pan.
+  useEffect(() => {
+    if (!ready) return;
+    webViewRef.current?.injectJavaScript(
+      `window.setBaseLayer && window.setBaseLayer("${baseLayer}"); true;`
+    );
+  }, [ready, baseLayer]);
+
+  function chooseBaseLayer(next: BaseLayer) {
+    if (next === baseLayer) return;
+    setBaseLayer(next);
+    void AsyncStorage.setItem(BASEMAP_KEY, next).catch(() => undefined);
+  }
 
   if (failed) {
     return (
@@ -149,6 +187,46 @@ export function RecordMap({
           setFailed(true);
         }}
       />
+      {/* Top-left, clear of the app's "My location" pill on the right and of
+          Leaflet's zoom buttons at the bottom. Hidden until the page is ready
+          so a tap cannot arrive before window.setBaseLayer exists. */}
+      {ready ? (
+        <View style={styles.layerToggle}>
+          <Pressable
+            onPress={() => chooseBaseLayer("street")}
+            accessibilityRole="button"
+            accessibilityLabel={t("Street")}
+            accessibilityState={{ selected: baseLayer === "street" }}
+            style={[
+              styles.layerButton,
+              baseLayer === "street" ? styles.layerButtonActive : null,
+            ]}
+          >
+            <Ionicons
+              name="map-outline"
+              size={15}
+              color={baseLayer === "street" ? colors.primaryDark : colors.muted}
+            />
+          </Pressable>
+          <Pressable
+            onPress={() => chooseBaseLayer("satellite")}
+            accessibilityRole="button"
+            accessibilityLabel={t("Satellite")}
+            accessibilityState={{ selected: baseLayer === "satellite" }}
+            style={[
+              styles.layerButton,
+              styles.layerButtonEnd,
+              baseLayer === "satellite" ? styles.layerButtonActive : null,
+            ]}
+          >
+            <Ionicons
+              name="globe-outline"
+              size={15}
+              color={baseLayer === "satellite" ? colors.primaryDark : colors.muted}
+            />
+          </Pressable>
+        </View>
+      ) : null}
       {!ready ? (
         <View style={styles.overlay} pointerEvents="none">
           <ActivityIndicator color={colors.primary} />
@@ -192,4 +270,25 @@ const makeStyles = ({ colors }: ThemeScale) =>
       justifyContent: "center",
       backgroundColor: colors.page,
     },
+    layerToggle: {
+      position: "absolute",
+      top: spacing.md,
+      left: spacing.md,
+      zIndex: 10,
+      flexDirection: "row",
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: colors.control,
+      backgroundColor: colors.card,
+      overflow: "hidden",
+      boxShadow: shadow.control,
+    },
+    layerButton: {
+      width: 36,
+      height: 34,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    layerButtonEnd: { borderLeftWidth: 1, borderLeftColor: colors.line },
+    layerButtonActive: { backgroundColor: colors.primarySoft },
 });

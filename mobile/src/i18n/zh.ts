@@ -247,6 +247,8 @@ export const zh: Record<string, string> = {
   "Sign in": "登录",
   "Sign out of Millennia FieldOps on this phone?": "要在此手机上退出 Millennia FieldOps 吗？",
   "Site map": "场地地图",
+  Street: "街道",
+  Satellite: "卫星",
   Species: "物种",
   "Species name": "物种名称",
   // The invasive check shown beside a species name.
