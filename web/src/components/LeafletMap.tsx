@@ -263,7 +263,14 @@ export function LeafletMap({
             key={z.id}
             center={[z.lat, z.lng]}
             radius={z.radius}
-            pathOptions={{ color: z.color, fillColor: z.color, fillOpacity: 0.12, weight: 2 }}
+            // Imagery swallows a thin outline: over forest and quarry rock the
+            // ring needs one more step of weight and fill to stay readable.
+            pathOptions={{
+              color: z.color,
+              fillColor: z.color,
+              fillOpacity: baseLayer === "satellite" ? 0.18 : 0.12,
+              weight: baseLayer === "satellite" ? 2.5 : 2,
+            }}
           >
             <Popup>
               <strong>{z.name}</strong>
@@ -363,11 +370,12 @@ export function LeafletMap({
           aria-pressed={baseLayer === "street"}
           aria-label={t("Street")}
           title={t("Street")}
-          className={`flex h-8 w-9 items-center justify-center transition-colors ${
+          className={`flex h-8 items-center gap-1.5 px-2.5 text-[11px] font-medium transition-colors ${
             baseLayer === "street" ? "bg-accent-soft text-accent" : "text-muted hover:text-ink"
           }`}
         >
-          <MapIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+          <MapIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.8} aria-hidden="true" />
+          <span>{t("Street")}</span>
         </button>
         <button
           type="button"
@@ -375,11 +383,12 @@ export function LeafletMap({
           aria-pressed={baseLayer === "satellite"}
           aria-label={t("Satellite")}
           title={t("Satellite")}
-          className={`flex h-8 w-9 items-center justify-center transition-colors ${
+          className={`flex h-8 items-center gap-1.5 px-2.5 text-[11px] font-medium transition-colors ${
             baseLayer === "satellite" ? "bg-accent-soft text-accent" : "text-muted hover:text-ink"
           }`}
         >
-          <Satellite className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+          <Satellite className="h-3.5 w-3.5 shrink-0" strokeWidth={1.8} aria-hidden="true" />
+          <span>{t("Satellite")}</span>
         </button>
       </div>
 

@@ -204,9 +204,17 @@ export function RecordMap({
           >
             <Ionicons
               name="map-outline"
-              size={15}
+              size={14}
               color={baseLayer === "street" ? colors.primaryDark : colors.muted}
             />
+            <Text
+              style={[
+                styles.layerLabel,
+                { color: baseLayer === "street" ? colors.primaryDark : colors.muted },
+              ]}
+            >
+              {t("Street")}
+            </Text>
           </Pressable>
           <Pressable
             onPress={() => chooseBaseLayer("satellite")}
@@ -221,9 +229,17 @@ export function RecordMap({
           >
             <Ionicons
               name="globe-outline"
-              size={15}
+              size={14}
               color={baseLayer === "satellite" ? colors.primaryDark : colors.muted}
             />
+            <Text
+              style={[
+                styles.layerLabel,
+                { color: baseLayer === "satellite" ? colors.primaryDark : colors.muted },
+              ]}
+            >
+              {t("Satellite")}
+            </Text>
           </Pressable>
         </View>
       ) : null}
@@ -284,11 +300,13 @@ const makeStyles = ({ colors }: ThemeScale) =>
       boxShadow: shadow.control,
     },
     layerButton: {
-      width: 36,
       height: 34,
+      flexDirection: "row",
       alignItems: "center",
-      justifyContent: "center",
+      gap: 5,
+      paddingHorizontal: 9,
     },
+    layerLabel: { fontSize: 11, fontWeight: "600" },
     layerButtonEnd: { borderLeftWidth: 1, borderLeftColor: colors.line },
     layerButtonActive: { backgroundColor: colors.primarySoft },
 });

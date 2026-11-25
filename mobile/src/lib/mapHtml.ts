@@ -226,6 +226,11 @@ ${chromeCss}
 
   streetLayer.addTo(map);
 
+  // The zone rings are kept so the basemap switch can restyle them: imagery
+  // swallows a thin outline, so on satellite they get one step more weight and
+  // fill. Declared before setBaseLayer because the app can call it first.
+  var zoneLayers = [];
+
   // The toggle is a native button in the app, so the page is never rebuilt (a
   // rebuild would throw away the zoom and the pan). The app pushes the choice
   // in here; Leaflet swaps the attribution text by itself.
@@ -237,12 +242,21 @@ ${chromeCss}
       if (map.hasLayer(satelliteLayer)) map.removeLayer(satelliteLayer);
       if (!map.hasLayer(streetLayer)) streetLayer.addTo(map);
     }
+
+    var onImagery = name === "satellite";
+    zoneLayers.forEach(function (circle) {
+      circle.setStyle({
+        weight: onImagery ? 2.5 : 1.5,
+        opacity: onImagery ? 0.95 : 0.85,
+        fillOpacity: onImagery ? 0.18 : 0.1
+      });
+    });
   };
 
   var bounds = [];
 
   DATA.zones.forEach(function (zone) {
-    L.circle([zone.lat, zone.lng], {
+    var circle = L.circle([zone.lat, zone.lng], {
       radius: zone.radius,
       color: zone.color,
       weight: 1.5,
@@ -253,6 +267,7 @@ ${chromeCss}
     })
       .bindPopup('<strong>' + escapeHtml(zone.name) + '</strong>')
       .addTo(map);
+    zoneLayers.push(circle);
     bounds.push([zone.lat, zone.lng]);
   });
 
