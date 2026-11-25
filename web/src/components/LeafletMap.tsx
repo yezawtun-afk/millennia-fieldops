@@ -358,11 +358,14 @@ export function LeafletMap({
 
       {/* Top-right, opposite Leaflet's zoom control. Street is the default so
           the map still reads like a map; satellite is one tap away when the
-          question is about terrain, water or a rock face. */}
+          question is about terrain, water or a rock face. On the map page the
+          "Add a zone" button owns this corner, so the toggle drops below it. */}
       <div
         role="group"
         aria-label={t("Map style")}
-        className="absolute right-3 top-3 z-[900] flex divide-x divide-line overflow-hidden rounded-full border border-control bg-sheet shadow-sm"
+        className={`absolute right-3 z-[900] flex divide-x divide-line overflow-hidden rounded-full border border-control bg-sheet shadow-sm ${
+          canManageZones ? "top-14" : "top-3"
+        }`}
       >
         <button
           type="button"
