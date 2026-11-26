@@ -874,6 +874,12 @@ export const zh: Record<string, string> = {
   "Choose a reading type.": "请选择读数类型。",
   "Choose a unit for {type}.": "请为 {type} 选择单位。",
   "Enter a valid number for {type}.": "请为 {type} 输入有效数字。",
-  "Reading is outside the expected range ({min}-{max} {unit}).":
-    "读数超出预期范围（{min}-{max} {unit}）。",
+  "Reading is outside the expected range ({min}–{max} {unit}).":
+    "读数超出预期范围（{min}–{max} {unit}）。",
+  "0–14 pH. 7 is neutral.": "0–14 pH，7 为中性。",
+  "Soil moisture as a percentage of a saturated sample.": "土壤含水量占饱和样本的百分比。",
+  "Depth from a fixed gauge mark or the water surface.": "从固定水尺标记或水面测量的深度。",
+  "Lower NTU means clearer water.": "NTU 越低，水质越清澈。",
+  "Water or soil temperature at the sample point.": "采样点的水温或土温。",
+  "Depth of the soil profile at the sample point.": "采样点的土壤剖面深度。",
 };

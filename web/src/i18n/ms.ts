@@ -917,6 +917,14 @@ export const ms: Record<string, string> = {
   "Choose a reading type.": "Pilih jenis bacaan.",
   "Choose a unit for {type}.": "Pilih unit untuk {type}.",
   "Enter a valid number for {type}.": "Masukkan nombor yang sah untuk {type}.",
-  "Reading is outside the expected range ({min}-{max} {unit}).":
-    "Bacaan di luar julat dijangka ({min}-{max} {unit}).",
+  "Reading is outside the expected range ({min}–{max} {unit}).":
+    "Bacaan di luar julat dijangka ({min}–{max} {unit}).",
+  "0–14 pH. 7 is neutral.": "0–14 pH. 7 ialah neutral.",
+  "Soil moisture as a percentage of a saturated sample.":
+    "Kelembapan tanah sebagai peratusan sampel tepu.",
+  "Depth from a fixed gauge mark or the water surface.":
+    "Kedalaman dari tanda tolok tetap atau permukaan air.",
+  "Lower NTU means clearer water.": "NTU lebih rendah bermaksud air lebih jernih.",
+  "Water or soil temperature at the sample point.": "Suhu air atau tanah pada titik sampel.",
+  "Depth of the soil profile at the sample point.": "Kedalaman profil tanah pada titik sampel.",
 };

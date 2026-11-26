@@ -23,7 +23,7 @@ export const READING_DEFINITIONS: Record<string, ReadingDefinition> = {
     units: ["pH"],
     ranges: { pH: { min: 0, max: 14 } },
     example: "6.8",
-    hint: "0-14 pH. 7 is neutral.",
+    hint: "0–14 pH. 7 is neutral.",
   },
   Moisture: {
     units: ["%"],
@@ -94,7 +94,7 @@ export function validateReading(
   const range = definition.ranges[unit];
   if (number < range.min || number > range.max) {
     return {
-      key: "Reading is outside the expected range ({min}-{max} {unit}).",
+      key: "Reading is outside the expected range ({min}–{max} {unit}).",
       params: { min: range.min, max: range.max, unit },
     };
   }
