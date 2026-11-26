@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { getProfile } from "@/lib/supabase/server";
 import { getZones, queryRecords } from "@/lib/data";
-import { EmptyState, PageHeader, tdClass, thClass } from "@/components/ui";
+import { EmptyState, PageHeader, btnPrimary, tdClass, thClass } from "@/components/ui";
 import { SeverityBadge, StatusBadge, TypePill, WorkPill } from "@/components/Pills";
 import {
   daysUntilDue,
@@ -74,7 +75,19 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
 
   return (
     <div>
-      <PageHeader title={t("Records")} subtitle={subtitle} actions={<ExportButtons query={exportQuery} />} />
+      <PageHeader
+        title={t("Records")}
+        subtitle={subtitle}
+        actions={
+          <div className="flex items-center gap-2">
+            <Link href="/records/new" className={btnPrimary}>
+              <Plus className="h-4 w-4" strokeWidth={2} />
+              {t("Add record")}
+            </Link>
+            <ExportButtons query={exportQuery} />
+          </div>
+        }
+      />
 
       <RecordsFilters zones={zones} />
 

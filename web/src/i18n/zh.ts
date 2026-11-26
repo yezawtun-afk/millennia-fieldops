@@ -339,6 +339,7 @@ export const zh: Record<string, string> = {
   Overview: "概览",
   Records: "记录",
   "Site map": "场地地图",
+  "Showing {count} of {total} records": "显示 {count} / {total} 条记录",
   "Map style": "地图样式",
   Street: "街道",
   Satellite: "卫星",
@@ -698,7 +699,11 @@ export const zh: Record<string, string> = {
   "Open map": "打开地图",
   "Quiet": "沉寂",
   "Records received in the last {days} days": "最近 {days} 天收到的记录",
+  "Nothing has been submitted in the last {days} days.": "最近 {days} 天没有提交记录。",
   "Submissions": "提交量",
+  "Weekly": "每周",
+  "Monthly": "每月",
+  "in {days} days": "最近 {days} 天",
   "View all": "查看全部",
   "Waiting on you": "等你处理",
   "What takes points away": "扣分项",
@@ -827,4 +832,48 @@ export const zh: Record<string, string> = {
   "fixed {when}": "修复于 {when}",
   "Work in the field, and fixes waiting for your decision": "现场进行中的工作，以及等待您决定的修复",
   "Review fixes": "核实修复",
+
+  // ---- Adding a record on the website ----
+  "Add record": "添加记录",
+  "Add photos": "添加照片",
+  "Observed date": "观察日期",
+  "New records wait for a supervisor to review them.": "新记录需等待主管审核。",
+  "What did you see?": "你看到了什么？",
+  "No AI assist for soil and water: read the instrument directly.":
+    "土壤与水质没有 AI 辅助：请直接读取仪器。",
+  "Auto-fill from photo": "从照片自动填写",
+  "Reading the photo...": "正在读取照片...",
+  "Fill again from another photo": "用另一张照片重新填写",
+  "Filled from photo": "已从照片填写",
+  "Filled from photo - {value}% confidence": "已从照片填写 - 置信度 {value}%",
+  "The photo is analysed once and not stored. Check every field before saving.":
+    "照片只分析一次且不会保存。保存前请检查每一项。",
+  "Scientific name": "学名",
+  "Invasive in Malaysia. Note the location and how much ground it covers.":
+    "在马来西亚属于入侵物种。请记录位置和被覆盖的面积。",
+  "Choose a reading": "选择读数",
+  "Use my location": "使用我的位置",
+  "Anything the photo does not show: access, weather, what you were doing.":
+    "照片无法呈现的内容：通道、天气、你当时在做什么。",
+  "Up to {count} photos, optional.": "最多 {count} 张照片，可选。",
+  "This browser cannot share a location.": "此浏览器无法共享位置。",
+  "Location unavailable. Allow it in your browser, then try again.":
+    "无法获取位置。请在浏览器中允许定位后重试。",
+  "AI has reached today's limit. Enter the record by hand.": "AI 已达今日上限。请手动填写记录。",
+  "AI is busy. Wait a moment and try again.": "AI 正忙。请稍后再试。",
+  "The photo was not clear enough. Try another.": "照片不够清晰。请换一张。",
+  "That photo is too large to analyse.": "该照片太大，无法分析。",
+  "Sign in again to use AI.": "请重新登录后使用 AI。",
+  "AI could not analyse the photo. Enter the record by hand.":
+    "AI 无法分析该照片。请手动填写记录。",
+  "Your session has expired. Sign in again.": "登录已过期。请重新登录。",
+  "Pick a record type.": "请选择记录类型。",
+  "Give the record a title.": "请为记录填写标题。",
+  "The photo could not be uploaded: {message}": "照片上传失败：{message}",
+  "The record could not be saved: {message}": "记录保存失败：{message}",
+  "Choose a reading type.": "请选择读数类型。",
+  "Choose a unit for {type}.": "请为 {type} 选择单位。",
+  "Enter a valid number for {type}.": "请为 {type} 输入有效数字。",
+  "Reading is outside the expected range ({min}-{max} {unit}).":
+    "读数超出预期范围（{min}-{max} {unit}）。",
 };

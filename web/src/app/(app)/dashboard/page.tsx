@@ -45,6 +45,7 @@ import type { FieldRecord } from "@/lib/types";
 
 const BUCKET = "record-photos";
 const WEEK_DAYS = 7;
+const MONTH_DAYS = 30;
 const QUIET_DAYS = 14;
 
 // The weekday labels and the day arithmetic follow the chosen language, not the
@@ -115,7 +116,15 @@ function deltaLabel(t: ServerTranslate, current: number, previous: number): stri
   return t("{count} fewer than last week", { count: previous - current });
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ span?: string }>;
+}) {
+  const params = await searchParams;
+  // The chart's period. A plain URL parameter keeps the whole page
+  // server-rendered: no chart library and no client state to keep in sync.
+  const span = params.span === "month" ? "month" : "week";
   const [
     t,
     locale,
@@ -180,6 +189,26 @@ export default async function DashboardPage() {
   const lastWeek = countBetween(priorStart, priorEnd);
 
   const weekDelta = deltaLabel(t, thisWeek, lastWeek);
+
+  // ---- The chart's other period: the same daily counts over 30 days ----------
+  // Daily bars, not monthly buckets: a supervisor reads "which day went quiet",
+  // so the shape of the month has to survive. The axis thins its labels out.
+  const month = Array.from({ length: MONTH_DAYS }, (_, index) => {
+    const start = new Date(today);
+    start.setDate(start.getDate() - (MONTH_DAYS - 1 - index));
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    return {
+      label: String(start.getDate()),
+      full: start.toLocaleDateString(dayTag, { day: "numeric", month: "short" }),
+      value: countBetween(start, end),
+      today: index === MONTH_DAYS - 1,
+    };
+  });
+  const last30 = month.reduce((sum, day) => sum + day.value, 0);
+
+  const series = span === "month" ? month : week;
+  const seriesTotal = span === "month" ? last30 : thisWeek;
   // ---- Zones ------------------------------------------------------------------
   const quietCutoff = Date.now() - QUIET_DAYS * 86_400_000;
   const zoneRows: ZoneRow[] = zones
@@ -493,19 +522,53 @@ export default async function DashboardPage() {
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
         <SectionCard
           title={t("Submissions")}
-          hint={t("Records received in the last {days} days", { days: WEEK_DAYS })}
+          hint={t("Records received in the last {days} days", {
+            days: span === "month" ? MONTH_DAYS : WEEK_DAYS,
+          })}
           action={
-            <span className="whitespace-nowrap num text-[12px] text-muted">
-              {thisWeek}
-              <span className="ml-1.5 font-sans text-[11px] text-faint">{t("this week")}</span>
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="whitespace-nowrap num text-[12px] text-muted">
+                {seriesTotal}
+                <span className="ml-1.5 font-sans text-[11px] text-faint">
+                  {span === "month" ? t("in {days} days", { days: MONTH_DAYS }) : t("this week")}
+                </span>
+              </span>
+              <div className="flex divide-x divide-line overflow-hidden rounded-full border border-control">
+                <Link
+                  href="/dashboard"
+                  scroll={false}
+                  aria-current={span === "week" ? "page" : undefined}
+                  className={`flex h-7 items-center px-2.5 text-[11px] font-medium transition-colors ${
+                    span === "week" ? "bg-accent-soft text-accent" : "text-muted hover:text-ink"
+                  }`}
+                >
+                  {t("Weekly")}
+                </Link>
+                <Link
+                  href="/dashboard?span=month"
+                  scroll={false}
+                  aria-current={span === "month" ? "page" : undefined}
+                  className={`flex h-7 items-center px-2.5 text-[11px] font-medium transition-colors ${
+                    span === "month" ? "bg-accent-soft text-accent" : "text-muted hover:text-ink"
+                  }`}
+                >
+                  {t("Monthly")}
+                </Link>
+              </div>
+            </div>
           }
         >
           <WeekBars
-            data={week}
+            data={series}
             height={168}
             unit={t("records")}
-            emptyLabel={t("Nothing has been submitted in the last seven days.")}
+            dense={span === "month"}
+            labelEvery={span === "month" ? 5 : 1}
+            emptyLabel={
+              span === "month"
+                ? t("Nothing has been submitted in the last {days} days.", { days: MONTH_DAYS })
+                : t("Nothing has been submitted in the last seven days.")
+            }
           />
         </SectionCard>
 

@@ -7,6 +7,8 @@ export interface WeekBar {
   label: string;
   value: number;
   today?: boolean;
+  /** A fuller name for the tooltip when the axis label is only a number. */
+  full?: string;
 }
 
 // Three gridlines at round numbers, with the top one above the tallest bar.
@@ -24,14 +26,21 @@ export function WeekBars({
   height = 168,
   unit = "records",
   emptyLabel,
+  dense = false,
+  labelEvery = 1,
 }: {
   data: WeekBar[];
   height?: number;
   unit?: string;
   emptyLabel?: string;
+  /** Thirty columns instead of seven: narrower bars, tighter gaps. */
+  dense?: boolean;
+  /** Print the axis label every Nth bar, plus the last one. */
+  labelEvery?: number;
 }) {
   const { top, ticks } = scale(Math.max(...data.map((day) => day.value), 0));
   const empty = data.every((day) => day.value === 0);
+  const barMax = dense ? 18 : 38;
 
   return (
     <div>
@@ -60,54 +69,82 @@ export function WeekBars({
           ))}
         </div>
 
-        <div className="absolute inset-y-0 left-7 right-0 flex items-end gap-1.5 sm:gap-2">
-          {data.map((day) => {
+        {/* The top padding is the room the count labels need above the tallest
+            bar; percentage heights resolve against the padded content box, so
+            the bars still grow from the baseline. */}
+        <div
+          className={`absolute inset-y-0 left-7 right-0 flex items-end pt-4 ${
+            dense ? "gap-[3px]" : "gap-1.5 sm:gap-2"
+          }`}
+        >
+          {data.map((day, index) => {
             const ratio = top === 0 ? 0 : day.value / top;
-            const reading = `${day.label}: ${day.value} ${unit}`;
+            const reading = `${day.full ?? day.label}: ${day.value} ${unit}`;
             return (
-              <div key={day.label} className="flex h-full flex-1 items-end justify-center">
-                {day.value === 0 ? (
-                  // A zero day keeps its slot: a faint dashed stub on the
-                  // baseline says "measured, nothing here" instead of leaving a
-                  // bare rule that looks like a missing bar.
+              <div
+                key={`${day.label}-${index}`}
+                className="flex h-full flex-1 items-end justify-center"
+              >
+                <div
+                  className="relative w-full"
+                  style={{
+                    height: day.value === 0 ? 10 : `${Math.max(ratio * 100, 3)}%`,
+                    maxWidth: barMax,
+                  }}
+                >
                   <span
-                    role="img"
-                    aria-label={reading}
-                    title={reading}
-                    className={`h-2.5 w-full max-w-[38px] rounded-t-[3px] border border-dashed ${
-                      day.today
-                        ? "border-accent/45 bg-accent-soft/70"
-                        : "border-control/80 bg-panel/70"
-                    }`}
-                  />
-                ) : (
-                  <span
-                    role="img"
-                    aria-label={reading}
-                    title={reading}
-                    className={`w-full max-w-[38px] rounded-t-[3px] ${
-                      day.today ? "bg-accent" : "bg-accent/75"
-                    }`}
-                    style={{ height: `${Math.max(ratio * 100, 3)}%` }}
-                  />
-                )}
+                    aria-hidden="true"
+                    className={`num absolute -top-4 left-1/2 -translate-x-1/2 leading-none ${
+                      dense ? "text-[9px]" : "text-[10px]"
+                    } ${day.today ? "font-semibold text-ink" : "text-muted"}`}
+                  >
+                    {day.value}
+                  </span>
+                  {day.value === 0 ? (
+                    // A zero day keeps its slot: a faint dashed stub on the
+                    // baseline says "measured, nothing here" instead of leaving
+                    // a bare rule that looks like a missing bar.
+                    <span
+                      role="img"
+                      aria-label={reading}
+                      title={reading}
+                      className={`block h-full w-full rounded-t-[3px] border border-dashed ${
+                        day.today
+                          ? "border-accent/45 bg-accent-soft/70"
+                          : "border-control/80 bg-panel/70"
+                      }`}
+                    />
+                  ) : (
+                    <span
+                      role="img"
+                      aria-label={reading}
+                      title={reading}
+                      className={`block h-full w-full rounded-t-[3px] ${
+                        day.today ? "bg-accent" : "bg-accent/75"
+                      }`}
+                    />
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
       </div>
 
-      <div className="mt-2 flex gap-1.5 pl-7 sm:gap-2">
-        {data.map((day) => (
-          <span
-            key={day.label}
-            className={`flex-1 truncate text-center text-[11px] ${
-              day.today ? "font-medium text-ink" : "text-faint"
-            }`}
-          >
-            {day.label}
-          </span>
-        ))}
+      <div className={`mt-2 flex pl-7 ${dense ? "gap-[3px]" : "gap-1.5 sm:gap-2"}`}>
+        {data.map((day, index) => {
+          const show = index % labelEvery === 0 || index === data.length - 1;
+          return (
+            <span
+              key={`${day.label}-${index}`}
+              className={`flex-1 truncate text-center ${
+                dense ? "text-[9px]" : "text-[11px]"
+              } ${day.today ? "font-medium text-ink" : "text-faint"}`}
+            >
+              {show ? day.label : "\u00a0"}
+            </span>
+          );
+        })}
       </div>
 
       {empty && emptyLabel ? (

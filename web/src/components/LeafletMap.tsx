@@ -22,6 +22,8 @@ export interface MapMarker {
   href?: string;
   /** Draws a slow halo around the dot: open critical hazards on the overview. */
   pulse?: boolean;
+  /** The record's type. The map's filter chips read this; the map ignores it. */
+  type?: "flora" | "soil_water" | "hazard";
 }
 
 export interface MapZone {

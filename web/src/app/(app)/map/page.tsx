@@ -1,7 +1,7 @@
 import { getZones, queryRecords } from "@/lib/data";
 import { getProfile } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui";
-import { MapView } from "@/components/MapView";
+import { MapExplorer } from "@/components/MapExplorer";
 import { STATUS_LABELS, MAP_MARKER_COLORS, TYPE_CHART_COLORS } from "@/lib/format";
 import { getT } from "@/i18n/server";
 import type { MapMarker } from "@/components/MapView";
@@ -20,6 +20,7 @@ export default async function MapPage() {
       label: r.title,
       sub: `${r.zone?.name ?? t("No zone")} - ${t(STATUS_LABELS[r.status])}`,
       href: `/records/${r.id}`,
+      type: r.type,
     }));
 
   const zoneShapes = zones.map((z) => ({
@@ -44,13 +45,11 @@ export default async function MapPage() {
         })}
       />
 
-      <div className="overflow-hidden rounded-card border border-line bg-sheet">
-        <MapView
-          markers={markers}
-          zones={zoneShapes}
-          canManageZones={profile?.role === "admin" || profile?.role === "supervisor"}
-        />
-      </div>
+      <MapExplorer
+        markers={markers}
+        zones={zoneShapes}
+        canManageZones={profile?.role === "admin" || profile?.role === "supervisor"}
+      />
 
       <div className="mt-4 flex flex-wrap items-center gap-2 text-[12px]">
         <span className="text-muted">{t("Zones and record types:")}</span>

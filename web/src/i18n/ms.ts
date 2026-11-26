@@ -365,6 +365,7 @@ export const ms: Record<string, string> = {
   Overview: "Gambaran keseluruhan",
   Records: "Rekod",
   "Site map": "Peta tapak",
+  "Showing {count} of {total} records": "Menunjukkan {count} daripada {total} rekod",
   "Map style": "Gaya peta",
   Street: "Jalan",
   Satellite: "Satelit",
@@ -737,7 +738,11 @@ export const ms: Record<string, string> = {
   "Open map": "Buka peta",
   "Quiet": "Senyap",
   "Records received in the last {days} days": "Rekod diterima dalam {days} hari lepas",
+  "Nothing has been submitted in the last {days} days.": "Tiada apa dihantar dalam {days} hari lepas.",
   "Submissions": "Penghantaran",
+  "Weekly": "Mingguan",
+  "Monthly": "Bulanan",
+  "in {days} days": "dalam {days} hari",
   "View all": "Lihat semua",
   "Waiting on you": "Menunggu tindakan anda",
   "What takes points away": "Apa yang menolak mata",
@@ -869,4 +874,49 @@ export const ms: Record<string, string> = {
   "Work in the field, and fixes waiting for your decision":
     "Kerja di lapangan, dan pembaikan yang menunggu keputusan anda",
   "Review fixes": "Semak pembaikan",
+
+  // ---- Adding a record on the website ----
+  "Add record": "Tambah rekod",
+  "Add photos": "Tambah foto",
+  "Observed date": "Tarikh pemerhatian",
+  "New records wait for a supervisor to review them.": "Rekod baharu menunggu semakan penyelia.",
+  "What did you see?": "Apa yang anda nampak?",
+  "No AI assist for soil and water: read the instrument directly.":
+    "Tiada bantuan AI untuk tanah dan air: baca alat ukur terus.",
+  "Auto-fill from photo": "Isi automatik dari foto",
+  "Reading the photo...": "Membaca foto...",
+  "Fill again from another photo": "Isi semula dari foto lain",
+  "Filled from photo": "Diisi dari foto",
+  "Filled from photo - {value}% confidence": "Diisi dari foto - {value}% keyakinan",
+  "The photo is analysed once and not stored. Check every field before saving.":
+    "Foto dianalisis sekali sahaja dan tidak disimpan. Semak setiap ruang sebelum menyimpan.",
+  "Scientific name": "Nama saintifik",
+  "Invasive in Malaysia. Note the location and how much ground it covers.":
+    "Invasif di Malaysia. Catat lokasi dan keluasan kawasan yang diliputi.",
+  "Choose a reading": "Pilih bacaan",
+  "Use my location": "Guna lokasi saya",
+  "Anything the photo does not show: access, weather, what you were doing.":
+    "Apa-apa yang foto tidak tunjukkan: akses, cuaca, apa yang anda lakukan.",
+  "Up to {count} photos, optional.": "Sehingga {count} foto, pilihan.",
+  "This browser cannot share a location.": "Pelayar ini tidak boleh berkongsi lokasi.",
+  "Location unavailable. Allow it in your browser, then try again.":
+    "Lokasi tidak tersedia. Benarkan dalam pelayar anda, kemudian cuba lagi.",
+  "AI has reached today's limit. Enter the record by hand.":
+    "AI telah mencapai had hari ini. Masukkan rekod secara manual.",
+  "AI is busy. Wait a moment and try again.": "AI sedang sibuk. Tunggu sebentar dan cuba lagi.",
+  "The photo was not clear enough. Try another.": "Foto tidak cukup jelas. Cuba foto lain.",
+  "That photo is too large to analyse.": "Foto itu terlalu besar untuk dianalisis.",
+  "Sign in again to use AI.": "Log masuk semula untuk menggunakan AI.",
+  "AI could not analyse the photo. Enter the record by hand.":
+    "AI tidak dapat menganalisis foto. Masukkan rekod secara manual.",
+  "Your session has expired. Sign in again.": "Sesi anda telah tamat. Log masuk semula.",
+  "Pick a record type.": "Pilih jenis rekod.",
+  "Give the record a title.": "Berikan tajuk kepada rekod.",
+  "The photo could not be uploaded: {message}": "Foto tidak dapat dimuat naik: {message}",
+  "The record could not be saved: {message}": "Rekod tidak dapat disimpan: {message}",
+  "Choose a reading type.": "Pilih jenis bacaan.",
+  "Choose a unit for {type}.": "Pilih unit untuk {type}.",
+  "Enter a valid number for {type}.": "Masukkan nombor yang sah untuk {type}.",
+  "Reading is outside the expected range ({min}-{max} {unit}).":
+    "Bacaan di luar julat dijangka ({min}-{max} {unit}).",
 };
