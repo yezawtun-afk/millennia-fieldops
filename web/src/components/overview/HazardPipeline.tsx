@@ -71,49 +71,80 @@ export function HazardPipeline({
 
   const share = (value: number) => `${(value / total) * 100}%`;
 
-  return (
-    <div className="p-4">
-      {/* The funnel itself is one picture, so it is not a row of tab stops; the
-          numbers underneath carry the labels and the links. */}
-      <div className="flex h-2.5 gap-[3px] overflow-hidden rounded-full bg-panel" aria-hidden="true">
-        {stages
-          .filter((stage) => stage.value > 0)
-          .map((stage) => (
-            <span
-              key={stage.key}
-              className={STAGE_CLASS[stage.key]}
-              style={{ width: share(stage.value) }}
-              title={`${t(STAGE_LABELS[stage.key])}: ${stage.value}`}
-            />
-          ))}
-      </div>
+  // The three counts a supervisor acts on, and the two that are context.
+  const workStages: PipelineStage[] = ["toAssign", "inRepair", "verify"];
+  const contextStages: PipelineStage[] = ["pending", "closed"];
+  const stageByKey = (key: PipelineStage) => stages.find((stage) => stage.key === key);
 
-      <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-5">
-        {stages.map((stage) => (
-          <Link
-            key={stage.key}
-            href={stage.href}
-            className="group -mx-1 rounded-[4px] px-1 py-0.5 transition-colors hover:bg-panel"
-          >
-            <span className="num block text-[15px] font-semibold leading-5 text-ink">
-              {stage.value}
-            </span>
-            <span className="block text-[11px] leading-4 text-muted group-hover:text-accent">
-              {t(STAGE_LABELS[stage.key])}
-            </span>
-          </Link>
-        ))}
+  return (
+    <div>
+      {/* The old remediation strip's numbers, kept at the size they read at.
+          "Awaiting review" and "Closed" say what the whole loop holds, not what
+          to do next, so they sit small under the bar. */}
+      <div className="grid grid-cols-3 divide-x divide-rule border-b border-rule">
+        {workStages.map((key) => {
+          const stage = stageByKey(key);
+          if (!stage) return null;
+          return (
+            <Link
+              key={key}
+              href={stage.href}
+              className="block px-4 py-3 transition-colors hover:bg-panel"
+            >
+              <span className="num block text-[22px] font-semibold leading-none tracking-[-0.02em] text-ink">
+                {stage.value}
+              </span>
+              <span className="mt-1 block text-[11px] leading-4 text-muted">
+                {t(STAGE_LABELS[key])}
+              </span>
+            </Link>
+          );
+        })}
       </div>
 
       {overdue > 0 ? (
-        <p className="mt-2 text-[11px] leading-4 text-negative-ink">
+        <p className="border-b border-rule bg-negative-soft/60 px-4 py-2 text-[12px] text-negative-ink">
           {overdue === 1
             ? t("1 job is past its due date.")
             : t("{count} jobs are past their due date.", { count: overdue })}
         </p>
       ) : null}
 
-      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+      {/* The funnel is one picture, so it is not a row of tab stops; the counts
+          beside it carry the labels and the links. */}
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div
+          className="flex h-2 min-w-0 flex-1 gap-[3px] overflow-hidden rounded-full bg-panel"
+          aria-hidden="true"
+        >
+          {stages
+            .filter((stage) => stage.value > 0)
+            .map((stage) => (
+              <span
+                key={stage.key}
+                className={STAGE_CLASS[stage.key]}
+                style={{ width: share(stage.value) }}
+                title={`${t(STAGE_LABELS[stage.key])}: ${stage.value}`}
+              />
+            ))}
+        </div>
+
+        {contextStages.map((key) => {
+          const stage = stageByKey(key);
+          if (!stage) return null;
+          return (
+            <Link
+              key={key}
+              href={stage.href}
+              className="shrink-0 whitespace-nowrap text-[11px] leading-4 text-faint transition-colors hover:text-accent"
+            >
+              {t(STAGE_LABELS[key])} <span className="num text-muted">{stage.value}</span>
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 px-4 pb-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
         {rows.map((row) => (
           <TypeCard key={row.key} row={row} t={t} />
         ))}
