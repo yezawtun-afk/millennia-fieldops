@@ -188,6 +188,7 @@ export const zh: Record<string, string> = {
   "Open review queue": "打开审核队列",
   "Open settings": "打开设置",
   "Opening...": "正在打开……",
+  "Outside every zone - left as No zone.": "不在任何区域内，已保留为“无区域”。",
   Password: "密码",
   "Phone alerts are off": "手机通知已关闭",
   "Phone number": "手机号码",

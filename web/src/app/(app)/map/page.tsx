@@ -20,7 +20,27 @@ export default async function MapPage() {
       label: r.title,
       sub: `${r.zone?.name ?? t("No zone")} - ${t(STATUS_LABELS[r.status])}`,
       href: `/records/${r.id}`,
-      type: r.type,
+      // Everything the site map's filter panel compares against. Built here
+      // because this is the only place that has the full record.
+      filter: {
+        type: r.type,
+        status: r.status,
+        severity: r.severity,
+        zoneId: r.zone?.id ?? null,
+        completion:
+          r.type === "hazard" && r.status === "approved"
+            ? r.closed_at
+              ? "done"
+              : r.completed_at
+                ? "verify"
+                : "open"
+            : undefined,
+        observedDate: r.observed_date,
+        search: [r.title, r.species_name, r.hazard_type, r.reading_type, r.notes]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase(),
+      },
     }));
 
   const zoneShapes = zones.map((z) => ({

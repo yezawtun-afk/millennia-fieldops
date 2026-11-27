@@ -475,6 +475,7 @@ export const ms: Record<string, string> = {
   "Filter by status": "Tapis mengikut status",
   "All statuses": "Semua status",
   Filters: "Penapis",
+  "Add filter": "Tambah penapis",
   Completion: "Status kerja",
   Incomplete: "Belum selesai",
   "Filter by completion": "Tapis mengikut status kerja",
@@ -901,6 +902,9 @@ export const ms: Record<string, string> = {
   "This browser cannot share a location.": "Pelayar ini tidak boleh berkongsi lokasi.",
   "Location unavailable. Allow it in your browser, then try again.":
     "Lokasi tidak tersedia. Benarkan dalam pelayar anda, kemudian cuba lagi.",
+  "Inside {zone}. The zone was filled in for you.":
+    "Anda berada di dalam {zone}. Zon telah diisi untuk anda.",
+  "Outside every zone - left as No zone.": "Di luar semua zon - dibiarkan sebagai Tiada zon.",
   "AI has reached today's limit. Enter the record by hand.":
     "AI telah mencapai had hari ini. Masukkan rekod secara manual.",
   "AI is busy. Wait a moment and try again.": "AI sedang sibuk. Tunggu sebentar dan cuba lagi.",

@@ -12,7 +12,15 @@ export default async function NewRecordPage() {
         title={t("Add record")}
         subtitle={t("New records wait for a supervisor to review them.")}
       />
-      <NewRecordForm zones={zones.map((zone) => ({ id: zone.id, name: zone.name }))} />
+      <NewRecordForm
+        zones={zones.map((zone) => ({
+          id: zone.id,
+          name: zone.name,
+          center_lat: zone.center_lat,
+          center_lng: zone.center_lng,
+          radius_m: zone.radius_m,
+        }))}
+      />
     </div>
   );
 }

@@ -446,6 +446,7 @@ export const zh: Record<string, string> = {
   "Filter by status": "按状态筛选",
   "All statuses": "所有状态",
   Filters: "筛选",
+  "Add filter": "添加筛选",
   Completion: "完成状态",
   Incomplete: "未完成",
   "Filter by completion": "按完成状态筛选",
@@ -859,6 +860,8 @@ export const zh: Record<string, string> = {
   "This browser cannot share a location.": "此浏览器无法共享位置。",
   "Location unavailable. Allow it in your browser, then try again.":
     "无法获取位置。请在浏览器中允许定位后重试。",
+  "Inside {zone}. The zone was filled in for you.": "你在 {zone} 内。已为你填入该区域。",
+  "Outside every zone - left as No zone.": "不在任何区域内，已保留为“无区域”。",
   "AI has reached today's limit. Enter the record by hand.": "AI 已达今日上限。请手动填写记录。",
   "AI is busy. Wait a moment and try again.": "AI 正忙。请稍后再试。",
   "The photo was not clear enough. Try another.": "照片不够清晰。请换一张。",

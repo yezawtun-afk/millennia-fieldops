@@ -415,6 +415,18 @@ export function NewRecordScreen({ navigation, route }: Props) {
     // The Location card prints the accuracy (and its quality) in place, so a
     // weak fix is not repeated as a banner at the top of the form.
     clearError("gps");
+
+    // A fix inside a circle fills the zone for you. Outside every circle the
+    // field goes back to No zone: a zone carried over from an earlier record
+    // would otherwise attach a spot that is nowhere near it.
+    const match = findZoneForPoint(zones, result);
+    if (match?.inside) {
+      setZoneId(match.zone.id);
+      setMessage({ kind: "info", text: t("Zone set to {zone}.", { zone: match.zone.name }) });
+    } else {
+      setZoneId(null);
+      setMessage({ kind: "info", text: t("Outside every zone - left as No zone.") });
+    }
   }
 
   function chooseReadingType(next: string) {

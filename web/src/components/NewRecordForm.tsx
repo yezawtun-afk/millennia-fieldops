@@ -25,6 +25,7 @@ import {
   TYPE_CHART_COLORS,
 } from "@/lib/format";
 import { defaultUnitFor, getReadingDefinition } from "@/lib/measurements";
+import { findZoneForPoint, type ZoneCircle } from "@/lib/zones";
 import { SPECIES_STATUS_LABELS, speciesStatusFor } from "@/lib/species";
 import { useI18n } from "@/i18n";
 import type { RecordType } from "@/lib/types";
@@ -109,7 +110,7 @@ async function toJpeg(file: File, maxEdge = 1600): Promise<File> {
   }
 }
 
-export function NewRecordForm({ zones }: { zones: { id: string; name: string }[] }) {
+export function NewRecordForm({ zones }: { zones: ZoneCircle[] }) {
   const { t } = useI18n();
   const [state, formAction, pending] = useActionState(createRecord, { error: null });
 
@@ -257,10 +258,28 @@ export function NewRecordForm({ zones }: { zones: { id: string; name: string }[]
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLatitude(position.coords.latitude.toFixed(6));
-        setLongitude(position.coords.longitude.toFixed(6));
+        const point = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+        setLatitude(point.latitude.toFixed(6));
+        setLongitude(point.longitude.toFixed(6));
         setLocating(false);
-        setLocationNote(null);
+
+        // A captured fix fills the zone only when it is genuinely inside a
+        // circle. Outside every zone the honest answer is "No zone", so a zone
+        // carried over from an earlier record is cleared rather than left to
+        // look deliberate.
+        const match = findZoneForPoint(zones, point);
+        if (match?.inside) {
+          setZoneId(match.zone.id);
+          setLocationNote(
+            t("Inside {zone}. The zone was filled in for you.", { zone: match.zone.name })
+          );
+        } else {
+          setZoneId("");
+          setLocationNote(t("Outside every zone - left as No zone."));
+        }
       },
       () => {
         setLocating(false);

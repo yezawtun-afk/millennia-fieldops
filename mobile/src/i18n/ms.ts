@@ -206,6 +206,7 @@ export const ms: Record<string, string> = {
   "Open review queue": "Buka baris gilir semakan",
   "Open settings": "Buka tetapan",
   "Opening...": "Membuka...",
+  "Outside every zone - left as No zone.": "Di luar semua zon - dibiarkan sebagai Tiada zon.",
   Password: "Kata laluan",
   "Phone alerts are off": "Makluman telefon dimatikan",
   "Phone number": "Nombor telefon",

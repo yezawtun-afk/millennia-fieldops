@@ -11,6 +11,24 @@ import { useI18n } from "@/i18n";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { useResolvedTheme } from "@/hooks/useResolvedTheme";
 import { FlyToUser, UserLocationLayer } from "./UserLocationLayer";
+import type { HazardSeverity, RecordStatus, RecordType } from "@/lib/types";
+
+/**
+ * The fields the site map's filter panel reads. Leaflet never touches them, so
+ * they stay out of the pin itself and the other maps do not have to supply them.
+ */
+export interface MapMarkerFilter {
+  type: RecordType;
+  status: RecordStatus;
+  severity: HazardSeverity | null;
+  zoneId: string | null;
+  /** Stage of the repair loop, only present on an approved hazard. */
+  completion?: "open" | "verify" | "done";
+  /** ISO timestamp of the observation, compared against the date range. */
+  observedDate: string;
+  /** Lower-cased title, species, hazard/reading type and notes. */
+  search: string;
+}
 
 export interface MapMarker {
   id: string;
@@ -22,8 +40,8 @@ export interface MapMarker {
   href?: string;
   /** Draws a slow halo around the dot: open critical hazards on the overview. */
   pulse?: boolean;
-  /** The record's type. The map's filter chips read this; the map ignores it. */
-  type?: "flora" | "soil_water" | "hazard";
+  /** Read by the site map's filters; the map itself ignores it. */
+  filter?: MapMarkerFilter;
 }
 
 export interface MapZone {
