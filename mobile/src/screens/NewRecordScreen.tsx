@@ -1285,7 +1285,13 @@ export function NewRecordScreen({ navigation, route }: Props) {
                 loading={aiBusy}
                 disabled={!online || photos.length === 0 || aiBusy}
               />
-              {aiBusy ? <AIAnalyzingPulse /> : null}
+              {aiBusy ? (
+                <AIAnalyzingPulse
+                  label={t(
+                    type === "flora" ? "Reading the flora photo..." : "Reading the hazard photo..."
+                  )}
+                />
+              ) : null}
             </View>
           ) : null}
         </Card>

@@ -53,9 +53,9 @@ export function AIAnalyzingPulse({ label }: AIAnalyzingPulseProps) {
       style={[styles.wrap, { opacity: pulseAnim }]}
       accessible
       accessibilityRole="progressbar"
-      accessibilityLabel={label ?? t("AI is analyzing hazard photo...")}
+      accessibilityLabel={label ?? t("Reading the photo...")}
     >
-      <Text style={styles.text}>{label ?? t("AI is analyzing hazard photo...")}</Text>
+      <Text style={styles.text}>{label ?? t("Reading the photo...")}</Text>
     </Animated.View>
   );
 }
